@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mentioned — AI Visibility Checker
+
+Check if AI tools like ChatGPT and Claude recommend your product when users search for tools in your category.
+
+## Features
+
+- **AI Visibility Scanning** — Query ChatGPT and Claude with real user prompts
+- **Competitor Analysis** — Compare your visibility against competitors
+- **Actionable Insights** — Get specific recommendations to improve your AI visibility
+- **Draft Generation** — AI-generated content drafts for comparison pages, FAQs, and more
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure Environment Variables
+
+Create a `.env.local` file in the project root with the following variables:
+
+```env
+# Supabase Configuration (for authentication and data storage)
+# Get these from: https://supabase.com/dashboard
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# OpenAI API Key (for ChatGPT queries)
+# Get this from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-openai-key
+
+# Anthropic API Key (for Claude queries)
+# Get this from: https://console.anthropic.com/
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+```
+
+**Note:** The app can run without API keys for development — it will show mock data. To run real scans, you need at least one AI provider key.
+
+### 3. Set Up Supabase (Optional)
+
+If you want authentication and data persistence:
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Run the SQL schema from `supabase-schema.sql` in the SQL editor
+3. Add your Supabase credentials to `.env.local`
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── api/scan/           # Scan API endpoint
+│   ├── check/              # Onboarding wizard
+│   ├── dashboard/          # Main results dashboard
+│   ├── login/              # Authentication pages
+│   └── ...
+├── components/             # React components
+│   ├── layout/             # Layout components
+│   └── ui/                 # UI primitives
+└── lib/
+    ├── scan/               # AI scanning logic
+    │   ├── analyze-response.ts
+    │   ├── detect-signals.ts
+    │   ├── generate-actions.ts
+    │   ├── generate-queries.ts
+    │   ├── query-chatgpt.ts
+    │   ├── query-claude.ts
+    │   └── run-scan.ts
+    ├── auth.tsx            # Authentication context
+    ├── mock-data.ts        # Sample data for development
+    └── supabase.ts         # Supabase client
+```
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** Next.js 16 (App Router)
+- **Styling:** Tailwind CSS + shadcn/ui
+- **Database:** Supabase (PostgreSQL)
+- **Auth:** Supabase Auth
+- **AI APIs:** OpenAI (GPT-4o-mini), Anthropic (Claude Sonnet)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Cost Estimation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Each scan makes approximately:
+- 5 queries to ChatGPT (GPT-4o-mini)
+- 5 queries to Claude (Claude Sonnet)
+- 5-10 analysis calls (GPT-4o-mini)
 
-## Deploy on Vercel
+Estimated cost per scan: ~$0.05-0.10
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private — All rights reserved.

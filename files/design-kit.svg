@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="2400" viewBox="0 0 1600 2400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#059669"/>
+      <stop offset="100%" style="stop-color:#10B981"/>
+    </linearGradient>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1D4ED8"/>
+      <stop offset="100%" style="stop-color:#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="graphFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:0"/>
+    </linearGradient>
+    
+    <!-- Shadows -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <filter id="buttonShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#2563EB" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1600" height="2400" fill="#F8FAFC"/>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Logo -->
+  <!-- ==================== -->
+  <text x="50" y="50" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">LOGO</text>
+  
+  <!-- Logo Mark -->
+  <circle cx="100" cy="100" r="24" fill="none" stroke="#111827" stroke-width="2.5"/>
+  <text x="92" y="108" font-family="Georgia, serif" font-size="20" font-weight="bold" fill="#111827">M</text>
+  
+  <!-- Logo with Text -->
+  <g transform="translate(170, 76)">
+    <circle cx="24" cy="24" r="20" fill="none" stroke="#111827" stroke-width="2"/>
+    <text x="17" y="31" font-family="Georgia, serif" font-size="16" font-weight="bold" fill="#111827">M</text>
+    <text x="54" y="32" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Mentioned</text>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Color Palette -->
+  <!-- ==================== -->
+  <text x="50" y="180" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">COLOR PALETTE</text>
+  
+  <!-- Primary Blue -->
+  <rect x="50" y="200" width="80" height="80" rx="8" fill="#2563EB"/>
+  <text x="50" y="300" font-family="monospace" font-size="11" fill="#374151">Primary</text>
+  <text x="50" y="315" font-family="monospace" font-size="11" fill="#6B7280">#2563EB</text>
+  
+  <!-- Success Green -->
+  <rect x="150" y="200" width="80" height="80" rx="8" fill="#10B981"/>
+  <text x="150" y="300" font-family="monospace" font-size="11" fill="#374151">Success</text>
+  <text x="150" y="315" font-family="monospace" font-size="11" fill="#6B7280">#10B981</text>
+  
+  <!-- Warning Amber -->
+  <rect x="250" y="200" width="80" height="80" rx="8" fill="#F59E0B"/>
+  <text x="250" y="300" font-family="monospace" font-size="11" fill="#374151">Warning</text>
+  <text x="250" y="315" font-family="monospace" font-size="11" fill="#6B7280">#F59E0B</text>
+  
+  <!-- Danger Red -->
+  <rect x="350" y="200" width="80" height="80" rx="8" fill="#EF4444"/>
+  <text x="350" y="300" font-family="monospace" font-size="11" fill="#374151">Danger</text>
+  <text x="350" y="315" font-family="monospace" font-size="11" fill="#6B7280">#EF4444</text>
+  
+  <!-- ChatGPT Green -->
+  <rect x="450" y="200" width="80" height="80" rx="8" fill="#10A37F"/>
+  <text x="450" y="300" font-family="monospace" font-size="11" fill="#374151">ChatGPT</text>
+  <text x="450" y="315" font-family="monospace" font-size="11" fill="#6B7280">#10A37F</text>
+  
+  <!-- Claude Orange -->
+  <rect x="550" y="200" width="80" height="80" rx="8" fill="#D97706"/>
+  <text x="550" y="300" font-family="monospace" font-size="11" fill="#374151">Claude</text>
+  <text x="550" y="315" font-family="monospace" font-size="11" fill="#6B7280">#D97706</text>
+  
+  <!-- Text Dark -->
+  <rect x="650" y="200" width="80" height="80" rx="8" fill="#111827"/>
+  <text x="650" y="300" font-family="monospace" font-size="11" fill="#374151">Text Dark</text>
+  <text x="650" y="315" font-family="monospace" font-size="11" fill="#6B7280">#111827</text>
+  
+  <!-- Text Muted -->
+  <rect x="750" y="200" width="80" height="80" rx="8" fill="#6B7280"/>
+  <text x="750" y="300" font-family="monospace" font-size="11" fill="#374151">Text Muted</text>
+  <text x="750" y="315" font-family="monospace" font-size="11" fill="#6B7280">#6B7280</text>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Buttons -->
+  <!-- ==================== -->
+  <text x="50" y="380" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">BUTTONS</text>
+  
+  <!-- Primary Button -->
+  <g filter="url(#buttonShadow)">
+    <rect x="50" y="400" width="220" height="48" rx="12" fill="#2563EB"/>
+    <text x="95" y="430" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="white">Check your AI visibility</text>
+  </g>
+  
+  <!-- Secondary Button -->
+  <rect x="290" y="400" width="140" height="48" rx="12" fill="white" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="320" y="430" font-family="Arial, sans-serif" font-size="15" font-weight="500" fill="#374151">Run new scan</text>
+  
+  <!-- Success Button -->
+  <rect x="450" y="400" width="150" height="48" rx="12" fill="#10B981"/>
+  <text x="480" y="430" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="white">Generate draft</text>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Score Display -->
+  <!-- ==================== -->
+  <text x="50" y="500" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">VISIBILITY SCORE</text>
+  
+  <!-- Excellent Score -->
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="520" width="200" height="140" rx="16" fill="white"/>
+    <text x="70" y="555" font-family="Arial, sans-serif" font-size="11" fill="#6B7280">VISIBILITY SCORE</text>
+    <text x="70" y="610" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#10B981">87</text>
+    <text x="152" y="610" font-family="Arial, sans-serif" font-size="24" fill="#D1D5DB">/100</text>
+    <text x="70" y="640" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#10B981">Excellent</text>
+    <!-- Progress bar -->
+    <rect x="70" y="650" width="160" height="6" rx="3" fill="#E5E7EB"/>
+    <rect x="70" y="650" width="139" height="6" rx="3" fill="#10B981"/>
+  </g>
+  
+  <!-- Moderate Score -->
+  <g filter="url(#cardShadow)">
+    <rect x="270" y="520" width="200" height="140" rx="16" fill="white"/>
+    <text x="290" y="555" font-family="Arial, sans-serif" font-size="11" fill="#6B7280">VISIBILITY SCORE</text>
+    <text x="290" y="610" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#F59E0B">45</text>
+    <text x="372" y="610" font-family="Arial, sans-serif" font-size="24" fill="#D1D5DB">/100</text>
+    <text x="290" y="640" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#F59E0B">Moderate</text>
+    <rect x="290" y="650" width="160" height="6" rx="3" fill="#E5E7EB"/>
+    <rect x="290" y="650" width="72" height="6" rx="3" fill="#F59E0B"/>
+  </g>
+  
+  <!-- Low Score -->
+  <g filter="url(#cardShadow)">
+    <rect x="490" y="520" width="200" height="140" rx="16" fill="white"/>
+    <text x="510" y="555" font-family="Arial, sans-serif" font-size="11" fill="#6B7280">VISIBILITY SCORE</text>
+    <text x="510" y="610" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#EF4444">12</text>
+    <text x="580" y="610" font-family="Arial, sans-serif" font-size="24" fill="#D1D5DB">/100</text>
+    <text x="510" y="640" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#EF4444">Not Visible</text>
+    <rect x="510" y="650" width="160" height="6" rx="3" fill="#E5E7EB"/>
+    <rect x="510" y="650" width="19" height="6" rx="3" fill="#EF4444"/>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Status Badges -->
+  <!-- ==================== -->
+  <text x="50" y="710" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">STATUS BADGES</text>
+  
+  <!-- Excellent Badge -->
+  <rect x="50" y="730" width="95" height="32" rx="16" fill="#ECFDF5"/>
+  <circle cx="70" cy="746" r="4" fill="#10B981"/>
+  <text x="82" y="752" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#10B981">Excellent</text>
+  
+  <!-- Good Badge -->
+  <rect x="160" y="730" width="75" height="32" rx="16" fill="#EFF6FF"/>
+  <circle cx="180" cy="746" r="4" fill="#3B82F6"/>
+  <text x="192" y="752" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#3B82F6">Good</text>
+  
+  <!-- Moderate Badge -->
+  <rect x="250" y="730" width="95" height="32" rx="16" fill="#FFFBEB"/>
+  <circle cx="270" cy="746" r="4" fill="#F59E0B"/>
+  <text x="282" y="752" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#F59E0B">Moderate</text>
+  
+  <!-- Low Badge -->
+  <rect x="360" y="730" width="65" height="32" rx="16" fill="#FEF2F2"/>
+  <circle cx="380" cy="746" r="4" fill="#EF4444"/>
+  <text x="392" y="752" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#EF4444">Low</text>
+  
+  <!-- Not Visible Badge -->
+  <rect x="440" y="730" width="105" height="32" rx="16" fill="#FEF2F2"/>
+  <circle cx="460" cy="746" r="4" fill="#EF4444"/>
+  <text x="472" y="752" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="#EF4444">Not Visible</text>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Platform Cards -->
+  <!-- ==================== -->
+  <text x="50" y="820" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">PLATFORM CARDS</text>
+  
+  <!-- ChatGPT Card - Mentioned -->
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="840" width="280" height="120" rx="16" fill="white"/>
+    <circle cx="90" cy="880" r="20" fill="#10A37F"/>
+    <text x="83" y="887" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">G</text>
+    <text x="120" y="875" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#111827">ChatGPT</text>
+    <text x="120" y="893" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Top 3 recommendation</text>
+    <!-- Checkmark -->
+    <circle cx="300" cy="875" r="12" fill="#ECFDF5"/>
+    <path d="M294 875 L298 879 L306 871" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Quote -->
+    <text x="70" y="935" font-family="Arial, sans-serif" font-size="12" font-style="italic" fill="#6B7280">"Stripe is a popular payment gateway..."</text>
+  </g>
+  
+  <!-- Claude Card - Mentioned -->
+  <g filter="url(#cardShadow)">
+    <rect x="350" y="840" width="280" height="120" rx="16" fill="white"/>
+    <circle cx="390" cy="880" r="20" fill="#D97706"/>
+    <text x="384" y="887" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">C</text>
+    <text x="420" y="875" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#111827">Claude</text>
+    <text x="420" y="893" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Mentioned</text>
+    <!-- Checkmark -->
+    <circle cx="600" cy="875" r="12" fill="#ECFDF5"/>
+    <path d="M594 875 L598 879 L606 871" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Quote -->
+    <text x="370" y="935" font-family="Arial, sans-serif" font-size="12" font-style="italic" fill="#6B7280">"Stripe is known for developer-friendly..."</text>
+  </g>
+  
+  <!-- ChatGPT Card - Not Mentioned -->
+  <g filter="url(#cardShadow)">
+    <rect x="650" y="840" width="280" height="120" rx="16" fill="white"/>
+    <circle cx="690" cy="880" r="20" fill="#D1D5DB"/>
+    <text x="683" y="887" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">G</text>
+    <text x="720" y="875" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#111827">ChatGPT</text>
+    <text x="720" y="893" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Not mentioned</text>
+    <!-- X mark -->
+    <circle cx="900" cy="875" r="12" fill="#FEF2F2"/>
+    <path d="M894 869 L906 881 M906 869 L894 881" stroke="#EF4444" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Query List -->
+  <!-- ==================== -->
+  <text x="50" y="1010" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">QUERY LIST</text>
+  
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="1030" width="600" height="200" rx="16" fill="white"/>
+    
+    <!-- Header -->
+    <text x="70" y="1060" font-family="Arial, sans-serif" font-size="11" fill="#6B7280">Queries tested for "payment gateway":</text>
+    
+    <!-- Query Row 1 -->
+    <text x="70" y="1095" font-family="Arial, sans-serif" font-size="14" fill="#374151">"Best payment gateway tools"</text>
+    <text x="420" y="1095" font-family="Arial, sans-serif" font-size="12" fill="#10B981">✓ ChatGPT</text>
+    <text x="510" y="1095" font-family="Arial, sans-serif" font-size="12" fill="#10B981">✓ Claude</text>
+    
+    <!-- Query Row 2 -->
+    <text x="70" y="1125" font-family="Arial, sans-serif" font-size="14" fill="#374151">"Best payment gateway for startups"</text>
+    <text x="420" y="1125" font-family="Arial, sans-serif" font-size="12" fill="#10B981">✓ ChatGPT</text>
+    <text x="510" y="1125" font-family="Arial, sans-serif" font-size="12" fill="#10B981">✓ Claude</text>
+    
+    <!-- Query Row 3 -->
+    <text x="70" y="1155" font-family="Arial, sans-serif" font-size="14" fill="#374151">"Stripe alternatives"</text>
+    <text x="420" y="1155" font-family="Arial, sans-serif" font-size="12" fill="#10B981">✓ ChatGPT</text>
+    <text x="510" y="1155" font-family="Arial, sans-serif" font-size="12" fill="#EF4444">✗ Claude</text>
+    
+    <!-- Query Row 4 -->
+    <text x="70" y="1185" font-family="Arial, sans-serif" font-size="14" fill="#374151">"Best free payment gateway"</text>
+    <text x="420" y="1185" font-family="Arial, sans-serif" font-size="12" fill="#EF4444">✗ ChatGPT</text>
+    <text x="510" y="1185" font-family="Arial, sans-serif" font-size="12" fill="#EF4444">✗ Claude</text>
+    
+    <!-- View responses link -->
+    <text x="600" y="1210" font-family="Arial, sans-serif" font-size="12" fill="#2563EB" text-anchor="end">View responses</text>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Competitor Card -->
+  <!-- ==================== -->
+  <text x="50" y="1280" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">COMPETITOR CARDS</text>
+  
+  <!-- Your Product Card -->
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="1300" width="700" height="100" rx="16" fill="white" stroke="#10B981" stroke-width="2"/>
+    <circle cx="100" cy="1350" r="25" fill="#3B82F6"/>
+    <text x="93" y="1358" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">S</text>
+    <text x="140" y="1340" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Stripe</text>
+    <rect x="185" y="1328" width="85" height="22" rx="11" fill="#EFF6FF"/>
+    <text x="200" y="1344" font-family="Arial, sans-serif" font-size="11" font-weight="500" fill="#2563EB">Your product</text>
+    <text x="140" y="1360" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Tested in: "payment gateway"</text>
+    <text x="140" y="1378" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Leading in AI recommendations</text>
+    <text x="650" y="1340" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#10B981" text-anchor="end">High</text>
+    <text x="650" y="1360" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="end">Mentioned by 2/2 sources</text>
+    <rect x="140" y="1385" width="510" height="6" rx="3" fill="#10B981"/>
+  </g>
+  
+  <!-- Competitor Card -->
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="1420" width="340" height="130" rx="16" fill="white"/>
+    <text x="70" y="1455" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">PayPal</text>
+    <rect x="130" y="1440" width="75" height="20" rx="10" fill="#F3F4F6"/>
+    <text x="143" y="1454" font-family="Arial, sans-serif" font-size="10" fill="#6B7280">Discovered</text>
+    <!-- Checkmark -->
+    <circle cx="350" cy="1450" r="10" fill="#ECFDF5"/>
+    <path d="M345 1450 L348 1453 L355 1446" stroke="#10B981" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <text x="70" y="1478" font-family="Arial, sans-serif" font-size="12" fill="#10B981">More visible than you</text>
+    <text x="70" y="1500" font-family="Arial, sans-serif" font-size="11" fill="#6B7280">In "payment gateway" queries:</text>
+    <text x="70" y="1518" font-family="Arial, sans-serif" font-size="12" fill="#374151">Mentions</text>
+    <text x="200" y="1518" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#111827">24 times</text>
+    <text x="70" y="1536" font-family="Arial, sans-serif" font-size="12" fill="#374151">Top 3</text>
+    <text x="200" y="1536" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#111827">12 times</text>
+    <rect x="70" y="1545" width="260" height="4" rx="2" fill="#E5E7EB"/>
+    <rect x="70" y="1545" width="200" height="4" rx="2" fill="#10B981"/>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Action Plan Card -->
+  <!-- ==================== -->
+  <text x="50" y="1600" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">ACTION PLAN CARDS</text>
+  
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="1620" width="700" height="170" rx="16" fill="white"/>
+    
+    <!-- Number badge -->
+    <circle cx="100" cy="1665" r="20" fill="#2563EB"/>
+    <text x="94" y="1672" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">#1</text>
+    
+    <!-- Title and impact -->
+    <text x="135" y="1660" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Add Testimonials to Build Trust</text>
+    <rect x="640" y="1645" width="85" height="24" rx="12" fill="#FEF2F2"/>
+    <text x="655" y="1662" font-family="Arial, sans-serif" font-size="11" font-weight="500" fill="#EF4444">High impact</text>
+    
+    <!-- What we found -->
+    <rect x="135" y="1680" width="4" height="35" rx="2" fill="#3B82F6"/>
+    <text x="150" y="1695" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#374151">What we found:</text>
+    <text x="150" y="1712" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Your site currently has '0 testimonials'.</text>
+    
+    <!-- Competitor comparison -->
+    <rect x="135" y="1725" width="4" height="35" rx="2" fill="#F59E0B"/>
+    <text x="150" y="1740" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#374151">Competitor comparison:</text>
+    <text x="150" y="1757" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">PayPal has '10 logos' from well-known brands.</text>
+    
+    <!-- Generate draft button -->
+    <rect x="135" y="1770" width="130" height="36" rx="8" fill="#2563EB"/>
+    <text x="160" y="1793" font-family="Arial, sans-serif" font-size="13" font-weight="500" fill="white">✨ Generate draft</text>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Progress Graph -->
+  <!-- ==================== -->
+  <text x="50" y="1840" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">VISIBILITY PROGRESS GRAPH</text>
+  
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="1860" width="700" height="280" rx="16" fill="white"/>
+    
+    <!-- Header -->
+    <text x="70" y="1895" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Visibility Progress</text>
+    <text x="70" y="1915" font-family="Arial, sans-serif" font-size="13" fill="#6B7280">doola</text>
+    
+    <!-- Change badge -->
+    <rect x="650" y="1878" width="80" height="28" rx="14" fill="#ECFDF5"/>
+    <text x="670" y="1897" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#10B981">↗ +55 pts</text>
+    
+    <!-- Current score -->
+    <text x="70" y="1960" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#10B981">78</text>
+    <text x="135" y="1960" font-family="Arial, sans-serif" font-size="20" fill="#D1D5DB">/100</text>
+    <text x="180" y="1960" font-family="Arial, sans-serif" font-size="13" fill="#6B7280">current score</text>
+    
+    <!-- Graph area -->
+    <rect x="70" y="1980" width="660" height="100" rx="4" fill="#F9FAFB"/>
+    
+    <!-- Graph line -->
+    <path d="M90 2060 Q150 2050, 200 2040 T300 2020 T400 2010 T500 1995 T600 1990 T700 1985" 
+          stroke="url(#greenGradient)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    
+    <!-- Area fill under graph -->
+    <path d="M90 2060 Q150 2050, 200 2040 T300 2020 T400 2010 T500 1995 T600 1990 T700 1985 L700 2080 L90 2080 Z" 
+          fill="url(#graphFill)"/>
+    
+    <!-- Data points -->
+    <circle cx="90" cy="2060" r="6" fill="#10B981" stroke="white" stroke-width="2"/>
+    <circle cx="200" cy="2040" r="6" fill="#10B981" stroke="white" stroke-width="2"/>
+    <circle cx="300" cy="2020" r="6" fill="#10B981" stroke="white" stroke-width="2"/>
+    <circle cx="400" cy="2010" r="6" fill="#10B981" stroke="white" stroke-width="2"/>
+    <circle cx="500" cy="1998" r="6" fill="#10B981" stroke="white" stroke-width="2"/>
+    <circle cx="600" cy="1990" r="6" fill="#10B981" stroke="white" stroke-width="2"/>
+    <circle cx="700" cy="1985" r="8" fill="#10B981" stroke="white" stroke-width="2"/>
+    
+    <!-- X-axis labels -->
+    <text x="90" y="2100" font-family="Arial, sans-serif" font-size="11" fill="#9CA3AF">Jan 14</text>
+    <text x="680" y="2100" font-family="Arial, sans-serif" font-size="11" fill="#9CA3AF">Feb 3</text>
+    
+    <!-- Stats row -->
+    <line x1="70" y1="2110" x2="730" y2="2110" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="150" y="2130" font-family="Arial, sans-serif" font-size="10" fill="#9CA3AF" text-anchor="middle">SCANS</text>
+    <text x="150" y="2150" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827" text-anchor="middle">7</text>
+    <text x="400" y="2130" font-family="Arial, sans-serif" font-size="10" fill="#9CA3AF" text-anchor="middle">HIGHEST</text>
+    <text x="400" y="2150" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#10B981" text-anchor="middle">78</text>
+    <text x="650" y="2130" font-family="Arial, sans-serif" font-size="10" fill="#9CA3AF" text-anchor="middle">LOWEST</text>
+    <text x="650" y="2150" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827" text-anchor="middle">23</text>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Stats Cards -->
+  <!-- ==================== -->
+  <text x="50" y="2200" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">STAT CARDS</text>
+  
+  <!-- Total Scans -->
+  <g filter="url(#cardShadow)">
+    <rect x="50" y="2220" width="170" height="90" rx="12" fill="white"/>
+    <rect x="70" y="2240" width="40" height="40" rx="10" fill="#EFF6FF"/>
+    <text x="82" y="2268" font-family="Arial, sans-serif" font-size="18" fill="#3B82F6">📅</text>
+    <text x="120" y="2255" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#111827">7</text>
+    <text x="120" y="2278" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Total Scans</text>
+  </g>
+  
+  <!-- Avg Score -->
+  <g filter="url(#cardShadow)">
+    <rect x="240" y="2220" width="170" height="90" rx="12" fill="white"/>
+    <rect x="260" y="2240" width="40" height="40" rx="10" fill="#FEF3C7"/>
+    <text x="272" y="2268" font-family="Arial, sans-serif" font-size="18" fill="#F59E0B">🎯</text>
+    <text x="310" y="2255" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#111827">48</text>
+    <text x="310" y="2278" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Avg Score</text>
+  </g>
+  
+  <!-- Best Score -->
+  <g filter="url(#cardShadow)">
+    <rect x="430" y="2220" width="170" height="90" rx="12" fill="white"/>
+    <rect x="450" y="2240" width="40" height="40" rx="10" fill="#ECFDF5"/>
+    <text x="462" y="2268" font-family="Arial, sans-serif" font-size="18" fill="#10B981">📈</text>
+    <text x="500" y="2255" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#111827">78</text>
+    <text x="500" y="2278" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Best Score</text>
+  </g>
+  
+  <!-- Total Change -->
+  <g filter="url(#cardShadow)">
+    <rect x="620" y="2220" width="170" height="90" rx="12" fill="white"/>
+    <rect x="640" y="2240" width="40" height="40" rx="10" fill="#ECFDF5"/>
+    <text x="652" y="2268" font-family="Arial, sans-serif" font-size="18" fill="#10B981">⚡</text>
+    <text x="690" y="2255" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#10B981">+55</text>
+    <text x="690" y="2278" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Total Change</text>
+  </g>
+  
+  <!-- ==================== -->
+  <!-- SECTION: Icons -->
+  <!-- ==================== -->
+  <text x="900" y="50" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6B7280">ICONS &amp; SYMBOLS</text>
+  
+  <!-- Checkmark -->
+  <circle cx="920" cy="90" r="16" fill="#ECFDF5"/>
+  <path d="M912 90 L918 96 L928 84" stroke="#10B981" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="950" y="95" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Checkmark</text>
+  
+  <!-- X Mark -->
+  <circle cx="920" cy="140" r="16" fill="#FEF2F2"/>
+  <path d="M912 132 L928 148 M928 132 L912 148" stroke="#EF4444" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <text x="950" y="145" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">X Mark</text>
+  
+  <!-- Trending Up -->
+  <circle cx="920" cy="190" r="16" fill="#ECFDF5"/>
+  <path d="M910 195 L920 185 L930 195" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M920 185 L920 198" stroke="#10B981" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <text x="950" y="195" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Trending Up</text>
+  
+  <!-- Trending Down -->
+  <circle cx="920" cy="240" r="16" fill="#FEF2F2"/>
+  <path d="M910 235 L920 245 L930 235" stroke="#EF4444" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M920 245 L920 232" stroke="#EF4444" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <text x="950" y="245" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Trending Down</text>
+  
+</svg>
