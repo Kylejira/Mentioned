@@ -26,16 +26,11 @@ export default function PricingPage() {
     setLoadingPlan(plan)
 
     try {
-      const priceId = plan === "starter" 
-        ? process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID
-        : plan === "pro_annual"
-          ? process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID
-          : process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID
-
+      // Send just the plan - server will look up the price ID
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, plan }),
+        body: JSON.stringify({ plan }),
       })
 
       const data = await response.json()

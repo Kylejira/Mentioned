@@ -28,10 +28,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { priceId, plan } = await request.json()
+    const { plan } = await request.json()
 
-    if (!priceId || !plan) {
-      return NextResponse.json({ error: "Missing priceId or plan" }, { status: 400 })
+    if (!plan) {
+      return NextResponse.json({ error: "Missing plan" }, { status: 400 })
+    }
+
+    // Look up price ID from plan name (server-side)
+    const priceIds = getPriceIds()
+    const priceId = priceIds[plan as keyof typeof priceIds]
+
+    if (!priceId) {
+      console.error(`No price ID found for plan: ${plan}`)
+      console.error("Available price IDs:", priceIds)
+      return NextResponse.json({ error: `Invalid plan: ${plan}` }, { status: 400 })
     }
 
     // Check if user already has a Stripe customer ID
