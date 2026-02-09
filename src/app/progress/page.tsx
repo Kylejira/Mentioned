@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/layout/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton"
 import { VisibilityProgress, type ScanHistoryEntry } from "@/components/VisibilityProgress"
+import { useSubscription } from "@/lib/subscription"
+import { UpgradePrompt } from "@/components/upgrade-prompt"
 import { 
   ArrowLeft, 
   TrendingUp, 
@@ -18,9 +21,19 @@ import {
 } from "lucide-react"
 
 export default function ProgressPage() {
+  const router = useRouter()
+  const subscription = useSubscription()
   const [history, setHistory] = useState<ScanHistoryEntry[]>([])
   const [productName, setProductName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+
+  // Show upgrade modal for free users
+  useEffect(() => {
+    if (!subscription.isLoading && subscription.plan === "free") {
+      setShowUpgradeModal(true)
+    }
+  }, [subscription.isLoading, subscription.plan])
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -285,6 +298,17 @@ export default function ProgressPage() {
           </>
         )}
       </div>
+
+      {/* Upgrade Modal for Free Users */}
+      {showUpgradeModal && (
+        <UpgradePrompt
+          feature="history"
+          onClose={() => {
+            setShowUpgradeModal(false)
+            router.push("/dashboard")
+          }}
+        />
+      )}
     </AppShell>
   )
 }

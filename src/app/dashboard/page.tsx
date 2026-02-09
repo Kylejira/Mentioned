@@ -13,6 +13,8 @@ import { SkeletonCard } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/toast"
 import { useSubscription } from "@/lib/subscription"
 import { UpgradePrompt } from "@/components/upgrade-prompt"
+import { ScansRemaining } from "@/components/scans-remaining"
+import { ScanLimitModal } from "@/components/upgrade-modal"
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -896,7 +898,8 @@ export default function DashboardPage() {
   const [rawScanData, setRawScanData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasRealData, setHasRealData] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState<"scan" | "generate" | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState<"scan" | "generate" | "checklist" | "history" | null>(null)
+  const [showScanLimitModal, setShowScanLimitModal] = useState(false)
   
   // NEW: Content generation state for action items
   const [generatingActionId, setGeneratingActionId] = useState<string | null>(null)
@@ -1004,7 +1007,7 @@ export default function DashboardPage() {
   // Handle generate draft with real API
   const handleGenerateDraft = async (action: Action) => {
     // Check subscription before allowing generation
-    if (!subscription.canGenerateDrafts) {
+    if (!subscription.isSubscribed) {
       setShowUpgradeModal("generate")
       return
     }
@@ -1044,8 +1047,14 @@ export default function DashboardPage() {
 
   // Handle run new scan with subscription check
   const handleRunNewScan = () => {
-    if (!subscription.canRunScan) {
-      setShowUpgradeModal("scan")
+    if (!subscription.canScan) {
+      // Check if this is a starter user at their limit
+      if (subscription.plan === "starter" && subscription.scansRemaining === 0) {
+        setShowScanLimitModal(true)
+      } else {
+        // Free user who used their scan
+        setShowUpgradeModal("scan")
+      }
       return
     }
     router.push("/check")
@@ -1077,7 +1086,7 @@ export default function DashboardPage() {
 
   // NEW: Generate content for action items (gap-based)
   const handleGenerateActionContent = async (actionItem: ActionItem) => {
-    if (!subscription.canGenerateDrafts) {
+    if (!subscription.isSubscribed) {
       setShowUpgradeModal("generate")
       return
     }
@@ -1241,7 +1250,7 @@ export default function DashboardPage() {
     <AppShell>
       <div className="space-y-8">
         {/* Header with Run New Scan button */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {data.brand.name}
@@ -1250,24 +1259,34 @@ export default function DashboardPage() {
               AI visibility dashboard
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/checklist">
-              <Button variant="outline">
-                <CheckCircle2 className="size-4 mr-2" />
-                Checklist
+          <div className="flex items-center gap-4">
+            {/* Scans remaining indicator */}
+            <ScansRemaining
+              plan={subscription.plan}
+              scansUsed={subscription.scansUsed}
+              scansLimit={subscription.scansLimit}
+              scansRemaining={subscription.scansRemaining}
+              nextResetDate={subscription.nextResetDate}
+            />
+            <div className="flex items-center gap-2">
+              <Link href="/checklist">
+                <Button variant="outline" className="relative border-blue-400 hover:border-blue-500 animate-pulse-border">
+                  <CheckCircle2 className="size-4 mr-2 text-blue-500" />
+                  Checklist
+                </Button>
+              </Link>
+              <Link href="/progress">
+                <Button variant="outline" className="relative border-blue-400 hover:border-blue-500 animate-pulse-border">
+                  <TrendingUp className="size-4 mr-2 text-blue-500" />
+                  Track Progress
+                </Button>
+              </Link>
+              <Button variant="secondary" onClick={handleRunNewScan}>
+                <RefreshCw className="size-4 mr-2" />
+                Run new scan
+                {!subscription.canScan && <Lock className="size-3.5 ml-2" />}
               </Button>
-            </Link>
-            <Link href="/progress">
-              <Button variant="outline">
-                <TrendingUp className="size-4 mr-2" />
-                Track Progress
-              </Button>
-            </Link>
-            <Button variant="secondary" onClick={handleRunNewScan}>
-              <RefreshCw className="size-4 mr-2" />
-              Run new scan
-              {!subscription.canRunScan && <Lock className="size-3.5 ml-2" />}
-            </Button>
+            </div>
           </div>
         </div>
 
@@ -1294,7 +1313,7 @@ export default function DashboardPage() {
             </div>
             <Button size="sm" onClick={handleRunNewScan}>
               Run new scan
-              {!subscription.canRunScan && <Lock className="size-3.5 ml-2" />}
+              {!subscription.canScan && <Lock className="size-3.5 ml-2" />}
             </Button>
           </div>
         )}
@@ -1309,7 +1328,7 @@ export default function DashboardPage() {
               className="text-foreground underline hover:no-underline inline-flex items-center gap-1"
             >
               Run new scan
-              {!subscription.canRunScan && <Lock className="size-3" />}
+              {!subscription.canScan && <Lock className="size-3" />}
             </button>
             <span className="text-muted-foreground/50">·</span>
             <button 
@@ -2055,14 +2074,14 @@ export default function DashboardPage() {
                           onClick={() => handleGenerateActionContent(actionItem)}
                           disabled={generatingActionId === actionItem.id}
                           className="mt-4"
-                          variant={subscription.canGenerateDrafts ? "default" : "secondary"}
+                          variant={subscription.isSubscribed ? "default" : "secondary"}
                         >
                           {generatingActionId === actionItem.id ? (
                             <>
                               <Loader2 className="size-4 mr-2 animate-spin" />
                               Generating...
                             </>
-                          ) : subscription.canGenerateDrafts ? (
+                          ) : subscription.isSubscribed ? (
                             <>
                               <Sparkles className="size-4 mr-2" />
                               Generate draft
@@ -2143,15 +2162,15 @@ export default function DashboardPage() {
                         <Button
                           size="sm"
                           onClick={() => handleGenerateDraft(action)}
-                          variant={subscription.canGenerateDrafts ? "default" : "secondary"}
+                          variant={subscription.isSubscribed ? "default" : "secondary"}
                         >
-                          {subscription.canGenerateDrafts ? (
+                          {subscription.isSubscribed ? (
                             <Sparkles className="size-3.5 mr-1.5" />
                           ) : (
                             <Lock className="size-3.5 mr-1.5" />
                           )}
                           Generate draft
-                          {!subscription.canGenerateDrafts && (
+                          {!subscription.isSubscribed && (
                             <span className="ml-1.5 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
                               Pro
                             </span>
@@ -2177,7 +2196,7 @@ export default function DashboardPage() {
             <Button variant="secondary" size="sm" onClick={handleRunNewScan}>
               <RefreshCw className="size-3.5 mr-1.5" />
               Run new scan
-              {!subscription.canRunScan && <Lock className="size-3 ml-1.5" />}
+              {!subscription.canScan && <Lock className="size-3 ml-1.5" />}
             </Button>
           </div>
         </section>
@@ -2190,6 +2209,15 @@ export default function DashboardPage() {
           onClose={() => setShowUpgradeModal(null)}
         />
       )}
+
+      {/* Scan Limit Modal (for Starter users) */}
+      <ScanLimitModal
+        isOpen={showScanLimitModal}
+        onClose={() => setShowScanLimitModal(false)}
+        scansUsed={subscription.scansUsed}
+        scansLimit={subscription.scansLimit || 10}
+        resetDate={subscription.nextResetDate}
+      />
 
       {/* Slide-over Panel for Generated Drafts */}
       <SlideOver

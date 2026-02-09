@@ -316,7 +316,7 @@ export default function CheckPage() {
     }
 
     // Check if user can run a scan (subscription check)
-    if (user && !subscription.canRunScan) {
+    if (user && !subscription.canScan) {
       setShowUpgradePrompt(true)
       return
     }
@@ -455,7 +455,7 @@ export default function CheckPage() {
 
       try {
         // Determine if user has a paid plan (for enhanced scanning)
-        const isPaidPlan = subscription.status === "pro" || subscription.status === "enterprise"
+        const isPaidPlan = subscription.plan === "pro" || subscription.plan === "starter"
         
         // Set a client-side timeout (5 minutes max for comprehensive AI analysis)
         const SCAN_TIMEOUT = 300000 // 5 minutes
@@ -547,8 +547,12 @@ export default function CheckPage() {
         localStorage.removeItem(FORM_STORAGE_KEY)
 
         // Mark free scan as used (for free tier users)
-        if (subscription.status === "free") {
+        if (subscription.plan === "free") {
           await subscription.markFreeScanUsed()
+        }
+        // Increment scan count for paid tiers
+        if (subscription.plan === "starter") {
+          await subscription.incrementScanCount()
         }
 
         // Complete all steps
@@ -1192,7 +1196,7 @@ export default function CheckPage() {
               </p>
             )}
             {/* Show message if user has used free scan */}
-            {user && subscription.freeScanUsed && !subscription.canRunScan && (
+            {user && subscription.freeScanUsed && !subscription.canScan && (
               <div className="mt-4 p-4 bg-muted/50 rounded-xl border border-border">
                 <div className="flex items-center gap-3">
                   <Lock className="size-5 text-muted-foreground" />

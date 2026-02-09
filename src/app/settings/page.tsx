@@ -12,7 +12,9 @@ import { SkeletonForm } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/toast"
 import { useAuth } from "@/lib/auth"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase"
-import { X, Plus, Loader2, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react"
+import { X, Plus, Loader2, AlertTriangle, ChevronDown, ChevronRight, CreditCard, ArrowRight } from "lucide-react"
+import { useSubscription } from "@/lib/subscription"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 interface BrandData {
@@ -32,6 +34,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
   const { showToast } = useToast()
+  const subscription = useSubscription()
 
   // Brand state
   const [brand, setBrand] = useState<BrandData | null>(null)
@@ -414,6 +417,46 @@ export default function SettingsPage() {
                 Set up your brand first to add competitors.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Billing */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing & Subscription</CardTitle>
+            <CardDescription>
+              Manage your plan and payment details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+              <div className="flex items-center gap-4">
+                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CreditCard className="size-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground capitalize">
+                    {subscription.plan} Plan
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {subscription.isPro 
+                      ? "Unlimited scans" 
+                      : subscription.plan === "starter"
+                        ? `${subscription.scansRemaining}/${subscription.scansLimit} scans remaining`
+                        : subscription.freeScanUsed 
+                          ? "Free scan used"
+                          : "1 free scan available"
+                    }
+                  </p>
+                </div>
+              </div>
+              <Link href="/settings/billing">
+                <Button variant="secondary" size="sm">
+                  Manage
+                  <ArrowRight className="size-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

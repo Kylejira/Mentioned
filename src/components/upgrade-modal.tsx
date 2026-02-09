@@ -2,48 +2,44 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { X, Check, Sparkles, Loader2, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Sparkles, Lock, Zap, ArrowRight, X, Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface UpgradePromptProps {
-  feature: "scan" | "generate" | "checklist" | "history"
-  onClose?: () => void
-  inline?: boolean
-  className?: string
+interface UpgradeModalProps {
+  isOpen: boolean
+  onClose: () => void
+  feature?: "scan" | "generate" | "checklist" | "history"
+  title?: string
+  description?: string
 }
 
-const featureMessages = {
-  scan: {
-    title: "Unlock More Scans",
-    description: "You've used your free scan. Upgrade to run more scans and track your AI visibility over time.",
-    icon: Zap,
-  },
-  generate: {
-    title: "Unlock AI Content Generation",
-    description: "Generate comparison pages, FAQ content, and homepage copy with AI — all tailored to your product.",
-    icon: Sparkles,
-  },
-  checklist: {
-    title: "Unlock AI Visibility Checklist",
-    description: "Access the complete checklist to systematically improve your discoverability by AI tools.",
-    icon: Lock,
-  },
-  history: {
-    title: "Unlock Scan History",
-    description: "View your full scan history and track how your AI visibility improves over time.",
-    icon: Lock,
-  },
-}
-
-export function UpgradePrompt({ feature, onClose, inline = false, className }: UpgradePromptProps) {
+export function UpgradeModal({ 
+  isOpen, 
+  onClose, 
+  feature = "scan",
+  title,
+  description 
+}: UpgradeModalProps) {
   const router = useRouter()
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly")
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
-  
-  const message = featureMessages[feature]
-  const Icon = message.icon
+
+  if (!isOpen) return null
+
+  const featureTitles: Record<string, string> = {
+    scan: "Unlock More Scans",
+    generate: "Unlock Content Generation",
+    checklist: "Unlock AI Visibility Checklist",
+    history: "Unlock Scan History",
+  }
+
+  const featureDescriptions: Record<string, string> = {
+    scan: "You've used your free scan. Upgrade to run more scans and track your AI visibility over time.",
+    generate: "Generate AI-optimized content drafts to improve your visibility on ChatGPT, Claude, and other AI tools.",
+    checklist: "Access the complete AI Visibility Checklist to systematically improve your discoverability.",
+    history: "View your full scan history and track how your AI visibility improves over time.",
+  }
 
   const handleSelectPlan = async (plan: "starter" | "pro_monthly" | "pro_annual") => {
     setLoadingPlan(plan)
@@ -76,29 +72,6 @@ export function UpgradePrompt({ feature, onClose, inline = false, className }: U
     }
   }
 
-  if (inline) {
-    // Inline version for embedding in page
-    return (
-      <div className={cn("bg-muted/50 border border-border rounded-xl p-6", className)}>
-        <div className="flex items-start gap-4">
-          <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <Lock className="size-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-foreground">{message.title}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{message.description}</p>
-            <Button onClick={() => router.push("/pricing")} className="mt-4" size="sm">
-              <Sparkles className="size-4 mr-2" />
-              View Plans
-              <ArrowRight className="size-4 ml-2" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Modal/overlay version with pricing options
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -109,26 +82,25 @@ export function UpgradePrompt({ feature, onClose, inline = false, className }: U
       
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <X className="size-5" />
-          </button>
-        )}
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <X className="size-5" />
+        </button>
 
         <div className="p-6 sm:p-8">
           {/* Header */}
           <div className="text-center mb-6">
             <div className="size-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon className="size-6 text-[#2563EB]" />
+              <Lock className="size-6 text-[#2563EB]" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-[#1E293B] mb-2">
-              {message.title}
+              {title || featureTitles[feature]}
             </h2>
             <p className="text-[#64748B] text-sm sm:text-base">
-              {message.description}
+              {description || featureDescriptions[feature]}
             </p>
           </div>
 
@@ -269,50 +241,154 @@ export function UpgradePrompt({ feature, onClose, inline = false, className }: U
   )
 }
 
-/**
- * Button wrapper that shows upgrade prompt if feature is locked
- */
-interface GatedButtonProps {
-  feature: "scan" | "generate"
-  canAccess: boolean
-  onClick: () => void
-  children: React.ReactNode
-  className?: string
-  variant?: "default" | "secondary" | "ghost" | "outline"
-  size?: "default" | "sm" | "lg" | "icon"
-  disabled?: boolean
+// Scan limit modal for Starter users
+interface ScanLimitModalProps {
+  isOpen: boolean
+  onClose: () => void
+  scansUsed: number
+  scansLimit: number
+  resetDate: string | null
 }
 
-export function GatedButton({
-  feature,
-  canAccess,
-  onClick,
-  children,
-  className,
-  variant = "default",
-  size = "default",
-  disabled = false,
-}: GatedButtonProps) {
-  const router = useRouter()
+export function ScanLimitModal({ 
+  isOpen, 
+  onClose, 
+  scansUsed, 
+  scansLimit,
+  resetDate 
+}: ScanLimitModalProps) {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly")
 
-  const handleClick = () => {
-    if (canAccess) {
-      onClick()
-    } else {
-      router.push("/pricing")
+  if (!isOpen) return null
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "your next billing date"
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  const handleUpgrade = async () => {
+    setLoadingPlan(billingPeriod === "annual" ? "pro_annual" : "pro_monthly")
+
+    try {
+      const plan = billingPeriod === "annual" ? "pro_annual" : "pro_monthly"
+      const priceId = billingPeriod === "annual"
+        ? process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID
+        : process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID
+
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, plan }),
+      })
+
+      const data = await response.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error("Checkout error:", error)
+    } finally {
+      setLoadingPlan(null)
     }
   }
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={handleClick}
-      disabled={disabled}
-      className={cn(className, !canAccess && "opacity-90")}
-    >
-      {!canAccess && <Lock className="size-3.5 mr-1.5" />}
-      {children}
-    </Button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <X className="size-5" />
+        </button>
+
+        <div className="p-6 sm:p-8">
+          <div className="text-center mb-6">
+            <div className="size-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">⚡</span>
+            </div>
+            <h2 className="text-xl font-bold text-[#1E293B] mb-2">
+              Monthly Scan Limit Reached
+            </h2>
+            <p className="text-[#64748B]">
+              You've used {scansUsed} of {scansLimit} scans this month.
+            </p>
+          </div>
+
+          {/* Options */}
+          <div className="space-y-4">
+            {/* Wait option */}
+            <div className="border border-gray-200 rounded-xl p-4">
+              <h3 className="font-medium text-[#1E293B] mb-1">Wait for reset</h3>
+              <p className="text-sm text-[#64748B]">
+                Your scans will reset on {formatDate(resetDate)}.
+              </p>
+            </div>
+
+            {/* Upgrade option */}
+            <div className="border-2 border-[#2563EB] rounded-xl p-4 bg-blue-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-medium text-[#1E293B]">Upgrade to Pro</h3>
+                  <p className="text-sm text-[#64748B]">Get unlimited scans</p>
+                </div>
+                <span className="text-xs bg-[#10B981] text-white px-2 py-0.5 rounded-full">
+                  Recommended
+                </span>
+              </div>
+              
+              {/* Billing toggle */}
+              <div className="flex items-center gap-2 mb-3 bg-white rounded-lg p-1">
+                <button
+                  onClick={() => setBillingPeriod("monthly")}
+                  className={cn(
+                    "flex-1 px-2 py-1 rounded text-xs font-medium transition-all",
+                    billingPeriod === "monthly"
+                      ? "bg-gray-100 text-[#1E293B]"
+                      : "text-[#64748B]"
+                  )}
+                >
+                  $37/mo
+                </button>
+                <button
+                  onClick={() => setBillingPeriod("annual")}
+                  className={cn(
+                    "flex-1 px-2 py-1 rounded text-xs font-medium transition-all",
+                    billingPeriod === "annual"
+                      ? "bg-gray-100 text-[#1E293B]"
+                      : "text-[#64748B]"
+                  )}
+                >
+                  $299/yr (save 33%)
+                </button>
+              </div>
+
+              <p className="text-xs text-[#64748B] mb-3">
+                Just ${billingPeriod === "annual" ? "25" : "37"}/month more for unlimited scans
+              </p>
+
+              <Button
+                className="w-full bg-[#2563EB] hover:bg-[#1D4ED8]"
+                onClick={handleUpgrade}
+                disabled={loadingPlan !== null}
+              >
+                {loadingPlan && <Loader2 className="size-4 animate-spin mr-2" />}
+                Upgrade to Pro
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

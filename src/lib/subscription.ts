@@ -2,117 +2,143 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/lib/auth"
-import { createClient, type SubscriptionStatus } from "@/lib/supabase"
+
+export type PlanType = "free" | "starter" | "pro"
+export type BillingPeriod = "monthly" | "annual" | null
+
+export interface SubscriptionState {
+  isLoading: boolean
+  plan: PlanType
+  billingPeriod: BillingPeriod
+  isSubscribed: boolean // starter or pro
+  isPro: boolean
+  canScan: boolean
+  scansRemaining: number | null // null = unlimited
+  scansLimit: number | null
+  scansUsed: number
+  nextResetDate: string | null
+  freeScanUsed: boolean
+  cancelAtPeriodEnd?: boolean
+  refresh: () => Promise<void>
+  markFreeScanUsed: () => Promise<void>
+  incrementScanCount: () => Promise<void>
+}
 
 // Pro access whitelist - emails that get automatic Pro access
 const PRO_WHITELIST = [
   "kylejira@gmail.com",
 ]
 
-export interface SubscriptionState {
-  status: SubscriptionStatus
-  freeScanUsed: boolean
-  canRunScan: boolean
-  canGenerateDrafts: boolean
-  isLoading: boolean
-  refresh: () => Promise<void>
-  markFreeScanUsed: () => Promise<void>
-}
-
 /**
  * Hook to manage subscription state and feature gating
  */
 export function useSubscription(): SubscriptionState {
   const { user } = useAuth()
-  const [status, setStatus] = useState<SubscriptionStatus>("free")
-  const [freeScanUsed, setFreeScanUsed] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [state, setState] = useState<Omit<SubscriptionState, "refresh" | "markFreeScanUsed" | "incrementScanCount">>({
+    isLoading: true,
+    plan: "free",
+    billingPeriod: null,
+    isSubscribed: false,
+    isPro: false,
+    canScan: true,
+    scansRemaining: 1,
+    scansLimit: 1,
+    scansUsed: 0,
+    nextResetDate: null,
+    freeScanUsed: false,
+  })
 
   const fetchSubscriptionStatus = useCallback(async () => {
     if (!user) {
-      setIsLoading(false)
+      setState(prev => ({ ...prev, isLoading: false }))
       return
     }
 
-    // Check if user email is in the Pro whitelist
+    // Check if user email is in the Pro whitelist (client-side check for instant response)
     const userEmail = user.email?.toLowerCase()
     if (userEmail && PRO_WHITELIST.includes(userEmail)) {
-      setStatus("pro")
-      setFreeScanUsed(false)
-      setIsLoading(false)
-      return
-    }
-
-    const supabase = createClient()
-    if (!supabase) {
-      // Demo mode - allow everything
-      setStatus("pro")
-      setFreeScanUsed(false)
-      setIsLoading(false)
+      setState({
+        isLoading: false,
+        plan: "pro",
+        billingPeriod: null,
+        isSubscribed: true,
+        isPro: true,
+        canScan: true,
+        scansRemaining: null,
+        scansLimit: null,
+        scansUsed: 0,
+        nextResetDate: null,
+        freeScanUsed: false,
+      })
       return
     }
 
     try {
-      const { data: brand, error } = await supabase
-        .from("brands")
-        .select("subscription_status, free_scan_used")
-        .eq("user_id", user.id)
-        .single()
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Error fetching subscription:", error)
-      }
-
-      if (brand) {
-        setStatus(brand.subscription_status || "free")
-        setFreeScanUsed(brand.free_scan_used || false)
+      const response = await fetch("/api/subscription")
+      if (response.ok) {
+        const data = await response.json()
+        setState({
+          isLoading: false,
+          plan: data.plan || "free",
+          billingPeriod: data.billingPeriod || null,
+          isSubscribed: data.isSubscribed || false,
+          isPro: data.isPro || false,
+          canScan: data.canScan ?? true,
+          scansRemaining: data.scansRemaining,
+          scansLimit: data.scansLimit,
+          scansUsed: data.scansUsed || 0,
+          nextResetDate: data.nextResetDate || null,
+          freeScanUsed: data.freeScanUsed || false,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+        })
       } else {
-        // No brand yet - user is on free tier
-        setStatus("free")
-        setFreeScanUsed(false)
+        setState(prev => ({ ...prev, isLoading: false }))
       }
-    } catch (err) {
-      console.error("Error:", err)
-    } finally {
-      setIsLoading(false)
+    } catch (error) {
+      console.error("Error fetching subscription:", error)
+      setState(prev => ({ ...prev, isLoading: false }))
     }
   }, [user])
 
   const markFreeScanUsed = useCallback(async () => {
     if (!user) return
 
-    const supabase = createClient()
-    if (!supabase) return
-
     try {
-      await supabase
-        .from("brands")
-        .update({ free_scan_used: true })
-        .eq("user_id", user.id)
-
-      setFreeScanUsed(true)
+      // This is handled by the scan API, but update local state
+      setState(prev => ({
+        ...prev,
+        freeScanUsed: true,
+        canScan: prev.isSubscribed, // Can only scan again if subscribed
+        scansRemaining: prev.isSubscribed ? prev.scansRemaining : 0,
+        scansUsed: prev.scansUsed + 1,
+      }))
     } catch (err) {
       console.error("Error marking free scan used:", err)
     }
   }, [user])
 
+  const incrementScanCount = useCallback(async () => {
+    setState(prev => {
+      const newUsed = prev.scansUsed + 1
+      const newRemaining = prev.scansLimit ? Math.max(0, prev.scansLimit - newUsed) : null
+      return {
+        ...prev,
+        scansUsed: newUsed,
+        scansRemaining: newRemaining,
+        canScan: newRemaining === null || newRemaining > 0,
+      }
+    })
+  }, [])
+
   useEffect(() => {
     fetchSubscriptionStatus()
   }, [fetchSubscriptionStatus])
 
-  // Calculate feature access
-  const isPaid = status === "pro" || status === "enterprise"
-  const canRunScan = isPaid || !freeScanUsed
-  const canGenerateDrafts = isPaid
-
   return {
-    status,
-    freeScanUsed,
-    canRunScan,
-    canGenerateDrafts,
-    isLoading,
+    ...state,
     refresh: fetchSubscriptionStatus,
     markFreeScanUsed,
+    incrementScanCount,
   }
 }
 
@@ -120,15 +146,34 @@ export function useSubscription(): SubscriptionState {
  * Check if user needs to upgrade for a feature
  */
 export function getUpgradeReason(
-  feature: "scan" | "generate",
+  feature: "scan" | "generate" | "checklist" | "history",
   subscription: SubscriptionState
 ): string | null {
-  if (feature === "scan" && !subscription.canRunScan) {
-    return "You've used your free scan. Upgrade to run unlimited scans."
+  if (subscription.isLoading) return null
+
+  if (feature === "scan") {
+    if (!subscription.canScan) {
+      if (subscription.plan === "free" && subscription.freeScanUsed) {
+        return "You've used your free scan. Upgrade to run more scans."
+      }
+      if (subscription.plan === "starter" && subscription.scansRemaining === 0) {
+        return `You've used all ${subscription.scansLimit} scans this month. Upgrade to Pro for unlimited scans.`
+      }
+    }
   }
-  if (feature === "generate" && !subscription.canGenerateDrafts) {
-    return "Upgrade to Pro to generate content drafts with AI."
+  
+  if (feature === "generate" && subscription.plan === "free") {
+    return "Upgrade to generate content drafts with AI."
   }
+  
+  if (feature === "checklist" && subscription.plan === "free") {
+    return "Upgrade to access the AI Visibility Checklist."
+  }
+  
+  if (feature === "history" && subscription.plan === "free") {
+    return "Upgrade to access your scan history."
+  }
+  
   return null
 }
 
@@ -142,53 +187,80 @@ export const PLANS = {
     priceLabel: "$0",
     period: "forever",
     features: [
-      "1 visibility scan",
-      "See your AI visibility status",
-      "Competitor comparison",
-      "Visibility signals breakdown",
-      "Basic action recommendations",
+      "1 AI visibility scan",
+      "View your visibility score",
+      "See AI recommendations",
+      "Basic competitor comparison",
     ],
     limitations: [
       "No additional scans",
-      "No AI-generated content drafts",
+      "No AI Visibility Checklist",
+      "No content generation",
     ],
     cta: "Current Plan",
     popular: false,
   },
-  pro: {
+  starter: {
+    name: "Starter",
+    price: 19,
+    priceLabel: "$19",
+    period: "per month",
+    scansIncluded: 10,
+    features: [
+      "10 AI visibility scans/month",
+      "AI Visibility Checklist",
+      "Generate optimization drafts",
+      "Full scan history",
+      "Competitor analysis",
+      "Action recommendations",
+    ],
+    limitations: [],
+    cta: "Get Started",
+    popular: false,
+  },
+  pro_monthly: {
     name: "Pro",
-    price: 29,
-    priceLabel: "$29",
+    price: 37,
+    priceLabel: "$37",
     period: "per month",
     features: [
-      "Unlimited visibility scans",
-      "AI-generated content drafts",
-      "Comparison page templates",
-      "FAQ content generator",
-      "Homepage copy suggestions",
-      "Track visibility over time",
+      "Unlimited AI visibility scans",
+      "AI Visibility Checklist",
+      "Generate optimization drafts",
+      "Full scan history",
+      "Competitor analysis",
+      "Action recommendations",
       "Priority support",
     ],
     limitations: [],
-    cta: "Upgrade to Pro",
+    cta: "Go Pro",
     popular: true,
   },
-  enterprise: {
-    name: "Enterprise",
-    price: 99,
-    priceLabel: "$99",
-    period: "per month",
+  pro_annual: {
+    name: "Pro",
+    price: 299,
+    priceLabel: "$299",
+    monthlyEquivalent: "$25",
+    period: "per year",
+    savings: "Save 33%",
     features: [
-      "Everything in Pro",
-      "Multiple brands",
-      "Team access",
-      "API access",
-      "Custom integrations",
-      "Dedicated support",
-      "Custom reporting",
+      "Unlimited AI visibility scans",
+      "AI Visibility Checklist",
+      "Generate optimization drafts",
+      "Full scan history",
+      "Competitor analysis",
+      "Action recommendations",
+      "Priority support",
     ],
     limitations: [],
-    cta: "Contact Sales",
-    popular: false,
+    cta: "Go Pro",
+    popular: true,
   },
 } as const
+
+// Stripe price IDs (set in environment variables)
+export const STRIPE_PRICES = {
+  starter: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID,
+  pro_monthly: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PRICE_ID,
+  pro_annual: process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID,
+}

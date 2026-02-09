@@ -6,6 +6,9 @@ import { saveScanHistory } from "@/lib/scan/save-scan-history"
 export const maxDuration = 300 // Allow up to 5 minutes for the scan (Vercel Pro limit)
 export const dynamic = "force-dynamic"
 
+// Pro access whitelist
+const PRO_WHITELIST = ["kylejira@gmail.com"]
+
 export async function POST(request: NextRequest) {
   try {
     // Check if API keys are configured
@@ -28,6 +31,68 @@ export async function POST(request: NextRequest) {
         { error: "Invalid request body" },
         { status: 400 }
       )
+    }
+
+    // Check subscription status
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user) {
+      // Check whitelist first
+      const isWhitelisted = PRO_WHITELIST.includes(user.email?.toLowerCase() || "")
+      
+      if (!isWhitelisted) {
+        // Get subscription
+        const { data: subscription } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .single()
+
+        // Get brand for free_scan_used
+        const { data: brand } = await supabase
+          .from("brands")
+          .select("free_scan_used")
+          .eq("user_id", user.id)
+          .single()
+
+        const freeScanUsed = brand?.free_scan_used || false
+
+        // Check if user can scan
+        if (!subscription) {
+          // Free tier - check if free scan used
+          if (freeScanUsed) {
+            return NextResponse.json(
+              { 
+                error: "upgrade_required",
+                message: "You've used your free scan. Upgrade to run more scans.",
+                upgradeRequired: true
+              },
+              { status: 403 }
+            )
+          }
+        } else if (subscription.plan === "starter") {
+          // Starter tier - check scan limit
+          const scansUsed = subscription.scans_used_this_period || 0
+          const scansLimit = subscription.scans_limit || 10
+          
+          if (scansUsed >= scansLimit) {
+            return NextResponse.json(
+              {
+                error: "scan_limit_reached",
+                message: `You've used all ${scansLimit} scans this month. Upgrade to Pro for unlimited scans.`,
+                scansUsed,
+                scansLimit,
+                resetDate: subscription.current_period_end,
+                upgradeRequired: true
+              },
+              { status: 403 }
+            )
+          }
+        }
+        // Pro users have unlimited scans - no check needed
+      }
     }
 
     // Validate required fields - extract ALL user-provided data
@@ -136,12 +201,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save to scan history for logged-in users (for progress tracking)
+    // Save to scan history and update subscription usage for logged-in users
     try {
-      const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
+        const isWhitelisted = PRO_WHITELIST.includes(user.email?.toLowerCase() || "")
+        
+        // Update subscription usage (if not whitelisted)
+        if (!isWhitelisted) {
+          // Get subscription
+          const { data: subscription } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("status", "active")
+            .single()
+
+          if (!subscription) {
+            // Free tier - mark free scan as used
+            await supabase
+              .from("brands")
+              .update({ free_scan_used: true })
+              .eq("user_id", user.id)
+            console.log("[API] Marked free scan as used for user:", user.id)
+          } else if (subscription.plan === "starter") {
+            // Starter tier - increment scan count
+            await supabase
+              .from("subscriptions")
+              .update({ 
+                scans_used_this_period: (subscription.scans_used_this_period || 0) + 1 
+              })
+              .eq("id", subscription.id)
+            console.log("[API] Incremented scan count for starter user:", user.id)
+          }
+          // Pro tier - no tracking needed (unlimited)
+        }
+        
         // Extract visibility score with type safety
         const vs = result.visibilityScore as {
           total?: number;

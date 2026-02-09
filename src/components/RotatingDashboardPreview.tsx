@@ -265,14 +265,14 @@ export function RotatingDashboardPreview() {
             : 'opacity-0 -translate-y-4'
           }
         `}>
-          <div className="inline-flex items-center gap-2 bg-blue-600 text-white text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-lg shadow-blue-500/25 max-w-[340px] sm:max-w-none">
-            <svg className="w-4 h-4 flex-shrink-0 opacity-80" viewBox="0 0 24 24" fill="currentColor">
+          <div className="inline-flex items-center gap-2 bg-white text-gray-700 text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-lg border border-gray-200 max-w-[340px] sm:max-w-none animate-pulse-border">
+            <svg className="w-4 h-4 flex-shrink-0 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
             </svg>
             <span className="truncate">
               &quot;{typedQuery}&quot;
               {isTyping && (
-                <span className="inline-block w-0.5 h-4 bg-white/80 ml-0.5 animate-pulse" />
+                <span className="inline-block w-0.5 h-4 bg-blue-500 ml-0.5 animate-pulse" />
               )}
             </span>
           </div>
