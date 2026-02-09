@@ -1272,9 +1272,9 @@ export default function DashboardPage() {
                       Upgrade to run more scans and track your visibility over time.
                     </p>
                     <Link href="/pricing">
-                      <Button size="sm" className="mt-3 bg-blue-600 hover:bg-blue-700 text-white">
+                      <Button size="sm" className="mt-2 h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white">
                         View Plans
-                        <ArrowRight className="size-4 ml-1.5" />
+                        <ArrowRight className="size-3 ml-1" />
                       </Button>
                     </Link>
                   </div>
