@@ -1250,7 +1250,7 @@ export default function DashboardPage() {
     <AppShell>
       <div className="space-y-8">
         {/* Header with Run New Scan button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {data.brand.name}
@@ -1258,35 +1258,62 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mt-1">
               AI visibility dashboard
             </p>
+            
+            {/* Free user upgrade prompt - left side */}
+            {subscription.plan === "free" && !subscription.canScan && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl max-w-md">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Lock className="size-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-[#1E293B]">Free scan used</p>
+                    <p className="text-sm text-[#64748B] mt-0.5">
+                      Upgrade to run more scans and track your visibility over time.
+                    </p>
+                    <Link href="/pricing">
+                      <Button size="sm" className="mt-3 bg-blue-600 hover:bg-blue-700 text-white">
+                        View Plans
+                        <ArrowRight className="size-4 ml-1.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Starter/Pro scans remaining - left side */}
+            {subscription.plan !== "free" && (
+              <div className="mt-3">
+                <ScansRemaining
+                  plan={subscription.plan}
+                  scansUsed={subscription.scansUsed}
+                  scansLimit={subscription.scansLimit}
+                  scansRemaining={subscription.scansRemaining}
+                  nextResetDate={subscription.nextResetDate}
+                />
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            {/* Scans remaining indicator */}
-            <ScansRemaining
-              plan={subscription.plan}
-              scansUsed={subscription.scansUsed}
-              scansLimit={subscription.scansLimit}
-              scansRemaining={subscription.scansRemaining}
-              nextResetDate={subscription.nextResetDate}
-            />
-            <div className="flex items-center gap-2">
-              <Link href="/checklist">
-                <Button variant="outline" className="relative border-blue-400 hover:border-blue-500 animate-pulse-border">
-                  <CheckCircle2 className="size-4 mr-2 text-blue-500" />
-                  Checklist
-                </Button>
-              </Link>
-              <Link href="/progress">
-                <Button variant="outline" className="relative border-blue-400 hover:border-blue-500 animate-pulse-border">
-                  <TrendingUp className="size-4 mr-2 text-blue-500" />
-                  Track Progress
-                </Button>
-              </Link>
-              <Button variant="secondary" onClick={handleRunNewScan}>
-                <RefreshCw className="size-4 mr-2" />
-                Run new scan
-                {!subscription.canScan && <Lock className="size-3.5 ml-2" />}
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/checklist">
+              <Button variant="outline" className="relative border-blue-400 hover:border-blue-500 animate-pulse-border">
+                <CheckCircle2 className="size-4 mr-2 text-blue-500" />
+                Checklist
               </Button>
-            </div>
+            </Link>
+            <Link href="/progress">
+              <Button variant="outline" className="relative border-blue-400 hover:border-blue-500 animate-pulse-border">
+                <TrendingUp className="size-4 mr-2 text-blue-500" />
+                Track Progress
+              </Button>
+            </Link>
+            <Button variant="secondary" onClick={handleRunNewScan}>
+              <RefreshCw className="size-4 mr-2" />
+              Run new scan
+              {!subscription.canScan && <Lock className="size-3.5 ml-2" />}
+            </Button>
           </div>
         </div>
 
