@@ -223,12 +223,18 @@ Be strict but reasonable. A query is valid if a real person would ask it when lo
 Return ONLY the JSON object.`
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini", // Faster model for validation
-      messages: [{ role: "user", content: validationPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.1 // Very low for consistent validation
-    })
+    // 15-second timeout on validation
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini", // Faster model for validation
+        messages: [{ role: "user", content: validationPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.1 // Very low for consistent validation
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Validation timeout after 15s")), 15000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {

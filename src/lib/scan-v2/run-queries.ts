@@ -9,10 +9,11 @@ import Anthropic from "@anthropic-ai/sdk"
 import { ValidatedQuery } from "./generate-queries"
 import { getCacheKey, getFromCache, setInCache } from "./cache"
 
-// Configuration - OPTIMIZED FOR SPEED
-const QUERY_TIMEOUT = 25000 // 25 seconds per query (reduced for faster timeout)
-const CLAUDE_BATCH_SIZE = 5 // Larger batches for speed (was 2)
-const CLAUDE_BATCH_DELAY = 500 // 0.5s between batches (was 1s)
+// Configuration - OPTIMIZED FOR SPEED AND RELIABILITY
+const QUERY_TIMEOUT = 15000 // 15 seconds per query (strict timeout)
+const CLAUDE_BATCH_SIZE = 5 // 5 concurrent Claude queries per batch
+const CLAUDE_BATCH_DELAY = 300 // 0.3s between batches
+const CHATGPT_CONCURRENCY = 10 // 10 concurrent ChatGPT queries
 const USE_CACHE = true // Enable/disable caching
 
 // Initialize clients
@@ -67,10 +68,11 @@ function getAnthropic(): Anthropic | null {
 
 /**
  * Run all queries on both ChatGPT and Claude
+ * Uses Promise.allSettled so one provider failing doesn't kill the scan
  */
 export async function runQueries(queries: ValidatedQuery[]): Promise<QueryResult[]> {
   const startTime = Date.now()
-  console.log(`[RunQueries] Executing ${queries.length} queries on ChatGPT and Claude`)
+  console.log(`[TIMING] RunQueries started - ${queries.length} queries`)
   
   const chatgptClient = getOpenAI()
   const claudeClient = getAnthropic()
@@ -94,20 +96,40 @@ export async function runQueries(queries: ValidatedQuery[]): Promise<QueryResult
   }))
   
   // RUN CHATGPT AND CLAUDE IN PARALLEL for maximum speed
-  console.log(`[RunQueries] Running ChatGPT and Claude queries in parallel...`)
+  // Use Promise.allSettled so one provider failing doesn't stop the other
+  console.log(`[TIMING] Starting parallel execution of ChatGPT (${CHATGPT_CONCURRENCY} concurrent) and Claude (batches of ${CLAUDE_BATCH_SIZE})`)
   
-  // ChatGPT promise - all queries in parallel
+  // ChatGPT promise - run with concurrency limiter
   const chatgptPromise = chatgptAvailable 
-    ? Promise.all(queries.map(q => runChatGPT(chatgptClient!, q.query)))
+    ? runChatGPTWithConcurrency(chatgptClient!, queries)
     : Promise.resolve(queries.map(() => ({ raw_response: null, error: "ChatGPT not configured" })))
   
-  // Claude promise - batched to avoid rate limits, but runs concurrently with ChatGPT
+  // Claude promise - batched to avoid rate limits
   const claudePromise = claudeAvailable
     ? runClaudeBatched(claudeClient!, queries)
     : Promise.resolve(queries.map(() => ({ raw_response: null, error: "Claude not configured" })))
   
-  // Wait for both to complete
-  const [chatgptResults, claudeResults] = await Promise.all([chatgptPromise, claudePromise])
+  // Wait for both to complete - use allSettled so one failing doesn't stop the other
+  const parallelStart = Date.now()
+  const [chatgptSettled, claudeSettled] = await Promise.allSettled([chatgptPromise, claudePromise])
+  console.log(`[TIMING] Parallel execution completed in ${Date.now() - parallelStart}ms`)
+  
+  // Log which provider was slower
+  if (chatgptSettled.status === 'fulfilled' && claudeSettled.status === 'fulfilled') {
+    console.log(`[TIMING] Both providers completed successfully`)
+  } else {
+    if (chatgptSettled.status === 'rejected') console.error(`[TIMING] ChatGPT FAILED:`, chatgptSettled.reason)
+    if (claudeSettled.status === 'rejected') console.error(`[TIMING] Claude FAILED:`, claudeSettled.reason)
+  }
+  
+  // Extract results, using empty arrays if a provider completely failed
+  const chatgptResults = chatgptSettled.status === 'fulfilled' 
+    ? chatgptSettled.value 
+    : queries.map(() => ({ raw_response: null, error: "ChatGPT provider failed" }))
+  
+  const claudeResults = claudeSettled.status === 'fulfilled'
+    ? claudeSettled.value
+    : queries.map(() => ({ raw_response: null, error: "Claude provider failed" }))
   
   // Merge results
   chatgptResults.forEach((res, i) => { results[i].chatgpt = res })
@@ -118,10 +140,79 @@ export async function runQueries(queries: ValidatedQuery[]): Promise<QueryResult
   const claudeSuccess = claudeResults.filter(r => r.raw_response).length
   const duration = Date.now() - startTime
   
-  console.log(`[RunQueries] Completed in ${duration}ms`)
-  console.log(`[RunQueries] Final: ChatGPT ${chatgptSuccess}/${queries.length}, Claude ${claudeSuccess}/${queries.length}`)
+  console.log(`[TIMING] RunQueries completed in ${duration}ms`)
+  console.log(`[TIMING] Final: ChatGPT ${chatgptSuccess}/${queries.length}, Claude ${claudeSuccess}/${queries.length}`)
+  
+  // Check if we have ANY results - if both providers completely failed, throw
+  if (chatgptSuccess === 0 && claudeSuccess === 0) {
+    console.error(`[RunQueries] BOTH providers returned 0 results!`)
+    throw new Error("BOTH_PROVIDERS_FAILED")
+  }
   
   return results
+}
+
+/**
+ * Simple concurrency limiter for ChatGPT queries
+ */
+function createConcurrencyLimiter(concurrency: number) {
+  let active = 0
+  const queue: Array<{ fn: () => Promise<any>; resolve: (v: any) => void; reject: (e: any) => void }> = []
+  
+  const next = () => {
+    if (active >= concurrency || queue.length === 0) return
+    active++
+    const { fn, resolve, reject } = queue.shift()!
+    fn()
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        active--
+        next()
+      })
+  }
+  
+  return <T>(fn: () => Promise<T>): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      queue.push({ fn, resolve, reject })
+      next()
+    })
+  }
+}
+
+/**
+ * Run ChatGPT queries with concurrency limit
+ */
+async function runChatGPTWithConcurrency(
+  client: OpenAI,
+  queries: ValidatedQuery[]
+): Promise<{ raw_response: string | null; error: string | null; fromCache?: boolean }[]> {
+  const startTime = Date.now()
+  console.log(`[TIMING] ChatGPT starting ${queries.length} queries with concurrency=${CHATGPT_CONCURRENCY}`)
+  
+  const limit = createConcurrencyLimiter(CHATGPT_CONCURRENCY)
+  
+  const results = await Promise.allSettled(
+    queries.map((q, index) =>
+      limit(async () => {
+        const queryStart = Date.now()
+        try {
+          const result = await runChatGPT(client, q.query)
+          console.log(`[TIMING] ChatGPT query ${index + 1}/${queries.length} completed in ${Date.now() - queryStart}ms`)
+          return result
+        } catch (error) {
+          console.error(`[ChatGPT] Query ${index + 1} failed in ${Date.now() - queryStart}ms:`, error)
+          return { raw_response: null, error: error instanceof Error ? error.message : "Unknown error" }
+        }
+      })
+    )
+  )
+  
+  console.log(`[TIMING] ChatGPT all queries completed in ${Date.now() - startTime}ms`)
+  
+  return results.map(r => 
+    r.status === 'fulfilled' ? r.value : { raw_response: null, error: "Query failed" }
+  )
 }
 
 /**
@@ -131,26 +222,39 @@ async function runClaudeBatched(
   client: Anthropic,
   queries: ValidatedQuery[]
 ): Promise<{ raw_response: string | null; error: string | null; fromCache?: boolean }[]> {
+  const startTime = Date.now()
+  const totalBatches = Math.ceil(queries.length / CLAUDE_BATCH_SIZE)
+  console.log(`[TIMING] Claude starting ${queries.length} queries in ${totalBatches} batches (batch_size=${CLAUDE_BATCH_SIZE})`)
+  
   const results: { raw_response: string | null; error: string | null; fromCache?: boolean }[] = []
   
   for (let i = 0; i < queries.length; i += CLAUDE_BATCH_SIZE) {
+    const batchStart = Date.now()
     const batch = queries.slice(i, i + CLAUDE_BATCH_SIZE)
     const batchNum = Math.floor(i / CLAUDE_BATCH_SIZE) + 1
-    const totalBatches = Math.ceil(queries.length / CLAUDE_BATCH_SIZE)
     
-    console.log(`[Claude] Batch ${batchNum}/${totalBatches}`)
+    console.log(`[TIMING] Claude batch ${batchNum}/${totalBatches} starting (${batch.length} queries)`)
     
     const batchResults = await Promise.all(
-      batch.map(q => runClaude(client, q.query))
+      batch.map((q, idx) => {
+        const queryIndex = i + idx + 1
+        return runClaude(client, q.query).then(result => {
+          console.log(`[TIMING] Claude query ${queryIndex}/${queries.length} done`)
+          return result
+        })
+      })
     )
     
     results.push(...batchResults)
+    console.log(`[TIMING] Claude batch ${batchNum}/${totalBatches} completed in ${Date.now() - batchStart}ms`)
     
     // Small delay between batches
     if (i + CLAUDE_BATCH_SIZE < queries.length) {
       await new Promise(resolve => setTimeout(resolve, CLAUDE_BATCH_DELAY))
     }
   }
+  
+  console.log(`[TIMING] Claude all queries completed in ${Date.now() - startTime}ms`)
   
   return results
 }

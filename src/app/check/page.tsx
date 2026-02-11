@@ -45,6 +45,8 @@ export default function CheckPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
   const scanAbortRef = useRef<AbortController | null>(null)
+  const scanSessionRef = useRef<string | null>(null) // Unique ID for current scan session
+  const formDataRef = useRef<FormData | null>(null) // Store form data at scan start
   const [formData, setFormData] = useState<FormData>({
     brandName: "",
     websiteUrl: "",
@@ -364,9 +366,31 @@ export default function CheckPage() {
 
   // Run actual scan
   useEffect(() => {
-    if (!isLoading) return
+    if (!isLoading) {
+      return
+    }
+    
+    // Generate a unique session ID for this scan attempt
+    // This prevents duplicate scans even if the effect re-runs
+    const currentSessionId = `scan_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    
+    // CRITICAL: If a scan session already exists, don't start another
+    if (scanSessionRef.current) {
+      console.log("[Check] Scan session already active:", scanSessionRef.current, "- skipping duplicate")
+      return
+    }
+    
+    // Lock this session
+    scanSessionRef.current = currentSessionId
+    console.log("[Check] Starting scan session:", currentSessionId)
+    
+    // Store form data at scan start so we don't depend on it changing
+    formDataRef.current = { ...formData }
 
     const runScan = async () => {
+      // Use the stored form data, not the current state
+      const scanFormData = formDataRef.current!
+      
       // Reset error state
       setScanError(null)
       
@@ -397,8 +421,8 @@ export default function CheckPage() {
 
       // ONLY use category if user MANUALLY selected one
       // If no manual selection, pass null to let AI extract the best category from website
-      const category = formData.categories.length > 0 
-        ? formData.categories[0] 
+      const category = scanFormData.categories.length > 0 
+        ? scanFormData.categories[0] 
         : null // Don't auto-extract - let AI determine from website content
       
       // CRITICAL: Clear ALL stale data before starting new scan
@@ -413,11 +437,11 @@ export default function CheckPage() {
       
       // Log the EXACT data we're about to scan - this is critical for debugging
       const scanInput = {
-        brandName: formData.brandName,
-        url: formData.websiteUrl,
+        brandName: scanFormData.brandName,
+        url: scanFormData.websiteUrl,
         category,
-        categories: formData.categories,
-        competitors: formData.competitors,
+        categories: scanFormData.categories,
+        competitors: scanFormData.competitors,
         timestamp: new Date().toISOString()
       }
       console.log("[Check] =============================================")
@@ -425,7 +449,7 @@ export default function CheckPage() {
       console.log("[Check] Brand Name:", scanInput.brandName)
       console.log("[Check] URL:", scanInput.url)
       console.log("[Check] Category:", category || "(AI will detect from website)")
-      console.log("[Check] User categories:", formData.categories.length > 0 ? formData.categories.join(", ") : "none")
+      console.log("[Check] User categories:", scanFormData.categories.length > 0 ? scanFormData.categories.join(", ") : "none")
       console.log("[Check] =============================================")
 
       // Start progress animation
@@ -457,40 +481,47 @@ export default function CheckPage() {
         // Determine if user has a paid plan (for enhanced scanning)
         const isPaidPlan = subscription.plan === "pro" || subscription.plan === "starter"
         
-        // Set a client-side timeout (5 minutes max for comprehensive AI analysis)
-        const SCAN_TIMEOUT = 300000 // 5 minutes
-        const timeoutId = setTimeout(() => {
-          abortController.abort()
-          throw new Error("Scan is taking too long. Please try again.")
-        }, SCAN_TIMEOUT)
+        // Set a client-side timeout - 240 seconds max (4 minutes)
+        // If scan takes longer, show error screen - DO NOT auto-retry
+        const SCAN_TIMEOUT = 240000 // 4 minutes
         
-        const response = await fetch("/api/scan", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            brandId,
-            brandName: formData.brandName,
-            brandUrl: formData.websiteUrl,
-            description: formData.productDescription,
-            category,
-            categories: formData.categories,
-            competitors: formData.competitors,
-            customQueries: formData.customQueries,
-            isPaidPlan, // Enable enhanced scanning for paid users
-          }),
-          signal: abortController.signal,
+        // Create a timeout promise that will reject
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            abortController.abort()
+            reject(new Error("SCAN_TIMEOUT"))
+          }, SCAN_TIMEOUT)
         })
         
-        clearTimeout(timeoutId) // Clear timeout if response received
+        // Race the fetch against the timeout
+        const response = await Promise.race([
+          fetch("/api/scan", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              brandId,
+              brandName: scanFormData.brandName,
+              brandUrl: scanFormData.websiteUrl,
+              description: scanFormData.productDescription,
+              category,
+              categories: scanFormData.categories,
+              competitors: scanFormData.competitors,
+              customQueries: scanFormData.customQueries,
+              isPaidPlan, // Enable enhanced scanning for paid users
+            }),
+            signal: abortController.signal,
+          }),
+          timeoutPromise
+        ])
 
         clearInterval(progressInterval)
 
         if (!response.ok) {
           let errorMessage = "Scan failed"
           try {
-            const errorData = await response.json()
+          const errorData = await response.json()
             errorMessage = errorData.error || errorMessage
           } catch {
             // If response isn't JSON, try to get text
@@ -519,9 +550,9 @@ export default function CheckPage() {
         const scanDataToSave = {
           ...result,
           // Override with user-provided values - these should NEVER be changed
-          brandName: formData.brandName,  // User's exact input
-          brandUrl: formData.websiteUrl,
-          description: formData.productDescription,
+          brandName: scanFormData.brandName,  // User's exact input
+          brandUrl: scanFormData.websiteUrl,
+          description: scanFormData.productDescription,
           category: finalCategory,  // User-selected OR AI-detected
           timestamp: new Date().toISOString(),
         }
@@ -560,6 +591,10 @@ export default function CheckPage() {
           prev.map((step) => ({ ...step, status: "complete" }))
         )
 
+        // Clear session before navigating (scan completed successfully)
+        console.log("[Check] Scan completed, clearing session:", scanSessionRef.current)
+        scanSessionRef.current = null
+        
         // Navigate to dashboard
         setTimeout(() => {
           router.push("/dashboard")
@@ -567,12 +602,24 @@ export default function CheckPage() {
       } catch (error) {
         clearInterval(progressInterval)
         
+        // Clear session on error so user can retry
+        console.log("[Check] Scan error, clearing session:", scanSessionRef.current)
+        scanSessionRef.current = null
+        
         if (error instanceof Error && error.name === "AbortError") {
-          // Scan was cancelled
+          // Scan was cancelled by user - not an error, just return
           return
         }
 
-        console.error("Scan error:", error)
+        console.error("[Check] Scan error:", error)
+        
+        // Clear any stale data to prevent issues on retry
+        try {
+          localStorage.removeItem(SCAN_RESULT_KEY)
+          localStorage.removeItem("mentioned_last_scan")
+        } catch (e) {
+          console.error("[Check] Failed to clear localStorage on error:", e)
+        }
         
         // Mark current step as error
         setLoadingSteps((prev) =>
@@ -581,23 +628,39 @@ export default function CheckPage() {
           )
         )
         
-        setScanError(
-          error instanceof Error 
-            ? error.message 
-            : "Something went wrong. Please try again."
-        )
+        // Provide user-friendly error messages - DO NOT auto-retry
+        let errorMessage = "Something went wrong. Please try again."
+        if (error instanceof Error) {
+          if (error.message === "SCAN_TIMEOUT") {
+            errorMessage = "Scan timed out after 4 minutes. AI services may be experiencing high demand. Please try again."
+          } else if (error.message.includes("BOTH_PROVIDERS_FAILED") || error.message.includes("NO_RESULTS")) {
+            errorMessage = "We couldn't get responses from AI services right now. Please try again in a few moments."
+          } else if (error.message.includes("fetch") || error.message.includes("network")) {
+            errorMessage = "Network error. Please check your connection and try again."
+          } else {
+            errorMessage = error.message
+          }
+        }
+        
+        setScanError(errorMessage)
+        // IMPORTANT: Do NOT set isLoading to false then true - that would restart the scan
+        // Just let the error state show
       }
     }
 
     runScan()
 
+    // IMPORTANT: Do NOT clear session in cleanup - it would cause loops when deps change
+    // Session is only cleared on: successful completion, error, or explicit retry
     return () => {
-      // Cleanup: abort any ongoing request
+      // Only abort the request, don't clear session
       if (scanAbortRef.current) {
         scanAbortRef.current.abort()
       }
     }
-  }, [isLoading, router, formData, user])
+  // Minimal dependencies - only isLoading should trigger this
+  // router is stable, user captured at scan start via ref
+  }, [isLoading, router])
 
   // Auth prompt overlay
   if (showAuthPrompt) {
@@ -645,19 +708,37 @@ export default function CheckPage() {
     )
   }
 
-  // Retry scan after error
+  // Go back to form after error - DO NOT auto-retry
   const handleRetry = () => {
+    // Clear scan session so user can start a new scan
+    console.log("[Check] Retry: clearing session")
+    scanSessionRef.current = null
+    
+    // Clear all scan-related state
     setScanError(null)
+    setIsLoading(false)
+    setIsSaving(false)
+    setLoadingElapsed(0)
     setLoadingSteps((prev) =>
       prev.map((step) => ({ ...step, status: "pending" }))
     )
-    // Trigger scan again
-    setIsLoading(false)
-    setTimeout(() => setIsLoading(true), 100)
+    // Clear any stale scan data from localStorage
+    try {
+      localStorage.removeItem(SCAN_RESULT_KEY)
+      localStorage.removeItem("mentioned_last_scan")
+    } catch (e) {
+      console.error("[Check] Failed to clear localStorage:", e)
+    }
+    // DO NOT auto-trigger the scan - let user click "Check visibility" again
+    // Just reset the form state so they can try again manually
   }
 
   // Cancel scan
   const handleCancel = () => {
+    // Clear scan session so user can start a new scan
+    console.log("[Check] Cancel: clearing session")
+    scanSessionRef.current = null
+    
     if (scanAbortRef.current) {
       scanAbortRef.current.abort()
     }
@@ -686,22 +767,28 @@ export default function CheckPage() {
 
             {scanError ? (
               <>
-                <div className="size-12 rounded-full bg-status-error/10 flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="size-6 text-status-error" />
+                <div className="size-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="size-6 text-red-500" />
                 </div>
                 <h1 className="text-2xl font-semibold text-foreground mb-2">
-                  Scan encountered an issue
+                  Something went wrong
                 </h1>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-muted-foreground mb-2">
                   {scanError}
                 </p>
-                <div className="flex gap-3 justify-center">
-                  <Button variant="secondary" onClick={handleCancel}>
-                    Go back
+                <p className="text-sm text-muted-foreground/80 mb-6">
+                  Don&apos;t worry — your form data is saved. Click below to try again.
+                </p>
+                <div className="flex flex-col gap-3 items-center">
+                  <Button onClick={handleRetry} className="w-full max-w-[200px]">
+                    Try Again
                   </Button>
-                  <Button onClick={handleRetry}>
-                    Try again
-                  </Button>
+                  <button
+                    onClick={handleCancel}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Go back to form
+                  </button>
                 </div>
               </>
             ) : (
@@ -712,17 +799,17 @@ export default function CheckPage() {
                 <p className="text-muted-foreground mb-6">
                   {isSaving 
                     ? "Just a moment" 
-                    : loadingElapsed >= 90
+                    : loadingElapsed >= 180
                       ? "Almost there — finalizing your results..."
-                      : loadingElapsed >= 60
-                        ? "Taking a bit longer than usual — we're thoroughly analyzing the data"
-                        : "This usually takes 30–60 seconds"
+                      : loadingElapsed >= 120
+                        ? "Taking a bit longer than usual — hang tight..."
+                        : "This usually takes 2–3 minutes"
                   }
                 </p>
 
                 {!isSaving && (
                   <>
-                    {/* Progress section */}
+                    {/* Progress section - optimized for 2 minute max scan time */}
                     <div className="w-full max-w-xs mx-auto mb-8">
                       {/* Elapsed time and estimate */}
                       <div className="flex items-center justify-between text-sm mb-2">
@@ -730,25 +817,29 @@ export default function CheckPage() {
                           {Math.floor(loadingElapsed / 60)}:{String(loadingElapsed % 60).padStart(2, '0')} elapsed
                         </span>
                         <span className="text-muted-foreground">
-                          {loadingElapsed < 30 
-                            ? `~${Math.max(30 - loadingElapsed, 10)}s remaining`
-                            : loadingElapsed < 60
+                          {loadingElapsed < 180 
+                            ? `~${Math.max(240 - loadingElapsed, 60)}s remaining`
+                            : loadingElapsed < 220
                               ? "Almost done..."
                               : "Finishing up..."
                           }
                         </span>
                       </div>
                       
-                      {/* Progress bar */}
+                      {/* Progress bar - smooth animation over 2 min timeline */}
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
                           style={{ 
                             width: `${Math.min(
-                              loadingElapsed < 10 ? loadingElapsed * 3 :
-                              loadingElapsed < 30 ? 30 + (loadingElapsed - 10) * 2 :
-                              loadingElapsed < 60 ? 70 + (loadingElapsed - 30) * 0.5 :
-                              85 + Math.min((loadingElapsed - 60) * 0.2, 12),
+                              // 0-40s: 0-40% (fast initial progress)
+                              loadingElapsed < 40 ? loadingElapsed * 1 :
+                              // 40-120s: 40-75% (steady progress)
+                              loadingElapsed < 120 ? 40 + (loadingElapsed - 40) * 0.44 :
+                              // 120-180s: 75-90% (slower as we finalize)
+                              loadingElapsed < 180 ? 75 + (loadingElapsed - 120) * 0.25 :
+                              // 180-240s: 90-97% (very slow final stretch)
+                              90 + Math.min((loadingElapsed - 180) * 0.12, 7),
                               97
                             )}%` 
                           }}
@@ -759,10 +850,10 @@ export default function CheckPage() {
                       <div className="text-center mt-2">
                         <span className="text-lg font-semibold text-foreground">
                           {Math.min(
-                            loadingElapsed < 10 ? loadingElapsed * 3 :
-                            loadingElapsed < 30 ? 30 + Math.floor((loadingElapsed - 10) * 2) :
-                            loadingElapsed < 60 ? 70 + Math.floor((loadingElapsed - 30) * 0.5) :
-                            85 + Math.min(Math.floor((loadingElapsed - 60) * 0.2), 12),
+                            loadingElapsed < 40 ? loadingElapsed * 1 :
+                            loadingElapsed < 120 ? 40 + Math.floor((loadingElapsed - 40) * 0.44) :
+                            loadingElapsed < 180 ? 75 + Math.floor((loadingElapsed - 120) * 0.25) :
+                            90 + Math.min(Math.floor((loadingElapsed - 180) * 0.12), 7),
                             97
                           )}%
                         </span>
@@ -770,16 +861,16 @@ export default function CheckPage() {
                     </div>
 
                     <div className="flex justify-center mb-6">
-                      <div className="flex gap-1.5">
-                        {[0, 1, 2].map((i) => (
-                          <div
-                            key={i}
-                            className="size-2 rounded-full bg-primary animate-pulse-subtle"
-                            style={{ animationDelay: `${i * 0.2}s` }}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="size-2 rounded-full bg-primary animate-pulse-subtle"
+                        style={{ animationDelay: `${i * 0.2}s` }}
+                      />
+                    ))}
+                  </div>
+                </div>
 
                     <div className="space-y-4 text-left mb-8">
                       {loadingSteps.map((step) => (

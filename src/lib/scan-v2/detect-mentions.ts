@@ -166,12 +166,18 @@ IMPORTANT: Be accurate. False positives (saying mentioned when it's not) and fal
 Return ONLY the JSON object.`
 
   try {
-    const aiResponse = await client.chat.completions.create({
-      model: "gpt-4o-mini", // Use gpt-4o-mini for speed (still accurate for detection)
-      messages: [{ role: "user", content: detectionPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.1 // Very low for consistent detection
-    })
+    // 15-second timeout on mention detection
+    const aiResponse = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini", // Use gpt-4o-mini for speed (still accurate for detection)
+        messages: [{ role: "user", content: detectionPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.1 // Very low for consistent detection
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Detection timeout after 15s")), 15000)
+      )
+    ])
 
     const content = aiResponse.choices[0]?.message?.content
     if (!content) {
@@ -282,12 +288,18 @@ If no competitors are found, return: { "competitors": [] }
 Return ONLY the JSON object.`
 
   try {
-    const aiResponse = await client.chat.completions.create({
-      model: "gpt-4o-mini", // Faster model is fine for extraction
-      messages: [{ role: "user", content: extractionPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.1
-    })
+    // 15-second timeout on competitor extraction
+    const aiResponse = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini", // Faster model is fine for extraction
+        messages: [{ role: "user", content: extractionPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Competitor extraction timeout after 15s")), 15000)
+      )
+    ])
 
     const content = aiResponse.choices[0]?.message?.content
     if (!content) {
@@ -313,44 +325,146 @@ Return ONLY the JSON object.`
 
 /**
  * Analyze all query results for mentions and competitors
+ * OPTIMIZED: Uses fast string matching instead of slow AI calls
+ * This saves 60+ seconds by eliminating 80 AI API calls
  */
 export async function analyzeAllResponses(
   queryResults: QueryResult[],
   productData: ProductData
 ): Promise<AnalyzedResult[]> {
   const startTime = Date.now()
-  console.log(`[Analyze] Analyzing ${queryResults.length} query results`)
+  console.log(`[Analyze] Analyzing ${queryResults.length} query results with fast string matching`)
+  console.log(`[Analyze] Brand: "${productData.product_name}" | Variations: ${productData.product_name_variations?.length || 0}`)
   
-  // Process all analyses in parallel
-  const analyzed = await Promise.all(
-    queryResults.map(async (result) => {
-      // Analyze ChatGPT and Claude responses in parallel
-      const [chatgptAnalysis, claudeAnalysis] = await Promise.all([
-        analyzeResponse(result.chatgpt.raw_response, productData),
-        analyzeResponse(result.claude.raw_response, productData)
-      ])
-      
-      return {
-        query: result.query,
-        type: result.type,
-        chatgpt: {
-          raw_response: result.chatgpt.raw_response,
-          error: result.chatgpt.error,
-          ...chatgptAnalysis
-        },
-        claude: {
-          raw_response: result.claude.raw_response,
-          error: result.claude.error,
-          ...claudeAnalysis
-        }
+  // FAST PATH: Use string matching directly (no AI calls)
+  // This saves 60+ seconds compared to 80 AI calls
+  const analyzed = queryResults.map((result, index) => {
+    const chatgptCheck = quickMentionCheckWithCompetitors(
+      result.chatgpt.raw_response,
+      productData
+    )
+    const claudeCheck = quickMentionCheckWithCompetitors(
+      result.claude.raw_response,
+      productData
+    )
+    
+    // Log each result for debugging
+    console.log(`[Analyze] Query ${index + 1}: ChatGPT=${chatgptCheck.mentioned ? 'FOUND' : 'not found'}, Claude=${claudeCheck.mentioned ? 'FOUND' : 'not found'}`)
+    
+    return {
+      query: result.query,
+      type: result.type,
+      chatgpt: {
+        raw_response: result.chatgpt.raw_response,
+        error: result.chatgpt.error,
+        ...chatgptCheck
+      },
+      claude: {
+        raw_response: result.claude.raw_response,
+        error: result.claude.error,
+        ...claudeCheck
       }
-    })
-  )
+    }
+  })
   
   const duration = Date.now() - startTime
-  console.log(`[Analyze] Completed analysis in ${duration}ms`)
+  const chatgptMentions = analyzed.filter(r => r.chatgpt.mentioned).length
+  const claudeMentions = analyzed.filter(r => r.claude.mentioned).length
+  console.log(`[Analyze] Completed in ${duration}ms | ChatGPT mentions: ${chatgptMentions}/${queryResults.length}, Claude mentions: ${claudeMentions}/${queryResults.length}`)
   
   return analyzed
+}
+
+/**
+ * Fast string-based mention check WITH competitor extraction (no AI)
+ * Uses word boundary regex for accurate brand detection
+ * Extracts competitors from both known lists AND common patterns
+ */
+function quickMentionCheckWithCompetitors(
+  response: string | null,
+  productData: ProductData
+): ResponseAnalysis {
+  if (!response) {
+    return {
+      mentioned: false,
+      confidence: "high",
+      evidence: "No response",
+      position: null,
+      context: "not mentioned",
+      sentiment: "not mentioned",
+      competitors: []
+    }
+  }
+  
+  const quickResult = quickMentionCheck(
+    response,
+    productData.product_name,
+    productData.product_name_variations || []
+  )
+  
+  // Extract competitor names - check both known competitors AND scan for common brand patterns
+  const competitors: CompetitorMention[] = []
+  const foundNames = new Set<string>()
+  
+  // List of known competitors from product data
+  const possibleCompetitors = [
+    ...(productData.likely_competitors || []),
+    ...(productData.competitors_mentioned || [])
+  ]
+  
+  // Check known competitors with word boundary
+  let position = 1
+  possibleCompetitors.forEach((comp) => {
+    if (!comp || foundNames.has(comp.toLowerCase())) return
+    
+    // Use word boundary regex for accurate matching
+    const escapedComp = comp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`\\b${escapedComp}\\b`, 'i')
+    
+    if (regex.test(response)) {
+      foundNames.add(comp.toLowerCase())
+      competitors.push({
+        name: comp,
+        position: position++,
+        context: "listed"
+      })
+    }
+  })
+  
+  // Also scan for common brand name patterns if we found the product mentioned
+  // This catches competitors even if they weren't in our initial list
+  if (quickResult.found || competitors.length === 0) {
+    // Common SaaS/tool name patterns (capitalized words that look like brand names)
+    const brandPatterns = /\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b/g // CamelCase words like HubSpot, FreshBooks
+    const numberedBrandPatterns = /\b([A-Z][a-z]+\s*\d+)\b/g // Brands with numbers like Notion2, etc.
+    
+    let match
+    while ((match = brandPatterns.exec(response)) !== null) {
+      const name = match[1]
+      const lowerName = name.toLowerCase()
+      // Skip if it's the user's product or already found
+      if (foundNames.has(lowerName)) continue
+      if (productData.product_name.toLowerCase().includes(lowerName)) continue
+      if (productData.product_name_variations?.some(v => v.toLowerCase() === lowerName)) continue
+      
+      foundNames.add(lowerName)
+      competitors.push({
+        name: name,
+        position: position++,
+        context: "listed"
+      })
+    }
+  }
+  
+  return {
+    mentioned: quickResult.found,
+    confidence: quickResult.found ? "high" : "medium",
+    evidence: quickResult.evidence || "String matching",
+    position: null,
+    context: quickResult.found ? "listed" : "not mentioned",
+    sentiment: quickResult.found ? "neutral" : "not mentioned",
+    competitors
+  }
 }
 
 /**

@@ -158,12 +158,18 @@ Be accurate. Only mark something as present if you actually see evidence in the 
 Return ONLY the JSON object.`
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini", // Use mini for speed on analysis
-      messages: [{ role: "user", content: analysisPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.2
-    })
+    // 15-second timeout on site analysis
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini", // Use mini for speed on analysis
+        messages: [{ role: "user", content: analysisPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.2
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Site analysis timeout after 15s")), 15000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {

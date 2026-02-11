@@ -186,12 +186,18 @@ Return JSON:
 }`
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: actionPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.2
-    })
+    // 15-second timeout on action generation
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: actionPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.2
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Action generation timeout after 15s")), 15000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {
@@ -625,12 +631,18 @@ FORMAT: Markdown`
   }
   
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 2000
-    })
+    // 15-second timeout on content generation
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Content generation timeout after 15s")), 15000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {

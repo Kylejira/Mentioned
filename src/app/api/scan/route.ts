@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase-server"
 import { runScanV2, convertToLegacyFormat } from "@/lib/scan-v2"
 import { saveScanHistory } from "@/lib/scan/save-scan-history"
 
-export const maxDuration = 300 // Allow up to 5 minutes for the scan (Vercel Pro limit)
+export const maxDuration = 240 // 4 minutes max
 export const dynamic = "force-dynamic"
 
 // Pro access whitelist

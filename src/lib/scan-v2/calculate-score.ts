@@ -257,6 +257,75 @@ export async function aggregateCompetitors(
 }
 
 /**
+ * Simple competitor aggregation WITHOUT AI filtering
+ * Used when running low on time to avoid additional AI calls
+ */
+export function aggregateCompetitorsSimple(
+  analyzedResults: AnalyzedResult[]
+): AggregatedCompetitor[] {
+  console.log(`[AggregateCompetitors] SIMPLE mode - no AI filtering`)
+  
+  const competitorMap = new Map<string, {
+    name: string
+    mentions: number
+    positions: number[]
+    platforms: { chatgpt: number; claude: number }
+  }>()
+
+  for (const result of analyzedResults) {
+    // Process ChatGPT competitors
+    const chatgptComps = result.chatgpt.competitors || []
+    for (const comp of chatgptComps) {
+      const key = comp.name.toLowerCase()
+      const existing = competitorMap.get(key) || {
+        name: comp.name,
+        mentions: 0,
+        positions: [],
+        platforms: { chatgpt: 0, claude: 0 }
+      }
+      existing.mentions++
+      existing.platforms.chatgpt++
+      if (comp.position) existing.positions.push(comp.position)
+      competitorMap.set(key, existing)
+    }
+
+    // Process Claude competitors
+    const claudeComps = result.claude.competitors || []
+    for (const comp of claudeComps) {
+      const key = comp.name.toLowerCase()
+      const existing = competitorMap.get(key) || {
+        name: comp.name,
+        mentions: 0,
+        positions: [],
+        platforms: { chatgpt: 0, claude: 0 }
+      }
+      existing.mentions++
+      existing.platforms.claude++
+      if (comp.position) existing.positions.push(comp.position)
+      competitorMap.set(key, existing)
+    }
+  }
+
+  // Convert to sorted array
+  const totalQueries = analyzedResults.length
+  const competitors = Array.from(competitorMap.values())
+    .map(comp => ({
+      name: comp.name,
+      mentions: comp.mentions,
+      totalPossible: totalQueries * 2,
+      mentionRate: Math.round((comp.mentions / (totalQueries * 2)) * 100),
+      averagePosition: comp.positions.length > 0
+        ? Number((comp.positions.reduce((a, b) => a + b, 0) / comp.positions.length).toFixed(1))
+        : null,
+      platforms: comp.platforms
+    }))
+    .sort((a, b) => b.mentions - a.mentions)
+
+  console.log(`[AggregateCompetitors] Found ${competitors.length} competitors (unfiltered)`)
+  return competitors.slice(0, 15)
+}
+
+/**
  * Use AI to filter out irrelevant competitors
  * Removes products from different categories (e.g., Git from Scheduling)
  */
@@ -309,12 +378,18 @@ Return JSON:
 Be strict. Only include TRUE competitors.`
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: filterPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.1
-    })
+    // 15-second timeout on competitor filtering
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: filterPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.1
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Competitor filter timeout after 15s")), 15000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {
@@ -412,12 +487,18 @@ Return JSON:
 Return ONLY the JSON object.`
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: actionPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.5
-    })
+    // 15-second timeout on action plan generation
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: actionPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.5
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Action plan generation timeout after 15s")), 15000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {

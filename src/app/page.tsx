@@ -29,9 +29,9 @@ export default function LandingPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Image
-              src="/logo.png"
-              alt="Mentioned"
+          <Image
+            src="/logo.png"
+            alt="Mentioned"
               width={32}
               height={32}
               className="rounded-lg sm:rounded-xl sm:w-9 sm:h-9"
@@ -64,7 +64,7 @@ export default function LandingPage() {
             </svg>
           </div>
         </div>
-        
+
         {/* Gradient orbs for depth */}
         <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-gradient-radial from-blue-50 via-white/50 to-transparent rounded-full blur-3xl pointer-events-none opacity-80" />
         <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gradient-radial from-slate-100 via-slate-50/30 to-transparent rounded-full blur-3xl pointer-events-none opacity-60" />

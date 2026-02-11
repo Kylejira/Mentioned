@@ -228,11 +228,11 @@ ${action.why}
         // If signals is an array, use it directly
         if (Array.isArray(apiResult.signals)) {
           return apiResult.signals.map((s: any) => ({
-            id: s.id,
-            status: s.status as "success" | "warning" | "error",
-            name: s.name,
-            explanation: s.explanation,
-            confidence: s.confidence as "observed" | "likely",
+        id: s.id,
+        status: s.status as "success" | "warning" | "error",
+        name: s.name,
+        explanation: s.explanation,
+        confidence: s.confidence as "observed" | "likely",
           }))
         }
         // If signals is an object with recommendations, convert to array format
@@ -252,12 +252,12 @@ ${action.why}
       actions: (() => {
         const actionsArray = Array.isArray(apiResult.actions) ? apiResult.actions : []
         return actionsArray.map((a: any, idx: number) => ({
-          id: a.id || `action-${idx + 1}`,
+        id: a.id || `action-${idx + 1}`,
           priority: (a.priority === "high" ? 1 : a.priority === "medium" ? 2 : a.priority || idx + 1) as 1 | 2 | 3,
           title: a.title || a.description || "Action item",
           why: a.why || a.impact || "",
           what: a.what || a.description || "",
-          draftContent: generateDraftContent(a, brandName, competitors),
+        draftContent: generateDraftContent(a, brandName, competitors),
         }))
       })(),
       scanDate: apiResult.timestamp || new Date().toISOString(),
@@ -634,8 +634,8 @@ function CompetitorComparison({
       <div className="mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-foreground">
-            {sectionTitle}
-          </h2>
+        {sectionTitle}
+      </h2>
           <div className="group relative">
             <Info className="size-4 text-muted-foreground cursor-help" />
             <div className="absolute left-0 top-6 z-10 hidden group-hover:block w-64 p-3 bg-popover border border-border rounded-lg shadow-lg text-xs text-muted-foreground">
@@ -1053,7 +1053,7 @@ export default function DashboardPage() {
         setShowScanLimitModal(true)
       } else {
         // Free user who used their scan
-        setShowUpgradeModal("scan")
+      setShowUpgradeModal("scan")
       }
       return
     }
@@ -1219,7 +1219,7 @@ export default function DashboardPage() {
     
     if (score < 40) {
       return {
-        title: "You're on the radar, but not top-of-mind",
+      title: "You're on the radar, but not top-of-mind",
         subtitle: "AI tools mention you sometimes, but competitors get recommended more often.",
       }
     }
@@ -1265,7 +1265,7 @@ export default function DashboardPage() {
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <Lock className="size-5 text-blue-600" />
-                  </div>
+          </div>
                   <div className="flex-1">
                     <p className="font-semibold text-[#1E293B]">Free scan used</p>
                     <p className="text-sm text-[#64748B] mt-0.5">
@@ -1309,11 +1309,11 @@ export default function DashboardPage() {
                 Track Progress
               </Button>
             </Link>
-            <Button variant="secondary" onClick={handleRunNewScan}>
-              <RefreshCw className="size-4 mr-2" />
-              Run new scan
+          <Button variant="secondary" onClick={handleRunNewScan}>
+            <RefreshCw className="size-4 mr-2" />
+            Run new scan
               {!subscription.canScan && <Lock className="size-3.5 ml-2" />}
-            </Button>
+          </Button>
           </div>
         </div>
 
@@ -1380,14 +1380,14 @@ export default function DashboardPage() {
                     status={getStatusFromScore(data.visibilityScore?.overall || 0)} 
                     className="text-base px-5 py-2" 
                   />
-                  <p className="mt-3 text-foreground font-medium">
-                    {statusMessage.title}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {statusMessage.subtitle}
-                  </p>
-                  
-                  {/* Context */}
+                <p className="mt-3 text-foreground font-medium">
+                  {statusMessage.title}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {statusMessage.subtitle}
+                </p>
+
+              {/* Context */}
                   <p className="mt-6 text-sm text-muted-foreground">
                     When users ask for <span className="font-medium text-foreground">{data.brand.category}</span>, here&apos;s how AI responds:
                   </p>
@@ -1783,32 +1783,32 @@ export default function DashboardPage() {
                         <li key={index} className="py-3 first:pt-0 last:pb-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-foreground">
-                                &quot;{query.query}&quot;
-                              </span>
+                        <span className="text-sm text-foreground">
+                          &quot;{query.query}&quot;
+                        </span>
                               {query.isCustom && (
                                 <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
                                   Custom
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                {query.chatgpt ? (
-                                  <Check className="size-3.5 text-status-success" />
-                                ) : (
-                                  <X className="size-3.5 text-status-error" />
-                                )}
-                                ChatGPT
-                              </span>
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                {query.claude ? (
-                                  <Check className="size-3.5 text-status-success" />
-                                ) : (
-                                  <X className="size-3.5 text-status-error" />
-                                )}
-                                Claude
-                              </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            {query.chatgpt ? (
+                              <Check className="size-3.5 text-status-success" />
+                            ) : (
+                              <X className="size-3.5 text-status-error" />
+                            )}
+                            ChatGPT
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            {query.claude ? (
+                              <Check className="size-3.5 text-status-success" />
+                            ) : (
+                              <X className="size-3.5 text-status-error" />
+                            )}
+                            Claude
+                          </span>
                               {rawResponse && (rawResponse.chatgpt_response || rawResponse.claude_response) && (
                                 <button
                                   onClick={() => setExpandedQueryIndex(isExpanded ? null : index)}
@@ -1817,7 +1817,7 @@ export default function DashboardPage() {
                                   {isExpanded ? "Hide responses" : "View responses"}
                                 </button>
                               )}
-                            </div>
+                        </div>
                           </div>
                           
                           {/* Raw AI Responses */}
@@ -1851,7 +1851,7 @@ export default function DashboardPage() {
                               )}
                             </div>
                           )}
-                        </li>
+                      </li>
                       )
                     })}
                   </ul>
@@ -1931,10 +1931,10 @@ export default function DashboardPage() {
             // For Moderate/Low scores (<60%) - show warnings
             return (
               <>
-                <h2 className="text-lg font-semibold text-foreground mb-4">
-                  What&apos;s affecting your visibility
-                </h2>
-                
+          <h2 className="text-lg font-semibold text-foreground mb-4">
+            What&apos;s affecting your visibility
+          </h2>
+
                 {/* Show new gap-based analysis if available */}
                 {data.visibilityGaps && data.visibilityGaps.length > 0 ? (
                   <div className="space-y-3">
@@ -1974,30 +1974,30 @@ export default function DashboardPage() {
                   </div>
                 ) : data.signals.length > 0 ? (
                   /* Fallback to old signals if no gaps */
-                  <div className="space-y-3">
-                    {data.signals.map((signal) => (
-                      <Card key={signal.id}>
-                        <CardContent className="py-4">
-                          <div className="flex items-start gap-3">
-                            <StatusIcon status={signal.status} withBackground />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-medium text-foreground text-sm">
-                                  {signal.name}
-                                </h3>
-                                <span className="text-xs text-muted-foreground/70 capitalize">
-                                  {signal.confidence}
-                                </span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {signal.explanation}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+          <div className="space-y-3">
+            {data.signals.map((signal) => (
+              <Card key={signal.id}>
+                <CardContent className="py-4">
+                  <div className="flex items-start gap-3">
+                    <StatusIcon status={signal.status} withBackground />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-foreground text-sm">
+                          {signal.name}
+                        </h3>
+                        <span className="text-xs text-muted-foreground/70 capitalize">
+                          {signal.confidence}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {signal.explanation}
+                      </p>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
                 ) : (
                   /* Empty state - no gaps found */
                   <div className="text-center py-8 border border-border rounded-lg">
@@ -2022,11 +2022,11 @@ export default function DashboardPage() {
             return (
               <>
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="size-5 text-foreground" />
-                  <h2 className="text-lg font-semibold text-foreground">
+            <Sparkles className="size-5 text-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">
                     {isExcellent ? "Ways to stay ahead" : "Your action plan"}
-                  </h2>
-                </div>
+            </h2>
+          </div>
                 <p className="text-muted-foreground text-sm mb-4">
                   {isExcellent 
                     ? "You're already doing great. Here are some ideas to maintain your lead:"
@@ -2159,56 +2159,56 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* Fallback to old actions if no action items */
-            <div className="space-y-4">
-              {data.actions.map((action, index) => (
-                <Card key={`${action.id}-${index}`} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
+          <div className="space-y-4">
+            {data.actions.map((action, index) => (
+              <Card key={`${action.id}-${index}`} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
                       {/* Priority Badge - use index for sequential numbering */}
-                      <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
+                    <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
                         #{index + 1}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        {/* Title */}
-                        <h3 className="font-semibold text-foreground mb-2">
-                          {action.title}
-                        </h3>
-
-                        {/* Why */}
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {action.why}
-                        </p>
-
-                        {/* What */}
-                        <p className="text-sm text-foreground/80 mb-4">
-                          {action.what}
-                        </p>
-
-                        {/* Generate Button */}
-                        <Button
-                          size="sm"
-                          onClick={() => handleGenerateDraft(action)}
-                          variant={subscription.isSubscribed ? "default" : "secondary"}
-                        >
-                          {subscription.isSubscribed ? (
-                            <Sparkles className="size-3.5 mr-1.5" />
-                          ) : (
-                            <Lock className="size-3.5 mr-1.5" />
-                          )}
-                          Generate draft
-                          {!subscription.isSubscribed && (
-                            <span className="ml-1.5 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                              Pro
-                            </span>
-                          )}
-                        </Button>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Title */}
+                      <h3 className="font-semibold text-foreground mb-2">
+                        {action.title}
+                      </h3>
+
+                      {/* Why */}
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {action.why}
+                      </p>
+
+                      {/* What */}
+                      <p className="text-sm text-foreground/80 mb-4">
+                        {action.what}
+                      </p>
+
+                      {/* Generate Button */}
+                      <Button
+                        size="sm"
+                        onClick={() => handleGenerateDraft(action)}
+                          variant={subscription.isSubscribed ? "default" : "secondary"}
+                      >
+                          {subscription.isSubscribed ? (
+                          <Sparkles className="size-3.5 mr-1.5" />
+                        ) : (
+                          <Lock className="size-3.5 mr-1.5" />
+                        )}
+                        Generate draft
+                          {!subscription.isSubscribed && (
+                          <span className="ml-1.5 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                            Pro
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           )}
         </section>
 

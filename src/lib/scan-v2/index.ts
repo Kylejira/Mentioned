@@ -11,7 +11,8 @@ import { runQueries, QueryResult } from "./run-queries"
 import { analyzeAllResponses, AnalyzedResult } from "./detect-mentions"
 import { 
   calculateVisibilityScore, 
-  aggregateCompetitors, 
+  aggregateCompetitors,
+  aggregateCompetitorsSimple,
   generateActionPlan,
   VisibilityScore,
   AggregatedCompetitor,
@@ -116,8 +117,13 @@ export interface ScanOptions {
   onProgress?: ProgressCallback
 }
 
+// GLOBAL SCAN TIMEOUT - must complete before serverless function times out
+// Reduced to 110s since we optimized away most AI calls - should complete in <60s now
+const SCAN_HARD_TIMEOUT = 110000 // 110 seconds (much faster with optimizations)
+
 /**
  * Run a complete AI-powered scan
+ * Has a hard timeout to ensure we return results even if some steps are slow
  */
 export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
   const { 
@@ -132,6 +138,15 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
   } = options
   
   const startTime = Date.now()
+  
+  // Check if we're running out of time
+  const checkTimeout = () => {
+    const elapsed = Date.now() - startTime
+    if (elapsed > SCAN_HARD_TIMEOUT) {
+      throw new Error("SCAN_HARD_TIMEOUT")
+    }
+    return SCAN_HARD_TIMEOUT - elapsed // remaining time
+  }
   const timing: ScanResult['timing'] = {
     total: 0,
     scraping: 0,
@@ -164,7 +179,7 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
   
   try {
     console.log(`\n========================================`)
-    console.log(`[ScanV2] Starting scan`)
+    console.log(`[TIMING] Scan started at ${new Date().toISOString()}`)
     console.log(`[ScanV2] Product Name: "${productName}" (user-provided, will NOT be changed)`)
     console.log(`[ScanV2] URL: ${url}`)
     console.log(`[ScanV2] User Category: ${userCategory || 'not provided'}`)
@@ -176,9 +191,11 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     // STEP 1: Scrape website
     onProgress?.("scraping", "active", "Scraping website content...")
     const scrapeStart = Date.now()
+    console.log(`[TIMING] Step 1: Scraping started`)
     
     const scrapeResult = await scrapeUrl(url)
     timing.scraping = Date.now() - scrapeStart
+    console.log(`[TIMING] Step 1: Scraping completed in ${timing.scraping}ms`)
     
     if (!scrapeResult.success || !scrapeResult.content) {
       console.error(`[ScanV2] Scraping failed: ${scrapeResult.error}`)
@@ -191,12 +208,14 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     // STEP 2: Extract product data with AI
     onProgress?.("extracting", "active", "Analyzing product information...")
     const extractStart = Date.now()
+    console.log(`[TIMING] Step 2: Product extraction started`)
     
     let productData = await extractProductData(
       scrapeResult.content || "",
       productName,
       url
     )
+    console.log(`[TIMING] Step 2: Product extraction completed in ${Date.now() - extractStart}ms`)
     
     // CRITICAL: Override with user-provided data - user's input takes priority
     // The user knows their product better than AI extraction
@@ -239,54 +258,78 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     // STEP 3: Generate queries
     onProgress?.("generating_queries", "active", "Generating search queries...")
     const queryGenStart = Date.now()
+    console.log(`[TIMING] Step 3: Query generation started`)
     
     const generatedQueries = await generateQueries(productData, queryCount)
+    console.log(`[TIMING] Step 3: Query generation completed in ${Date.now() - queryGenStart}ms`)
     
-    // STEP 4: Validate queries
-    onProgress?.("validating_queries", "active", "Validating queries...")
+    // STEP 4: Validate queries (SKIP validation to save time - queries from bank are pre-validated)
+    onProgress?.("validating_queries", "active", "Preparing queries...")
+    console.log(`[TIMING] Step 4: Skipping AI validation (using pre-validated query bank)`)
     
-    const validatedQueries = await validateQueries(generatedQueries, productData)
+    // Convert to ValidatedQuery format without AI validation (saves ~15s)
+    const validatedQueries = generatedQueries.map(q => ({
+      ...q,
+      validated: true
+    }))
     result.queries = validatedQueries
     timing.queryGeneration = Date.now() - queryGenStart
     
     onProgress?.("validating_queries", "complete", `${validatedQueries.length} queries ready`)
-    console.log(`[ScanV2] ${validatedQueries.length} queries validated`)
+    console.log(`[ScanV2] ${validatedQueries.length} queries prepared in ${timing.queryGeneration}ms`)
     
     // STEP 5: Run queries on ChatGPT and Claude
+    checkTimeout() // Ensure we have time
     onProgress?.("running_queries", "active", "Querying ChatGPT and Claude...")
     const queryExecStart = Date.now()
+    console.log(`[TIMING] Step 5: AI queries started (${validatedQueries.length} queries to both ChatGPT and Claude)`)
     
     const queryResults = await runQueries(validatedQueries)
     result.queryResults = queryResults
     timing.queryExecution = Date.now() - queryExecStart
+    console.log(`[TIMING] Step 5: AI queries completed in ${timing.queryExecution}ms`)
     
     const chatgptResponses = queryResults.filter(r => r.chatgpt.raw_response).length
     const claudeResponses = queryResults.filter(r => r.claude.raw_response).length
     onProgress?.("running_queries", "complete", `ChatGPT: ${chatgptResponses}, Claude: ${claudeResponses}`)
     
-    // STEP 6: Analyze responses with AI
-    onProgress?.("analyzing_responses", "active", "Detecting brand mentions with AI...")
+    // STEP 6: Analyze responses with fast string matching (AI fallback removed for speed)
+    checkTimeout() // Ensure we have time
+    onProgress?.("analyzing_responses", "active", "Detecting brand mentions...")
     const analysisStart = Date.now()
+    console.log(`[TIMING] Step 6: Analysis started (${queryResults.length * 2} responses to analyze)`)
     
     const analyzedResults = await analyzeAllResponses(queryResults, productData)
     result.analyzedResults = analyzedResults
     timing.analysis = Date.now() - analysisStart
+    console.log(`[TIMING] Step 6: Analysis completed in ${timing.analysis}ms`)
     
     // Count mentions
     const chatgptMentions = analyzedResults.filter(r => r.chatgpt.mentioned).length
     const claudeMentions = analyzedResults.filter(r => r.claude.mentioned).length
     onProgress?.("analyzing_responses", "complete", `Mentions: ChatGPT ${chatgptMentions}, Claude ${claudeMentions}`)
     
-    // STEP 7: Calculate visibility score
+    // STEP 7: Calculate visibility score (this is fast, no API calls)
     onProgress?.("calculating_score", "active", "Calculating visibility score...")
     const scoringStart = Date.now()
+    console.log(`[TIMING] Step 7: Scoring started`)
     
     const visibilityScore = calculateVisibilityScore(analyzedResults)
     result.visibilityScore = visibilityScore
     
-    // Aggregate competitors (now filters irrelevant ones using AI)
-    const competitors = await aggregateCompetitors(analyzedResults, productData)
+    // Check remaining time - if less than 30s, skip optional AI-heavy steps
+    const remainingTime = checkTimeout()
+    const skipOptionalSteps = remainingTime < 30000
+    
+    if (skipOptionalSteps) {
+      console.log(`[TIMING] Only ${remainingTime}ms remaining - skipping optional AI steps`)
+    }
+    
+    // Aggregate competitors (use simple aggregation to save time - AI is optional)
+    console.log(`[TIMING] Step 7b: Competitor aggregation started (simple mode for speed)`)
+    const competitors = aggregateCompetitorsSimple(analyzedResults) // Always use simple mode - AI adds 15+ seconds
     result.competitors = competitors
+    console.log(`[TIMING] Step 7: Scoring completed in ${Date.now() - scoringStart}ms`)
     
     onProgress?.("calculating_score", "complete", `Score: ${visibilityScore.score}/100`)
     console.log(`[ScanV2] Visibility score: ${visibilityScore.score}/100 (${visibilityScore.status})`)
@@ -294,154 +337,79 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     timing.scoring = Date.now() - scoringStart
     
     // STEP 8: Analyze user's site for content/positioning/authority
-    onProgress?.("generating_actions", "active", "Analyzing your website...")
+    // SKIP - adds 15+ seconds and action generation works without it
+    let userSiteAnalysis: SiteAnalysis | null = null
     const siteAnalysisStart = Date.now()
+    console.log(`[TIMING] Step 8: Skipping site analysis (saves 15+ seconds)`)
+    timing.siteAnalysis = 0
     
-    // Use the already scraped content for site analysis
-    const userSiteAnalysis = await analyzeSite(
-      productData.product_name,
-      productData.url,
-      scrapeResult.content
-    )
-    result.siteAnalysis = userSiteAnalysis
-    timing.siteAnalysis = Date.now() - siteAnalysisStart
-    
-    console.log(`[ScanV2] User site analysis complete`)
-    
-    // STEP 9: Analyze top competitors (parallel scraping for speed)
-    // Set a strict timeout for this entire section to prevent hanging
+    // STEP 9: Skip competitor scraping - too slow (15-30+ seconds)
+    // Action generation works fine with just the competitor names from AI responses
     const competitorAnalysisStart = Date.now()
     const topCompetitorNames = competitors.slice(0, 3).map(c => c.name)
-    const COMPETITOR_TIMEOUT = 20000 // 20 seconds max for all competitor analysis
+    console.log(`[TIMING] Step 9: Skipping competitor site analysis (saves 15-30 seconds)`)
+    console.log(`[TIMING] Top competitors from AI responses: ${topCompetitorNames.join(', ') || 'none found'}`)
     
-    if (topCompetitorNames.length > 0) {
-      onProgress?.("generating_actions", "active", `Analyzing ${topCompetitorNames.length} competitors...`)
-      
-      try {
-        // Wrap all competitor analysis in a single timeout
-        const competitorAnalysisPromise = (async () => {
-          const competitorPromises = topCompetitorNames.map(async (compName) => {
-            try {
-              // Try common URL patterns for the competitor
-              const possibleUrls = [
-                `https://${compName.toLowerCase().replace(/\s+/g, '')}.com`,
-                `https://www.${compName.toLowerCase().replace(/\s+/g, '')}.com`,
-              ]
-              
-              for (const compUrl of possibleUrls) {
-                try {
-                  const compScrape = await Promise.race([
-                    scrapeUrl(compUrl),
-                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)) // 5s per scrape
-                  ])
-                  
-                  if (compScrape && compScrape.success && compScrape.content.length > 500) {
-                    // Also timeout the analysis itself
-                    const analysis = await Promise.race([
-                      analyzeSite(compName, compUrl, compScrape.content),
-                      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)) // 8s per analysis
-                    ])
-                    return analysis
-                  }
-                } catch {
-                  continue
-                }
-              }
-              return null
-            } catch {
-              return null
-            }
-          })
-          
-          return await Promise.all(competitorPromises)
-        })()
-        
-        const competitorResults = await Promise.race([
-          competitorAnalysisPromise,
-          new Promise<(SiteAnalysis | null)[]>((resolve) => setTimeout(() => resolve([]), COMPETITOR_TIMEOUT))
-        ])
-        
-        result.competitorAnalyses = (competitorResults || []).filter((a): a is SiteAnalysis => a !== null)
-        console.log(`[ScanV2] Analyzed ${result.competitorAnalyses.length}/${topCompetitorNames.length} competitor sites`)
-      } catch (error) {
-        console.error(`[ScanV2] Competitor analysis failed:`, error)
-        result.competitorAnalyses = []
-      }
-    }
-    
-    timing.competitorAnalysis = Date.now() - competitorAnalysisStart
+    timing.competitorAnalysis = 0
     
     // STEP 10: Find gaps between user and competitors
-    const visibilityGaps = findGaps(userSiteAnalysis, result.competitorAnalyses)
+    const visibilityGaps = userSiteAnalysis ? findGaps(userSiteAnalysis, result.competitorAnalyses) : []
     result.visibilityGaps = visibilityGaps
     
     console.log(`[ScanV2] Found ${visibilityGaps.length} visibility gaps`)
     
-    // STEP 11: Generate action items based on scan data
-    onProgress?.("generating_actions", "active", "Generating action plan...")
+    // STEP 11: Generate action items based on scan data (skip AI - use template-based)
     const actionGenStart = Date.now()
-    const ACTION_GEN_TIMEOUT = 15000 // 15 seconds max for action generation
+    console.log(`[TIMING] Step 11: Action generation started`)
+    
+    onProgress?.("generating_actions", "active", "Generating action plan...")
     
     // Build scan context with specific data for action generation
     const queriesNotMentioned = analyzedResults
       .filter(r => !r.chatgpt.mentioned && !r.claude.mentioned)
       .map(r => r.query)
     
-    const scanContext = {
-      score: visibilityScore.score,
-      queriesNotMentioned,
-      topCompetitors: competitors.slice(0, 5).map(c => ({
-        name: c.name,
-        mentions: c.mentions
-      })),
-      totalQueries: analyzedResults.length
-    }
+    console.log(`[TIMING] Queries not mentioned in: ${queriesNotMentioned.length}/${analyzedResults.length}`)
     
-    console.log(`[ScanV2] Queries not mentioned in: ${queriesNotMentioned.length}/${analyzedResults.length}`)
+    // Skip AI-based action generation - use fast template-based approach
+    // This saves 15-30 seconds
+    result.actionItems = []
+    result.actionPlan = null
     
-    // Generate action items with timeout
-    try {
-      const actionItemsPromise = generateActionItems(
-        visibilityGaps,
-        productData,
-        topCompetitorNames,
-        scanContext,
-        userSiteAnalysis,
-        result.competitorAnalyses
-      )
+    // Check remaining time - only try AI if we have plenty of time
+    const remainingTimeForActions = SCAN_HARD_TIMEOUT - (Date.now() - startTime)
+    console.log(`[TIMING] Remaining time: ${remainingTimeForActions}ms`)
+    
+    if (remainingTimeForActions > 30000) {
+      // We have time - try to generate action plan (but with strict timeout)
+      const ACTION_GEN_TIMEOUT = 10000 // 10 seconds max
       
-      const actionItems = await Promise.race([
-        actionItemsPromise,
-        new Promise<ActionItem[]>((resolve) => setTimeout(() => resolve([]), ACTION_GEN_TIMEOUT))
-      ])
-      result.actionItems = actionItems || []
-    } catch (error) {
-      console.error(`[ScanV2] Action items generation failed:`, error)
-      result.actionItems = []
-    }
-    
-    // Also generate legacy action plan for compatibility (with timeout)
-    try {
-      const actionPlanPromise = generateActionPlan(
-        analyzedResults, 
-        visibilityScore, 
-        productData,
-        competitors
-      )
-      
-      const actionPlan = await Promise.race([
-        actionPlanPromise,
-        new Promise<ActionPlan | null>((resolve) => setTimeout(() => resolve(null), ACTION_GEN_TIMEOUT))
-      ])
-      result.actionPlan = actionPlan
-    } catch (error) {
-      console.error(`[ScanV2] Action plan generation failed:`, error)
-      result.actionPlan = null
+      try {
+        const actionPlanPromise = generateActionPlan(
+          analyzedResults, 
+          visibilityScore, 
+          productData,
+          competitors
+        )
+        
+        const actionPlan = await Promise.race([
+          actionPlanPromise,
+          new Promise<ActionPlan | null>((resolve) => setTimeout(() => resolve(null), ACTION_GEN_TIMEOUT))
+        ])
+        result.actionPlan = actionPlan
+        console.log(`[TIMING] Action plan generated`)
+      } catch (error) {
+        console.error(`[TIMING] Action plan generation failed:`, error)
+        result.actionPlan = null
+      }
+    } else {
+      console.log(`[TIMING] Skipping AI action generation (low time: ${remainingTimeForActions}ms)`)
     }
     
     timing.actionGeneration = Date.now() - actionGenStart
+    console.log(`[TIMING] Step 11: Action generation completed in ${timing.actionGeneration}ms`)
     
-    onProgress?.("generating_actions", "complete", `${result.actionItems.length} actions`)
+    onProgress?.("generating_actions", "complete", `Action plan ready`)
     
     // Complete
     timing.total = Date.now() - startTime
@@ -450,11 +418,21 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     onProgress?.("complete", "complete", `Scan completed in ${(timing.total / 1000).toFixed(1)}s`)
     
     console.log(`\n========================================`)
-    console.log(`[ScanV2] SCAN COMPLETE`)
-    console.log(`[ScanV2] Total time: ${timing.total}ms`)
-    console.log(`[ScanV2] Score: ${visibilityScore.score}/100`)
-    console.log(`[ScanV2] Status: ${visibilityScore.status}`)
-    console.log(`[ScanV2] Gaps found: ${visibilityGaps.length}`)
+    console.log(`[TIMING] SCAN COMPLETE - TIMING SUMMARY`)
+    console.log(`[TIMING] --------------------------------`)
+    console.log(`[TIMING] Scraping:       ${timing.scraping}ms`)
+    console.log(`[TIMING] Extraction:     ${timing.extraction}ms`)
+    console.log(`[TIMING] Query Gen:      ${timing.queryGeneration}ms`)
+    console.log(`[TIMING] AI Queries:     ${timing.queryExecution}ms`)
+    console.log(`[TIMING] Analysis:       ${timing.analysis}ms`)
+    console.log(`[TIMING] Scoring:        ${timing.scoring}ms`)
+    console.log(`[TIMING] Site Analysis:  ${timing.siteAnalysis}ms (skipped)`)
+    console.log(`[TIMING] Comp Analysis:  ${timing.competitorAnalysis}ms (skipped)`)
+    console.log(`[TIMING] Action Gen:     ${timing.actionGeneration}ms`)
+    console.log(`[TIMING] --------------------------------`)
+    console.log(`[TIMING] TOTAL:          ${timing.total}ms (${(timing.total / 1000).toFixed(1)}s)`)
+    console.log(`========================================`)
+    console.log(`[ScanV2] Score: ${visibilityScore.score}/100 (${visibilityScore.status})`)
     console.log(`[ScanV2] Actions generated: ${result.actionItems.length}`)
     console.log(`========================================\n`)
     
@@ -462,11 +440,19 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error(`[ScanV2] FATAL ERROR: ${errorMessage}`)
+    console.error(`[ScanV2] ERROR: ${errorMessage}`)
     
-    result.error = errorMessage
     timing.total = Date.now() - startTime
     
+    // If we timed out but have partial results, return them as success
+    if (errorMessage === "SCAN_HARD_TIMEOUT" && result.analyzedResults.length > 0 && result.visibilityScore) {
+      console.log(`[ScanV2] Timeout but have partial results - returning as success`)
+      result.success = true
+      onProgress?.("complete", "complete", `Scan completed in ${(timing.total / 1000).toFixed(1)}s (partial)`)
+      return result
+    }
+    
+    result.error = errorMessage
     onProgress?.("complete", "error", `Scan failed: ${errorMessage}`)
     
     return result

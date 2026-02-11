@@ -102,12 +102,18 @@ CRITICAL RULES:
 Return ONLY the JSON object.`
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: extractionPrompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.2 // Low temperature for consistent extraction
-    })
+    // 10-second timeout on extraction to prevent hanging
+    const response = await Promise.race([
+      client.chat.completions.create({
+        model: "gpt-4o-mini", // Use faster model for extraction
+        messages: [{ role: "user", content: extractionPrompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.2 // Low temperature for consistent extraction
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Extraction timeout after 10s")), 10000)
+      )
+    ])
 
     const content = response.choices[0]?.message?.content
     if (!content) {
