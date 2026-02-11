@@ -709,7 +709,7 @@ export default function CheckPage() {
                 <h1 className="text-2xl font-semibold text-foreground mb-2">
                   {isSaving ? "Saving your product..." : "Checking how AI tools see your product..."}
                 </h1>
-                <p className="text-muted-foreground mb-12">
+                <p className="text-muted-foreground mb-6">
                   {isSaving 
                     ? "Just a moment" 
                     : loadingElapsed >= 90
@@ -720,20 +720,67 @@ export default function CheckPage() {
                   }
                 </p>
 
-                <div className="flex justify-center mb-10">
-                  <div className="flex gap-1.5">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="size-2 rounded-full bg-primary animate-pulse-subtle"
-                        style={{ animationDelay: `${i * 0.2}s` }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
                 {!isSaving && (
                   <>
+                    {/* Progress section */}
+                    <div className="w-full max-w-xs mx-auto mb-8">
+                      {/* Elapsed time and estimate */}
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-muted-foreground">
+                          {Math.floor(loadingElapsed / 60)}:{String(loadingElapsed % 60).padStart(2, '0')} elapsed
+                        </span>
+                        <span className="text-muted-foreground">
+                          {loadingElapsed < 30 
+                            ? `~${Math.max(30 - loadingElapsed, 10)}s remaining`
+                            : loadingElapsed < 60
+                              ? "Almost done..."
+                              : "Finishing up..."
+                          }
+                        </span>
+                      </div>
+                      
+                      {/* Progress bar */}
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
+                          style={{ 
+                            width: `${Math.min(
+                              loadingElapsed < 10 ? loadingElapsed * 3 :
+                              loadingElapsed < 30 ? 30 + (loadingElapsed - 10) * 2 :
+                              loadingElapsed < 60 ? 70 + (loadingElapsed - 30) * 0.5 :
+                              85 + Math.min((loadingElapsed - 60) * 0.2, 12),
+                              97
+                            )}%` 
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Percentage */}
+                      <div className="text-center mt-2">
+                        <span className="text-lg font-semibold text-foreground">
+                          {Math.min(
+                            loadingElapsed < 10 ? loadingElapsed * 3 :
+                            loadingElapsed < 30 ? 30 + Math.floor((loadingElapsed - 10) * 2) :
+                            loadingElapsed < 60 ? 70 + Math.floor((loadingElapsed - 30) * 0.5) :
+                            85 + Math.min(Math.floor((loadingElapsed - 60) * 0.2), 12),
+                            97
+                          )}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center mb-6">
+                      <div className="flex gap-1.5">
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="size-2 rounded-full bg-primary animate-pulse-subtle"
+                            style={{ animationDelay: `${i * 0.2}s` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="space-y-4 text-left mb-8">
                       {loadingSteps.map((step) => (
                         <div
@@ -778,6 +825,20 @@ export default function CheckPage() {
                       Cancel
                     </button>
                   </>
+                )}
+                
+                {isSaving && (
+                  <div className="flex justify-center">
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="size-2 rounded-full bg-primary animate-pulse-subtle"
+                          style={{ animationDelay: `${i * 0.2}s` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             )}
