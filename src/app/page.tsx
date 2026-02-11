@@ -348,7 +348,21 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
+            <Link
+              href="/privacy-policy"
+              className="text-xs sm:text-sm text-gray-500 hover:text-blue-600 transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <span className="text-gray-200">·</span>
+            <Link
+              href="/terms"
+              className="text-xs sm:text-sm text-gray-500 hover:text-blue-600 transition-colors"
+            >
+              Terms
+            </Link>
+            <span className="text-gray-200">·</span>
             <span className="text-xs sm:text-sm text-gray-400">Built by Kyle Jira</span>
             <div className="flex items-center gap-3">
               <a 
