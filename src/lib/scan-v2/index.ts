@@ -309,47 +309,64 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     console.log(`[ScanV2] User site analysis complete`)
     
     // STEP 9: Analyze top competitors (parallel scraping for speed)
+    // Set a strict timeout for this entire section to prevent hanging
     const competitorAnalysisStart = Date.now()
     const topCompetitorNames = competitors.slice(0, 3).map(c => c.name)
+    const COMPETITOR_TIMEOUT = 20000 // 20 seconds max for all competitor analysis
     
     if (topCompetitorNames.length > 0) {
       onProgress?.("generating_actions", "active", `Analyzing ${topCompetitorNames.length} competitors...`)
       
-      // Try to scrape and analyze top competitors (with timeouts)
-      const competitorPromises = topCompetitorNames.map(async (compName) => {
-        try {
-          // Try common URL patterns for the competitor
-          const possibleUrls = [
-            `https://${compName.toLowerCase().replace(/\s+/g, '')}.com`,
-            `https://www.${compName.toLowerCase().replace(/\s+/g, '')}.com`,
-            `https://${compName.toLowerCase().replace(/\s+/g, '-')}.com`
-          ]
-          
-          for (const compUrl of possibleUrls) {
+      try {
+        // Wrap all competitor analysis in a single timeout
+        const competitorAnalysisPromise = (async () => {
+          const competitorPromises = topCompetitorNames.map(async (compName) => {
             try {
-              const compScrape = await Promise.race([
-                scrapeUrl(compUrl),
-                new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000))
-              ])
+              // Try common URL patterns for the competitor
+              const possibleUrls = [
+                `https://${compName.toLowerCase().replace(/\s+/g, '')}.com`,
+                `https://www.${compName.toLowerCase().replace(/\s+/g, '')}.com`,
+              ]
               
-              if (compScrape && compScrape.success && compScrape.content.length > 500) {
-                const analysis = await analyzeSite(compName, compUrl, compScrape.content)
-                return analysis
+              for (const compUrl of possibleUrls) {
+                try {
+                  const compScrape = await Promise.race([
+                    scrapeUrl(compUrl),
+                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)) // 5s per scrape
+                  ])
+                  
+                  if (compScrape && compScrape.success && compScrape.content.length > 500) {
+                    // Also timeout the analysis itself
+                    const analysis = await Promise.race([
+                      analyzeSite(compName, compUrl, compScrape.content),
+                      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)) // 8s per analysis
+                    ])
+                    return analysis
+                  }
+                } catch {
+                  continue
+                }
               }
+              return null
             } catch {
-              continue
+              return null
             }
-          }
-          return null
-        } catch {
-          return null
-        }
-      })
-      
-      const competitorResults = await Promise.all(competitorPromises)
-      result.competitorAnalyses = competitorResults.filter((a): a is SiteAnalysis => a !== null)
-      
-      console.log(`[ScanV2] Analyzed ${result.competitorAnalyses.length}/${topCompetitorNames.length} competitor sites`)
+          })
+          
+          return await Promise.all(competitorPromises)
+        })()
+        
+        const competitorResults = await Promise.race([
+          competitorAnalysisPromise,
+          new Promise<(SiteAnalysis | null)[]>((resolve) => setTimeout(() => resolve([]), COMPETITOR_TIMEOUT))
+        ])
+        
+        result.competitorAnalyses = (competitorResults || []).filter((a): a is SiteAnalysis => a !== null)
+        console.log(`[ScanV2] Analyzed ${result.competitorAnalyses.length}/${topCompetitorNames.length} competitor sites`)
+      } catch (error) {
+        console.error(`[ScanV2] Competitor analysis failed:`, error)
+        result.competitorAnalyses = []
+      }
     }
     
     timing.competitorAnalysis = Date.now() - competitorAnalysisStart
@@ -363,6 +380,7 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     // STEP 11: Generate action items based on scan data
     onProgress?.("generating_actions", "active", "Generating action plan...")
     const actionGenStart = Date.now()
+    const ACTION_GEN_TIMEOUT = 15000 // 15 seconds max for action generation
     
     // Build scan context with specific data for action generation
     const queriesNotMentioned = analyzedResults
@@ -381,28 +399,49 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     
     console.log(`[ScanV2] Queries not mentioned in: ${queriesNotMentioned.length}/${analyzedResults.length}`)
     
-    const actionItems = await generateActionItems(
-      visibilityGaps,
-      productData,
-      topCompetitorNames,
-      scanContext,
-      userSiteAnalysis,           // Pass real site analysis
-      result.competitorAnalyses   // Pass competitor analyses
-    )
-    result.actionItems = actionItems
+    // Generate action items with timeout
+    try {
+      const actionItemsPromise = generateActionItems(
+        visibilityGaps,
+        productData,
+        topCompetitorNames,
+        scanContext,
+        userSiteAnalysis,
+        result.competitorAnalyses
+      )
+      
+      const actionItems = await Promise.race([
+        actionItemsPromise,
+        new Promise<ActionItem[]>((resolve) => setTimeout(() => resolve([]), ACTION_GEN_TIMEOUT))
+      ])
+      result.actionItems = actionItems || []
+    } catch (error) {
+      console.error(`[ScanV2] Action items generation failed:`, error)
+      result.actionItems = []
+    }
     
-    // Also generate legacy action plan for compatibility
-    const actionPlan = await generateActionPlan(
-      analyzedResults, 
-      visibilityScore, 
-      productData,
-      competitors
-    )
-    result.actionPlan = actionPlan
+    // Also generate legacy action plan for compatibility (with timeout)
+    try {
+      const actionPlanPromise = generateActionPlan(
+        analyzedResults, 
+        visibilityScore, 
+        productData,
+        competitors
+      )
+      
+      const actionPlan = await Promise.race([
+        actionPlanPromise,
+        new Promise<ActionPlan | null>((resolve) => setTimeout(() => resolve(null), ACTION_GEN_TIMEOUT))
+      ])
+      result.actionPlan = actionPlan
+    } catch (error) {
+      console.error(`[ScanV2] Action plan generation failed:`, error)
+      result.actionPlan = null
+    }
     
     timing.actionGeneration = Date.now() - actionGenStart
     
-    onProgress?.("generating_actions", "complete", `${actionItems.length} actions`)
+    onProgress?.("generating_actions", "complete", `${result.actionItems.length} actions`)
     
     // Complete
     timing.total = Date.now() - startTime
@@ -416,7 +455,7 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     console.log(`[ScanV2] Score: ${visibilityScore.score}/100`)
     console.log(`[ScanV2] Status: ${visibilityScore.status}`)
     console.log(`[ScanV2] Gaps found: ${visibilityGaps.length}`)
-    console.log(`[ScanV2] Actions generated: ${actionItems.length}`)
+    console.log(`[ScanV2] Actions generated: ${result.actionItems.length}`)
     console.log(`========================================\n`)
     
     return result
