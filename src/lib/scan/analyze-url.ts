@@ -1,4 +1,5 @@
 import OpenAI from "openai"
+import { isSameBrand } from "./brand-matcher"
 
 // Lazy initialization
 let openai: OpenAI | null = null
@@ -135,13 +136,10 @@ function validateAndEnrichCompetitors(
   isLocationBound: boolean,
   brandName: string
 ): string[] {
-  const brandLower = brandName.toLowerCase()
-  
-  // Remove the scanned brand from competitors
+  // Remove the scanned brand from competitors using exact matching
+  // This prevents false positives like removing "Calendar" when searching for "Cal"
   let competitors = discoveredCompetitors.filter(
-    comp => comp.toLowerCase() !== brandLower && 
-            !comp.toLowerCase().includes(brandLower) &&
-            brandLower.length > 2 && !brandLower.includes(comp.toLowerCase())
+    comp => !isSameBrand(comp, brandName)
   )
   
   // Get industry-specific competitors
@@ -161,20 +159,20 @@ function validateAndEnrichCompetitors(
     if (isLocationBound && regionalComps.length > 0) {
       console.log(`[Competitors] Adding ${regionalComps.length} regional competitors for ${countryCode}`)
       
-      // Add regional competitors that aren't already in the list
+      // Add regional competitors that aren't already in the list and aren't the same as the brand
       const existingLower = new Set(competitors.map(c => c.toLowerCase()))
       const newRegional = regionalComps.filter(
-        c => !existingLower.has(c.toLowerCase()) && c.toLowerCase() !== brandLower
+        c => !existingLower.has(c.toLowerCase()) && !isSameBrand(c, brandName)
       )
       
       // Put regional competitors first
       competitors = [...newRegional, ...competitors]
     }
     
-    // Add global competitors that might be missing
+    // Add global competitors that might be missing and aren't the same as the brand
     const existingLower = new Set(competitors.map(c => c.toLowerCase()))
     const newGlobal = globalComps.filter(
-      c => !existingLower.has(c.toLowerCase()) && c.toLowerCase() !== brandLower
+      c => !existingLower.has(c.toLowerCase()) && !isSameBrand(c, brandName)
     )
     
     // Add some global competitors at the end (not too many to overwhelm regional ones)

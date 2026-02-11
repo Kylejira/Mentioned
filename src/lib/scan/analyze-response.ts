@@ -1,5 +1,6 @@
 import OpenAI from "openai"
 import type { MentionAnalysis, AnalysisResponse, AccuracyCheckResponse, ResponseQuality } from "./types"
+import { isExactBrandMatch, findExactBrandPosition, countExactBrandMentions } from "./brand-matcher"
 
 // Lazy initialization to avoid errors when API key is not set
 let openai: OpenAI | null = null
@@ -530,145 +531,69 @@ function basicAccuracyCheck(aiDescription: string, userDescription: string): Acc
 
 /**
  * Verify that the brand name is actually present in the text
- * Handles variations like: PayFast, Payfast, PAYFAST, Pay-Fast, Pay Fast, Payfast's, etc.
+ * Uses EXACT word boundary matching to prevent false positives
+ * (e.g., "Cal" should NOT match "Calendar" or "Calendly")
  */
 function verifyBrandInText(response: string, brandName: string): boolean {
   // First, strip any remaining markdown from the response
   const cleanedResponse = stripMarkdown(response)
-  const lowerResponse = cleanedResponse.toLowerCase()
-  const lowerBrand = brandName.toLowerCase().trim()
   
   console.log(`[Brand Check] Looking for "${brandName}" in response (${cleanedResponse.length} chars)`)
   
-  // Check 1: Full brand name present (most reliable)
-  if (lowerResponse.includes(lowerBrand)) {
-    console.log(`[Brand Check] ✓ Exact match found for "${brandName}"`)
+  // Use the exact brand matcher which handles:
+  // - Word boundaries (prevents "Cal" matching "Calendar")
+  // - Domain TLDs (Cal.com matches both "Cal.com" and "Cal" as standalone)
+  // - CamelCase variations (PayFast, Pay Fast, pay-fast)
+  // - Special character escaping
+  const isMatch = isExactBrandMatch(cleanedResponse, brandName)
+  
+  if (isMatch) {
+    console.log(`[Brand Check] ✓ Exact word-boundary match found for "${brandName}"`)
     return true
   }
   
-  // Check 2: Handle CamelCase/PascalCase variations (PayFast -> pay fast, pay-fast)
-  // Split by capital letters: "PayFast" -> ["Pay", "Fast"]
-  const camelParts = brandName.split(/(?=[A-Z])/).filter(p => p.length > 0)
-  if (camelParts.length > 1) {
-    // Check with space: "pay fast"
-    const withSpace = camelParts.join(' ').toLowerCase()
-    if (lowerResponse.includes(withSpace)) {
-      console.log(`[Brand Check] ✓ Found spaced version "${withSpace}"`)
-      return true
-    }
-    // Check with hyphen: "pay-fast"
-    const withHyphen = camelParts.join('-').toLowerCase()
-    if (lowerResponse.includes(withHyphen)) {
-      console.log(`[Brand Check] ✓ Found hyphenated version "${withHyphen}"`)
-      return true
-    }
-    // Check joined without space: "payfast"
-    const joined = camelParts.join('').toLowerCase()
-    if (lowerResponse.includes(joined)) {
-      console.log(`[Brand Check] ✓ Found joined version "${joined}"`)
-      return true
-    }
-  }
-  
-  // Check 3: Remove ALL non-alphanumeric characters and compare
-  const alphanumericBrand = lowerBrand.replace(/[^a-z0-9]/g, '')
-  const alphanumericResponse = lowerResponse.replace(/[^a-z0-9\s]/g, ' ')
-  if (alphanumericResponse.includes(alphanumericBrand)) {
-    console.log(`[Brand Check] ✓ Found alphanumeric match for "${brandName}"`)
-    return true
-  }
-  
-  // Check 4: Word boundary check - brand as a distinct word
-  // This catches "PayFast" in "PayFast vs Netcash" or "PayFast," or "PayFast."
-  const brandEscaped = escapeRegex(lowerBrand)
-  const wordBoundaryRegex = new RegExp(`(?:^|[\\s,.:;!?()\\[\\]{}"\`])(${brandEscaped})(?:[\\s,.:;!?()\\[\\]{}"\`'']|$)`, 'i')
-  if (wordBoundaryRegex.test(cleanedResponse)) {
-    console.log(`[Brand Check] ✓ Found word-boundary match for "${brandName}"`)
-    return true
-  }
-  
-  // Check 5: For multi-part brands, check if the distinctive first word is present
-  const brandParts = lowerBrand.split(/[\s\-_.]+/).filter(part => part.length > 0)
-  
-  if (brandParts.length > 0) {
-    const firstPart = brandParts[0]
-    // Only check first part if it's distinctive enough (4+ chars) and not too common
-    if (firstPart.length >= 4) {
-      const commonWords = ['best', 'good', 'great', 'free', 'easy', 'fast', 'safe', 'smart', 'quick', 'simple', 
-                          'online', 'digital', 'global', 'local', 'first', 'direct', 'instant', 'express',
-                          'payment', 'gateway', 'service', 'system', 'platform', 'solution']
-      if (!commonWords.includes(firstPart)) {
-        // Use word boundary regex
-        const partRegex = new RegExp(`\\b${escapeRegex(firstPart)}\\b`, 'i')
-        if (partRegex.test(cleanedResponse)) {
-          console.log(`[Brand Check] ✓ Found distinctive first part "${firstPart}"`)
-          return true
-        }
-      }
-    }
-  }
-  
-  // Check 6: For single-word brands 3+ chars, do word search
-  if (brandParts.length === 1 && lowerBrand.length >= 3) {
-    const singleWordRegex = new RegExp(`\\b${escapeRegex(lowerBrand)}\\b`, 'i')
-    if (singleWordRegex.test(cleanedResponse)) {
-      console.log(`[Brand Check] ✓ Found single word brand "${brandName}"`)
-      return true
-    }
-  }
-  
-  // Check 7: Last resort - check original response with markdown (sometimes markdown helps identify brands)
+  // Also check original response with markdown (sometimes markdown helps identify brands)
   // Look for **BrandName** or ##BrandName patterns
-  const markdownBrandRegex = new RegExp(`(?:\\*\\*|##\\s*\\*\\*?)${escapeRegex(lowerBrand)}`, 'i')
+  const lowerBrand = brandName.toLowerCase().trim()
+  const markdownBrandRegex = new RegExp(`(?:\\*\\*|##\\s*\\*\\*?)${escapeRegex(lowerBrand)}(?:\\*\\*)?`, 'i')
   if (markdownBrandRegex.test(response.toLowerCase())) {
     console.log(`[Brand Check] ✓ Found brand in markdown formatting`)
     return true
   }
   
-  console.log(`[Brand Check] ✗ "${brandName}" NOT found in response`)
+  console.log(`[Brand Check] ✗ "${brandName}" NOT found in response (exact match required)`)
   console.log(`[Brand Check] Response preview: "${cleanedResponse.substring(0, 200)}..."`)
   return false
 }
 
 /**
  * Quick check if brand might be mentioned (avoids unnecessary API calls)
- * More permissive than verifyBrandInText - used to decide if we should do deeper analysis
+ * Uses exact word boundary matching to prevent false positives
  */
 function quickBrandCheck(response: string, brandName: string): { possiblyMentioned: boolean; exactMatch: boolean } {
-  const lowerResponse = response.toLowerCase()
+  // Use the exact brand matcher for accurate detection
+  const isMatch = isExactBrandMatch(response, brandName)
+  
+  if (isMatch) {
+    return { possiblyMentioned: true, exactMatch: true }
+  }
+  
+  // For multi-word brand names, check if the FIRST distinctive word is present as exact match
   const lowerBrand = brandName.toLowerCase()
-  
-  // Check for exact match (full brand name)
-  if (lowerResponse.includes(lowerBrand)) {
-    return { possiblyMentioned: true, exactMatch: true }
-  }
-  
-  // Check for CamelCase variations (PayFast -> pay fast, pay-fast)
-  const camelParts = brandName.split(/(?=[A-Z])/).filter(p => p.length > 0)
-  if (camelParts.length > 1) {
-    const withSpace = camelParts.join(' ').toLowerCase()
-    const withHyphen = camelParts.join('-').toLowerCase()
-    if (lowerResponse.includes(withSpace) || lowerResponse.includes(withHyphen)) {
-      return { possiblyMentioned: true, exactMatch: true }
-    }
-  }
-  
-  // Check normalized (remove separators)
-  const normalizedBrand = lowerBrand.replace(/[\s\-_]/g, '')
-  const normalizedResponse = lowerResponse.replace(/[\s\-_]/g, '')
-  if (normalizedResponse.includes(normalizedBrand)) {
-    return { possiblyMentioned: true, exactMatch: true }
-  }
-  
-  // For multi-word brand names, check if the FIRST word (usually the unique identifier) is present
   const brandParts = lowerBrand.split(/[\s\-_.]+/).filter(part => part.length > 0)
   
   if (brandParts.length > 1) {
     const firstPart = brandParts[0]
-    if (firstPart.length >= 3) {
-      const wordBoundaryRegex = new RegExp(`\\b${escapeRegex(firstPart)}\\b`, 'i')
-      if (wordBoundaryRegex.test(response)) {
-        return { possiblyMentioned: true, exactMatch: false }
+    // Only check first part if it's distinctive enough (4+ chars) and not too common
+    if (firstPart.length >= 4) {
+      const commonWords = ['best', 'good', 'great', 'free', 'easy', 'fast', 'safe', 'smart', 'quick', 'simple', 
+                          'online', 'digital', 'global', 'local', 'first', 'direct', 'instant', 'express',
+                          'payment', 'gateway', 'service', 'system', 'platform', 'solution', 'made', 'open', 'cloud']
+      if (!commonWords.includes(firstPart)) {
+        const wordBoundaryRegex = new RegExp(`\\b${escapeRegex(firstPart)}\\b`, 'i')
+        if (wordBoundaryRegex.test(response)) {
+          return { possiblyMentioned: true, exactMatch: false }
+        }
       }
     }
   } else if (brandParts.length === 1) {
@@ -693,29 +618,23 @@ function escapeRegex(string: string): string {
 }
 
 /**
- * Find which competitors are mentioned in a response
+ * Find which competitors are mentioned in a response (exact match only)
  */
 function findCompetitors(response: string, competitors: string[]): string[] {
-  const lowerResponse = response.toLowerCase()
-  return competitors.filter(comp => 
-    lowerResponse.includes(comp.toLowerCase())
-  )
+  return competitors.filter(comp => isExactBrandMatch(response, comp))
 }
 
 /**
- * Find which competitors appear in top 3 recommendations
+ * Find which competitors appear in top 3 recommendations (exact match only)
  */
 function findTopCompetitors(response: string, competitors: string[]): string[] {
-  const lowerResponse = response.toLowerCase()
-  
-  // Look for numbered lists or "best" mentions in first part of response
-  const firstPart = lowerResponse.slice(0, 500)
+  // Look for mentions in first part of response
+  const firstPart = response.slice(0, 500)
   
   return competitors.filter(comp => {
-    const compLower = comp.toLowerCase()
-    // Check if competitor is mentioned early in the response
-    const firstMention = firstPart.indexOf(compLower)
-    return firstMention !== -1 && firstMention < 300
+    // Check if competitor is mentioned early in the response with exact matching
+    const position = findExactBrandPosition(firstPart, comp)
+    return position !== -1 && position < 300
   })
 }
 
@@ -732,38 +651,10 @@ function basicAnalysis(
   const foundCompetitors = findCompetitors(response, competitors)
   const topCompetitors = findTopCompetitors(response, competitors)
   
-  // More accurate brand mention check - require actual brand name match
-  // Use stricter matching: full brand name or first distinctive part as whole word
-  const lowerResponse = response.toLowerCase()
-  const lowerBrand = brandName.toLowerCase()
-  
-  let isMentioned = false
-  let brandIndex = -1
-  
-  // Check for full brand name first (most accurate)
-  const fullBrandIndex = lowerResponse.indexOf(lowerBrand)
-  if (fullBrandIndex !== -1) {
-    isMentioned = true
-    brandIndex = fullBrandIndex
-  } else if (quickCheck.possiblyMentioned && quickCheck.exactMatch === false) {
-    // If quickCheck found a partial match, verify it's actually the brand
-    // by checking if the first distinctive word appears as a whole word
-    const brandParts = lowerBrand.split(/[\s\-_.]+/).filter(part => part.length > 0)
-    if (brandParts.length > 0) {
-      const firstPart = brandParts[0]
-      const wordBoundaryRegex = new RegExp(`\\b${escapeRegex(firstPart)}\\b`, 'gi')
-      const match = wordBoundaryRegex.exec(response)
-      if (match) {
-        // Only count as mentioned if followed by another brand part or brand-related context
-        // For "Alo Yoga", finding "Alo" alone should count
-        // But for generic first parts, be more careful
-        if (firstPart.length >= 4 || (brandParts.length > 1 && match)) {
-          isMentioned = true
-          brandIndex = match.index
-        }
-      }
-    }
-  }
+  // Use exact word-boundary matching to check for brand mention
+  // This prevents false positives like "Cal" matching "Calendar"
+  const isMentioned = isExactBrandMatch(response, brandName)
+  const brandIndex = isMentioned ? findExactBrandPosition(response, brandName) : -1
   
   // Determine position based on where brand appears
   let position: "top_3" | "mentioned_not_top" | "not_found" = "not_found"

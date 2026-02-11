@@ -19,6 +19,7 @@ import { analyzeResponse, checkDescriptionAccuracy } from "./analyze-response"
 import { detectSignals } from "./detect-signals"
 import { generateActions } from "./generate-actions"
 import { analyzeURL } from "./analyze-url"
+import { isSameBrand } from "./brand-matcher"
 
 export interface ScanProgress {
   step: string
@@ -1052,15 +1053,14 @@ function compileCompetitorResults(
 
   // Now, discover other brands mentioned in responses that weren't in our list
   const allOtherBrands = new Map<string, { mentions: number; topThree: number }>()
-  const competitorsLower = allCompetitors.map(c => c.toLowerCase())
-  
   // Collect other brands from all analyses
   ;[...chatgptAnalyses, ...claudeAnalyses].forEach(analysis => {
     // Add from other_brands_mentioned
     analysis.other_brands_mentioned?.forEach(brand => {
       const brandLower = brand.toLowerCase()
-      // Skip if it's a user-specified competitor
-      if (competitorsLower.includes(brandLower)) return
+      // Skip if it's a user-specified competitor (using exact brand matching)
+      const isKnownCompetitor = allCompetitors.some(comp => isSameBrand(comp, brand))
+      if (isKnownCompetitor) return
       
       const existing = allOtherBrands.get(brandLower) || { mentions: 0, topThree: 0 }
       existing.mentions++
@@ -1070,7 +1070,8 @@ function compileCompetitorResults(
     // Also check competitors_in_top_3 for discovered brands
     analysis.competitors_in_top_3?.forEach(brand => {
       const brandLower = brand.toLowerCase()
-      if (competitorsLower.includes(brandLower)) return
+      const isKnownCompetitor = allCompetitors.some(comp => isSameBrand(comp, brand))
+      if (isKnownCompetitor) return
       
       const existing = allOtherBrands.get(brandLower) || { mentions: 0, topThree: 0 }
       existing.topThree++
