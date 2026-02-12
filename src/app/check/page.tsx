@@ -32,7 +32,11 @@ type LoadingStep = {
 
 const FORM_STORAGE_KEY = "mentioned_check_form"
 
-const SCAN_RESULT_KEY = "mentioned_scan_result"
+const SCAN_RESULT_KEY_BASE = "mentioned_scan_result"
+// Helper to get user-scoped localStorage key
+function getScanResultKey(userId?: string | null): string {
+  return userId ? `${SCAN_RESULT_KEY_BASE}_${userId}` : SCAN_RESULT_KEY_BASE
+}
 
 export default function CheckPage() {
   const router = useRouter()
@@ -427,7 +431,8 @@ export default function CheckPage() {
       
       // CRITICAL: Clear ALL stale data before starting new scan
       try {
-        localStorage.removeItem(SCAN_RESULT_KEY)
+        localStorage.removeItem(getScanResultKey(user?.id))
+        localStorage.removeItem(SCAN_RESULT_KEY_BASE) // Also clear legacy key
         localStorage.removeItem("mentioned_last_scan")
         localStorage.removeItem(FORM_STORAGE_KEY) // Also clear old form data
         console.log("[Check] Cleared ALL stale data from localStorage")
@@ -565,10 +570,10 @@ export default function CheckPage() {
         console.log("[Check] Timestamp:", scanDataToSave.timestamp)
         console.log("[Check] =============================================")
         
-        localStorage.setItem(SCAN_RESULT_KEY, JSON.stringify(scanDataToSave))
+        localStorage.setItem(getScanResultKey(user?.id), JSON.stringify(scanDataToSave))
         
         // Verify it was saved correctly
-        const verification = localStorage.getItem(SCAN_RESULT_KEY)
+        const verification = localStorage.getItem(getScanResultKey(user?.id))
         if (verification) {
           const parsed = JSON.parse(verification)
           console.log("[Check] Verified localStorage brandName:", parsed.brandName)
@@ -615,7 +620,8 @@ export default function CheckPage() {
         
         // Clear any stale data to prevent issues on retry
         try {
-          localStorage.removeItem(SCAN_RESULT_KEY)
+          localStorage.removeItem(getScanResultKey(user?.id))
+          localStorage.removeItem(SCAN_RESULT_KEY_BASE) // Also clear legacy key
           localStorage.removeItem("mentioned_last_scan")
         } catch (e) {
           console.error("[Check] Failed to clear localStorage on error:", e)
@@ -724,7 +730,8 @@ export default function CheckPage() {
     )
     // Clear any stale scan data from localStorage
     try {
-      localStorage.removeItem(SCAN_RESULT_KEY)
+      localStorage.removeItem(getScanResultKey(user?.id))
+      localStorage.removeItem(SCAN_RESULT_KEY_BASE) // Also clear legacy key
       localStorage.removeItem("mentioned_last_scan")
     } catch (e) {
       console.error("[Check] Failed to clear localStorage:", e)
@@ -1106,7 +1113,7 @@ export default function CheckPage() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g., yoga, fitness, activewear, banking, SEO, AI..."
+                    placeholder="e.g., CRM, project management, marketing automation, SEO, AI tools..."
                     value={categoryInput}
                     onChange={(e) => setCategoryInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -1143,7 +1150,7 @@ export default function CheckPage() {
                 <div className="pt-2">
                   <p className="text-xs text-muted-foreground mb-2">Popular categories:</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {["yoga", "fitness", "running", "CrossFit", "golf", "banking", "SEO", "AI", "SaaS", "e-commerce", "fashion", "beauty", "food", "travel"].map((suggestion) => (
+                    {["CRM", "project management", "marketing automation", "SEO", "AI tools", "SaaS", "e-commerce", "fintech", "HR software", "analytics", "collaboration", "productivity", "developer tools", "email marketing"].map((suggestion) => (
                       !formData.categories.map(c => c.toLowerCase()).includes(suggestion.toLowerCase()) && (
                         <button
                           key={suggestion}

@@ -39,7 +39,8 @@ import { cn } from "@/lib/utils"
 import { mockScanData, formatScanDate, type Action, type ScanData, type VisibilityStatus, type VisibilityScore, type DimensionScore, type VisibilityGap, type ActionItem } from "@/lib/mock-data"
 import ReactMarkdown from "react-markdown"
 
-const SCAN_RESULT_KEY = "mentioned_scan_result"
+const SCAN_RESULT_KEY = "mentioned_scan_result" // Legacy key (shared across users)
+// New keys are scoped per-user: mentioned_scan_result_{userId}
 
 // Transform API scan result to dashboard format
 function transformScanResult(apiResult: any): ScanData | null {
@@ -912,65 +913,73 @@ export default function DashboardPage() {
     window.location.reload()
   }
 
-  // Load scan data from localStorage or use mock
+  // Load scan data: DB first (per-user), then localStorage fallback, then mock
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
+      // STEP 1: Try to load from database (per-user, authoritative source)
+      try {
+        console.log("[Dashboard] Fetching latest scan from database...")
+        const response = await fetch("/api/scan-history/latest")
+        
+        if (response.ok) {
+          const { scan } = await response.json()
+          
+          if (scan?.fullResult) {
+            console.log("[Dashboard] Loaded scan from database:", {
+              brandName: scan.fullResult.brandName,
+              category: scan.fullResult.category,
+              score: scan.score,
+              scannedAt: scan.scannedAt,
+            })
+            
+            setRawScanData(scan.fullResult)
+            const transformed = transformScanResult(scan.fullResult)
+            
+            if (transformed) {
+              setScanData(transformed)
+              setHasRealData(true)
+              setIsLoading(false)
+              return
+            }
+          } else {
+            console.log("[Dashboard] No scan found in database for this user")
+          }
+        }
+      } catch (e) {
+        console.error("[Dashboard] Error fetching from database:", e)
+      }
+      
+      // STEP 2: Fall back to localStorage (for scans before this fix was deployed)
       try {
         const stored = localStorage.getItem(SCAN_RESULT_KEY)
-        console.log("[Dashboard] Loading scan data from localStorage...")
+        console.log("[Dashboard] Trying localStorage fallback...")
         
         if (stored) {
           const parsed = JSON.parse(stored)
           
-          // Debug logging - critical for tracing data issues
-          console.log("[Dashboard] Raw stored data:", {
+          console.log("[Dashboard] Found localStorage data:", {
             brandName: parsed.brandName,
             category: parsed.category,
             timestamp: parsed.timestamp,
-            sources: {
-              chatgpt: parsed.sources?.chatgpt,
-              claude: parsed.sources?.claude
-            }
           })
-          
-          // Check if data is extremely stale (more than 7 days old)
-          const timestamp = parsed.timestamp ? new Date(parsed.timestamp) : null
-          const now = new Date()
-          const daysDiff = timestamp 
-            ? Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60 * 24))
-            : 999
-          
-          if (daysDiff > 7) {
-            console.warn(`[Dashboard] Data is ${daysDiff} days old - may be stale`)
-          }
           
           setRawScanData(parsed)
           const transformed = transformScanResult(parsed)
           
           if (transformed) {
-            console.log("[Dashboard] Transformed data:", {
-              brandName: transformed.brand.name,
-              category: transformed.brand.category,
-              sources: transformed.sources.map(s => ({
-                source: s.source,
-                mentioned: s.mentioned,
-                position: s.position
-              }))
-            })
-            
             setScanData(transformed)
             setHasRealData(true)
             setIsLoading(false)
             return
           }
         } else {
-          console.log("[Dashboard] No stored scan data found")
+          console.log("[Dashboard] No localStorage data found either")
         }
       } catch (e) {
-        console.error("[Dashboard] Error loading scan data:", e)
+        console.error("[Dashboard] Error loading from localStorage:", e)
       }
       
-      // Fall back to mock data
+      // STEP 3: Fall back to mock data
       console.log("[Dashboard] Using mock data")
       setScanData(mockScanData)
       setHasRealData(false)

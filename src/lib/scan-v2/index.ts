@@ -337,20 +337,70 @@ export async function runScanV2(options: ScanOptions): Promise<ScanResult> {
     timing.scoring = Date.now() - scoringStart
     
     // STEP 8: Analyze user's site for content/positioning/authority
-    // SKIP - adds 15+ seconds and action generation works without it
+    // SKIP - feeds only into visibilityGaps (recommendations) and action items, NOT the score
     let userSiteAnalysis: SiteAnalysis | null = null
     const siteAnalysisStart = Date.now()
-    console.log(`[TIMING] Step 8: Skipping site analysis (saves 15+ seconds)`)
+    console.log(`[TIMING] Step 8: Skipping site analysis (feeds only into recommendations, not score)`)
     timing.siteAnalysis = 0
     
-    // STEP 9: Skip competitor scraping - too slow (15-30+ seconds)
-    // Action generation works fine with just the competitor names from AI responses
+    // STEP 9: Analyze top competitors (parallel with 8s timeout per competitor)
     const competitorAnalysisStart = Date.now()
     const topCompetitorNames = competitors.slice(0, 3).map(c => c.name)
-    console.log(`[TIMING] Step 9: Skipping competitor site analysis (saves 15-30 seconds)`)
-    console.log(`[TIMING] Top competitors from AI responses: ${topCompetitorNames.join(', ') || 'none found'}`)
+    const COMPETITOR_SCRAPE_TIMEOUT = 8000 // 8 seconds per competitor
     
-    timing.competitorAnalysis = 0
+    if (topCompetitorNames.length > 0 && !skipOptionalSteps) {
+      onProgress?.("generating_actions", "active", `Analyzing ${topCompetitorNames.length} competitors...`)
+      console.log(`[TIMING] Step 9: Competitor scraping started (parallel, 8s timeout per competitor)`)
+      
+      const competitorPromises = topCompetitorNames.map(async (compName) => {
+        try {
+          const possibleUrls = [
+            `https://${compName.toLowerCase().replace(/\s+/g, '')}.com`,
+            `https://www.${compName.toLowerCase().replace(/\s+/g, '')}.com`,
+          ]
+          
+          for (const compUrl of possibleUrls) {
+            try {
+              const compScrape = await Promise.race([
+                scrapeUrl(compUrl),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
+              ])
+              
+              if (compScrape && compScrape.success && compScrape.content.length > 500) {
+                const analysis = await Promise.race([
+                  analyzeSite(compName, compUrl, compScrape.content),
+                  new Promise<null>((resolve) => setTimeout(() => resolve(null), COMPETITOR_SCRAPE_TIMEOUT))
+                ])
+                return analysis
+              }
+            } catch {
+              continue
+            }
+          }
+          return null
+        } catch {
+          return null
+        }
+      })
+      
+      const competitorResults = await Promise.allSettled(
+        competitorPromises.map(p => Promise.race([
+          p,
+          new Promise<SiteAnalysis | null>((resolve) => setTimeout(() => resolve(null), COMPETITOR_SCRAPE_TIMEOUT))
+        ]))
+      )
+      
+      result.competitorAnalyses = competitorResults
+        .filter((r): r is PromiseFulfilledResult<SiteAnalysis | null> => r.status === 'fulfilled')
+        .map(r => r.value)
+        .filter((a): a is SiteAnalysis => a !== null)
+      
+      console.log(`[TIMING] Step 9: Competitor analysis completed in ${Date.now() - competitorAnalysisStart}ms (${result.competitorAnalyses.length}/${topCompetitorNames.length} succeeded)`)
+    } else {
+      console.log(`[TIMING] Step 9: Skipped (no competitors or low time)`)
+    }
+    
+    timing.competitorAnalysis = Date.now() - competitorAnalysisStart
     
     // STEP 10: Find gaps between user and competitors
     const visibilityGaps = userSiteAnalysis ? findGaps(userSiteAnalysis, result.competitorAnalyses) : []

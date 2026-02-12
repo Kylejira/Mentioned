@@ -1,12 +1,12 @@
 /**
  * AI-Powered Mention Detection
- * Uses AI to accurately detect if a product is mentioned in responses
- * Now includes fallback string matching for reliability
+ * Uses word-boundary regex for accurate brand matching (no false positives)
  */
 
 import OpenAI from "openai"
 import { ProductData } from "./extract-product"
 import { QueryResult } from "./run-queries"
+import { isExactBrandMatch, findBrandMatchEvidence } from "./brand-matcher"
 
 // Initialize OpenAI client
 let openai: OpenAI | null = null
@@ -22,55 +22,23 @@ function getOpenAI(): OpenAI {
 }
 
 /**
- * Quick string-based mention check (fallback)
- * Handles case-insensitivity, special characters, and variations
+ * Word-boundary brand mention check
+ * Uses isExactBrandMatch to prevent false positives (Cal in Calcium, Notion in notional)
  */
 function quickMentionCheck(response: string, productName: string, variations: string[] = []): { found: boolean; evidence: string | null } {
   if (!response || !productName) {
     return { found: false, evidence: null }
   }
-  
-  const lowerResponse = response.toLowerCase()
-  
-  // Build list of names to check
+
   const namesToCheck = [productName, ...variations].filter(Boolean)
-  
+
   for (const name of namesToCheck) {
-    const lowerName = name.toLowerCase()
-    
-    // Check 1: Exact match (case-insensitive)
-    if (lowerResponse.includes(lowerName)) {
-      // Find the evidence - get surrounding context
-      const index = lowerResponse.indexOf(lowerName)
-      const start = Math.max(0, index - 20)
-      const end = Math.min(response.length, index + lowerName.length + 50)
-      const evidence = response.substring(start, end).trim()
-      return { found: true, evidence: `...${evidence}...` }
-    }
-    
-    // Check 2: Without special characters (Cal.com → calcom, Cal-com → calcom)
-    const cleanName = lowerName.replace(/[^a-z0-9]/g, '')
-    const cleanResponse = lowerResponse.replace(/[^a-z0-9\s]/g, '')
-    if (cleanName.length > 2 && cleanResponse.includes(cleanName)) {
-      // Find evidence from original response
-      const index = cleanResponse.indexOf(cleanName)
-      const start = Math.max(0, index - 20)
-      const end = Math.min(response.length, index + cleanName.length + 50)
-      const evidence = response.substring(start, end).trim()
-      return { found: true, evidence: `...${evidence}...` }
-    }
-    
-    // Check 3: With spaces instead of dots/hyphens (Cal.com → cal com)
-    const spacedName = lowerName.replace(/[.\-_]/g, ' ').replace(/\s+/g, ' ').trim()
-    if (spacedName !== lowerName && lowerResponse.includes(spacedName)) {
-      const index = lowerResponse.indexOf(spacedName)
-      const start = Math.max(0, index - 20)
-      const end = Math.min(response.length, index + spacedName.length + 50)
-      const evidence = response.substring(start, end).trim()
-      return { found: true, evidence: `...${evidence}...` }
+    if (isExactBrandMatch(response, name)) {
+      const evidence = findBrandMatchEvidence(response, name)
+      return { found: true, evidence: evidence || `...${name}...` }
     }
   }
-  
+
   return { found: false, evidence: null }
 }
 
@@ -412,16 +380,12 @@ function quickMentionCheckWithCompetitors(
     ...(productData.competitors_mentioned || [])
   ]
   
-  // Check known competitors with word boundary
+  // Check known competitors with word-boundary matching
   let position = 1
   possibleCompetitors.forEach((comp) => {
     if (!comp || foundNames.has(comp.toLowerCase())) return
-    
-    // Use word boundary regex for accurate matching
-    const escapedComp = comp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const regex = new RegExp(`\\b${escapedComp}\\b`, 'i')
-    
-    if (regex.test(response)) {
+
+    if (isExactBrandMatch(response, comp)) {
       foundNames.add(comp.toLowerCase())
       competitors.push({
         name: comp,

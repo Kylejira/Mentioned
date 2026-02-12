@@ -12,6 +12,7 @@ interface ScanResult {
   claudeScore?: number | null;
   chatgptMentioned?: boolean | null;
   claudeMentioned?: boolean | null;
+  fullResult?: Record<string, unknown> | null; // Full scan result for dashboard
 }
 
 export async function saveScanHistory(userId: string, scanResult: ScanResult) {
@@ -33,6 +34,7 @@ export async function saveScanHistory(userId: string, scanResult: ScanResult) {
         claude_score: scanResult.claudeScore || null,
         chatgpt_mentioned: scanResult.chatgptMentioned ?? null,
         claude_mentioned: scanResult.claudeMentioned ?? null,
+        full_result: scanResult.fullResult || null,
         scanned_at: new Date().toISOString(),
       });
     

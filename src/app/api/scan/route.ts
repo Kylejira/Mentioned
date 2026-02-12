@@ -249,6 +249,14 @@ export async function POST(request: NextRequest) {
         // Sources can be an object with chatgpt/claude keys or an array
         const sources = result.sources as { chatgpt?: { mentioned?: boolean }; claude?: { mentioned?: boolean } } | undefined
         
+        // Build the full result to save (same format the dashboard expects)
+        const fullResultForDb = {
+          ...result,
+          brandName,
+          brandUrl,
+          timestamp: new Date().toISOString(),
+        }
+        
         await saveScanHistory(user.id, {
           productUrl: brandUrl,
           productName: brandName,
@@ -261,6 +269,7 @@ export async function POST(request: NextRequest) {
           claudeScore: vs?.byModel?.claude || null,
           chatgptMentioned: sources?.chatgpt?.mentioned ?? null,
           claudeMentioned: sources?.claude?.mentioned ?? null,
+          fullResult: fullResultForDb,
         })
         console.log("[API] Scan history saved for user:", user.id)
       }
