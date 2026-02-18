@@ -6,8 +6,7 @@ import { saveScanHistory } from "@/lib/scan/save-scan-history"
 export const maxDuration = 240 // 4 minutes max
 export const dynamic = "force-dynamic"
 
-// Pro access whitelist
-const PRO_WHITELIST = ["kylejira@gmail.com"]
+const PRO_WHITELIST = (process.env.PRO_WHITELIST_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean)
 
 export async function POST(request: NextRequest) {
   try {

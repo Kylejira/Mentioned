@@ -24,10 +24,7 @@ export interface SubscriptionState {
   incrementScanCount: () => Promise<void>
 }
 
-// Pro access whitelist - emails that get automatic Pro access
-const PRO_WHITELIST = [
-  "kylejira@gmail.com",
-]
+const PRO_WHITELIST = (process.env.NEXT_PUBLIC_PRO_WHITELIST_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean)
 
 /**
  * Hook to manage subscription state and feature gating
