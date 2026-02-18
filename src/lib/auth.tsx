@@ -39,9 +39,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null)
         setLoading(false)
+
+        // On fresh sign-in, force navigate to dashboard if still on login/signup
+        if (event === "SIGNED_IN" && session) {
+          const path = window.location.pathname
+          if (path === "/login" || path === "/signup") {
+            const params = new URLSearchParams(window.location.search)
+            const redirect = params.get("redirect") || "/dashboard"
+            window.location.replace(redirect)
+          }
+        }
       }
     )
 

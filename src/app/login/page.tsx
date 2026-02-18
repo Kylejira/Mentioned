@@ -25,7 +25,7 @@ function LoginContent() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      window.location.href = redirectTo
+      window.location.replace(redirectTo)
     }
   }, [user, authLoading, redirectTo])
 
@@ -41,7 +41,8 @@ function LoginContent() {
         setError(getErrorMessage(error.message))
         setLoading(false)
       } else {
-        window.location.href = redirectTo
+        // Full page reload to ensure auth cookies are sent
+        window.location.replace(redirectTo)
       }
     } catch {
       setError("Something went wrong. Please try again.")
