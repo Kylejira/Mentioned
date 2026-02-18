@@ -1180,8 +1180,8 @@ export default function DashboardPage() {
     )
   }
 
-  // No data state
-  if (!data) {
+  // No data state — show for new users with no scan results
+  if (!hasRealData) {
     return (
       <AppShell>
         <Card>
