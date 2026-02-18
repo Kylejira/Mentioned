@@ -25,9 +25,9 @@ function LoginContent() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.push(redirectTo)
+      window.location.href = redirectTo
     }
-  }, [user, authLoading, router, redirectTo])
+  }, [user, authLoading, redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,7 +41,7 @@ function LoginContent() {
         setError(getErrorMessage(error.message))
         setLoading(false)
       } else {
-        router.push(redirectTo)
+        window.location.href = redirectTo
       }
     } catch {
       setError("Something went wrong. Please try again.")
