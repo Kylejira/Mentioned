@@ -54,11 +54,13 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Use getSession() — reads JWT from cookie locally, no external HTTP call.
+  // Actual token verification happens in API routes via getUser().
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  if (!user) {
+  if (!session) {
     const loginUrl = new URL("/login", request.url)
     loginUrl.searchParams.set("redirect", pathname)
     return NextResponse.redirect(loginUrl)
