@@ -34,13 +34,18 @@ function LoginContent() {
     setError(null)
     setLoading(true)
 
-    const { error } = await signIn(email, password)
+    try {
+      const { error } = await signIn(email, password)
 
-    if (error) {
-      setError(getErrorMessage(error.message))
+      if (error) {
+        setError(getErrorMessage(error.message))
+        setLoading(false)
+      } else {
+        router.push(redirectTo)
+      }
+    } catch {
+      setError("Something went wrong. Please try again.")
       setLoading(false)
-    } else {
-      router.push(redirectTo)
     }
   }
 
@@ -142,6 +147,9 @@ function getErrorMessage(message: string): string {
   }
   if (message.includes("Email not confirmed")) {
     return "Please check your email to confirm your account"
+  }
+  if (message.includes("invalid") || message.includes("400")) {
+    return "Unable to sign in. Please check your credentials."
   }
   return "Something went wrong. Please try again."
 }

@@ -42,15 +42,20 @@ function SignupContent() {
       return
     }
 
-    const { error, session } = await signUp(email, password)
+    try {
+      const { error, session } = await signUp(email, password)
 
-    if (error) {
-      setError(getErrorMessage(error.message))
-      setLoading(false)
-    } else if (session) {
-      router.push(redirectTo)
-    } else {
-      setSuccess(true)
+      if (error) {
+        setError(getErrorMessage(error.message))
+        setLoading(false)
+      } else if (session) {
+        router.push(redirectTo)
+      } else {
+        setSuccess(true)
+        setLoading(false)
+      }
+    } catch {
+      setError("Something went wrong. Please try again.")
       setLoading(false)
     }
   }
