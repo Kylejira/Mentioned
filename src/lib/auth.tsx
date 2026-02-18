@@ -1,14 +1,14 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { User, AuthError } from "@supabase/supabase-js"
+import { User, AuthError, Session } from "@supabase/supabase-js"
 import { createClient, isSupabaseConfigured } from "./supabase"
 
 type AuthContextType = {
   user: User | null
   loading: boolean
   isConfigured: boolean
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password: string) => Promise<{ error: AuthError | null; session: Session | null }>
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
@@ -50,16 +50,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     if (!supabase) {
-      return { error: { message: "Supabase not configured" } as AuthError }
+      return { error: { message: "Supabase not configured" } as AuthError, session: null }
     }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
-    return { error }
+    return { error, session: data?.session ?? null }
   }, [supabase])
 
   const signIn = useCallback(async (email: string, password: string) => {

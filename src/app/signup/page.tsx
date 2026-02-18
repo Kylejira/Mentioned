@@ -42,11 +42,13 @@ function SignupContent() {
       return
     }
 
-    const { error } = await signUp(email, password)
+    const { error, session } = await signUp(email, password)
 
     if (error) {
       setError(getErrorMessage(error.message))
       setLoading(false)
+    } else if (session) {
+      router.push(redirectTo)
     } else {
       setSuccess(true)
       setLoading(false)
