@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase-server"
+import { createAdminClient } from "@/lib/supabase-admin"
 
 export const dynamic = "force-dynamic"
 
@@ -12,65 +12,50 @@ export async function GET() {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "MISSING",
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const admin = createAdminClient()
 
   let scanHistoryRows: any[] = []
   let scanHistoryError: string | null = null
-
   try {
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from("scan_history")
-      .select("id, product_name, product_url, category, score, scanned_at")
+      .select("id, user_id, product_name, product_url, category, score, scanned_at")
       .order("scanned_at", { ascending: false })
-      .limit(5)
-
-    if (error) {
-      scanHistoryError = JSON.stringify(error)
-    } else {
-      scanHistoryRows = data || []
-    }
+      .limit(10)
+    if (error) scanHistoryError = JSON.stringify(error)
+    else scanHistoryRows = data || []
   } catch (e) {
     scanHistoryError = String(e)
   }
 
   let scansRows: any[] = []
   let scansError: string | null = null
-
   try {
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from("scans")
       .select("id, brand_id, status, created_at")
       .order("created_at", { ascending: false })
-      .limit(5)
-
-    if (error) {
-      scansError = JSON.stringify(error)
-    } else {
-      scansRows = data || []
-    }
+      .limit(10)
+    if (error) scansError = JSON.stringify(error)
+    else scansRows = data || []
   } catch (e) {
     scansError = String(e)
   }
 
   let brandsRows: any[] = []
   try {
-    if (user) {
-      const { data } = await supabase
-        .from("brands")
-        .select("id, name, url, category, description")
-        .eq("user_id", user.id)
-        .limit(3)
-      brandsRows = data || []
-    }
+    const { data } = await admin
+      .from("brands")
+      .select("id, user_id, name, url, category, description")
+      .limit(10)
+    brandsRows = data || []
   } catch {}
 
   return NextResponse.json({
     timestamp: new Date().toISOString(),
-    user: user ? { id: user.id, email: user.email } : null,
     envStatus,
-    scanHistory: { rows: scanHistoryRows, error: scanHistoryError },
-    scans: { rows: scansRows, error: scansError },
+    scanHistory: { count: scanHistoryRows.length, rows: scanHistoryRows, error: scanHistoryError },
+    scans: { count: scansRows.length, rows: scansRows, error: scansError },
     brands: brandsRows,
   }, { status: 200 })
 }
