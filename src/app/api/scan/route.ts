@@ -38,18 +38,18 @@ function createQueryLlmAdapter(): (query: string, provider: "openai" | "claude")
     if (provider === "openai") {
       if (!openai) openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
       const res = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [{ role: "user", content: query }],
         max_tokens: 1500,
-        temperature: 0,
+        temperature: 0.3,
       })
       return res.choices[0]?.message?.content || ""
     } else {
       if (!anthropic) anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
       const res = await anthropic.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-3-haiku-20240307",
         max_tokens: 1500,
-        temperature: 0,
+        temperature: 0.3,
         messages: [{ role: "user", content: query }],
       })
       const textBlock = res.content.find(b => b.type === "text")
