@@ -506,6 +506,46 @@ async function handleV3Scan(
 function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?: string) {
   const mentionRate = Math.round(v3.score.mention_rate * 100)
   const score = v3.score.final_score
+  const analyses = v3.analyses || []
+
+  // Build per-query results grouped by query text
+  const queryMap = new Map<string, { chatgpt: boolean; claude: boolean; chatgpt_response?: string; claude_response?: string }>()
+  for (const a of analyses) {
+    const key = a.query.text
+    if (!queryMap.has(key)) {
+      queryMap.set(key, { chatgpt: false, claude: false })
+    }
+    const entry = queryMap.get(key)!
+    if (a.provider === "openai") {
+      entry.chatgpt = a.brand_detection.detected
+      entry.chatgpt_response = a.raw_response
+    } else if (a.provider === "claude") {
+      entry.claude = a.brand_detection.detected
+      entry.claude_response = a.raw_response
+    }
+  }
+
+  const queriesTested = Array.from(queryMap.entries()).map(([query, result]) => ({
+    query,
+    chatgpt: result.chatgpt,
+    claude: result.claude,
+  }))
+
+  const rawResponses = Array.from(queryMap.entries()).map(([query, result]) => ({
+    query,
+    chatgpt_response: result.chatgpt_response || null,
+    claude_response: result.claude_response || null,
+  }))
+
+  // Derive per-model source status from analyses
+  const openaiAnalyses = analyses.filter(a => a.provider === "openai")
+  const claudeAnalyses = analyses.filter(a => a.provider === "claude")
+  const chatgptMentioned = openaiAnalyses.some(a => a.brand_detection.detected)
+  const claudeMentioned = claudeAnalyses.some(a => a.brand_detection.detected)
+  const chatgptMentionCount = openaiAnalyses.filter(a => a.brand_detection.detected).length
+  const claudeMentionCount = claudeAnalyses.filter(a => a.brand_detection.detected).length
+  const chatgptMentionRate = openaiAnalyses.length > 0 ? Math.round((chatgptMentionCount / openaiAnalyses.length) * 100) : 0
+  const claudeMentionRate = claudeAnalyses.length > 0 ? Math.round((claudeMentionCount / claudeAnalyses.length) * 100) : 0
 
   return {
     status: "complete",
@@ -518,10 +558,11 @@ function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?: strin
         mentionRate,
         topThreeRate: 0,
         avgPosition: null,
+        modelConsistency: chatgptMentioned === claudeMentioned ? 100 : 50,
       },
       byModel: {
-        chatgpt: null,
-        claude: null,
+        chatgpt: chatgptMentionRate,
+        claude: claudeMentionRate,
       },
     },
     productData: {
@@ -530,16 +571,34 @@ function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?: strin
       competitors: v3.profile.competitors_mentioned,
       description: v3.profile.tagline,
     },
-    sources: {},
-    queries_tested: [],
+    sources: {
+      chatgpt: {
+        mentioned: chatgptMentioned,
+        position: chatgptMentionCount >= 3 ? "top_3" : chatgptMentioned ? "mentioned" : "not_found",
+        description: chatgptMentioned ? `Mentioned in ${chatgptMentionCount} of ${openaiAnalyses.length} queries` : null,
+        descriptionAccurate: true,
+      },
+      claude: {
+        mentioned: claudeMentioned,
+        position: claudeMentionCount >= 3 ? "top_3" : claudeMentioned ? "mentioned" : "not_found",
+        description: claudeMentioned ? `Mentioned in ${claudeMentionCount} of ${claudeAnalyses.length} queries` : null,
+        descriptionAccurate: true,
+      },
+    },
+    queries_tested: queriesTested,
     query_count: v3.query_count,
     signals: [],
     actions: [],
     competitor_results: v3.competitors.map((c) => ({
       name: c.competitor_name,
-      mentionRate: c.last_mention_count,
+      mentioned: c.last_mention_count > 0,
+      mentionCount: c.last_mention_count,
+      topThreeCount: 0,
+      totalQueries: v3.query_count,
+      visibilityLevel: c.last_mention_count > 3 ? "recommended" : c.last_mention_count > 0 ? "low_visibility" : "not_mentioned",
+      outranksUser: c.last_mention_count > Math.round(v3.score.mention_rate * v3.query_count),
     })),
-    raw_responses: [],
+    raw_responses: rawResponses,
     scan_version: "v3",
   }
 }

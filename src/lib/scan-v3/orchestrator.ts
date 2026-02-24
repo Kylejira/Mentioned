@@ -21,6 +21,7 @@ export interface ScanResult {
   query_count: number
   score: ScoringBreakdown
   competitors: CompetitorRecord[]
+  analyses: ResponseAnalysis[]
 }
 
 export class ScanOrchestrator {
@@ -180,6 +181,7 @@ export class ScanOrchestrator {
       query_count: cappedQueries.length,
       score,
       competitors,
+      analyses,
     }
   }
 
