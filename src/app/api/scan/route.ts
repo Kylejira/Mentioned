@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
+import { createAdminClient } from "@/lib/supabase-admin"
 import { runScanV2, convertToLegacyFormat } from "@/lib/scan-v2"
 import { saveScanHistory } from "@/lib/scan/save-scan-history"
 import { ScanOrchestrator, validateScanInput, type ScanResult as V3ScanResult, type ScanInput } from "@/lib/scan-v3"
@@ -74,11 +75,11 @@ async function runV3Shadow(
 ): Promise<void> {
   try {
     console.log("[V3 Shadow] Starting shadow scan...")
-    const supabase = await createClient()
+    const adminDb = createAdminClient()
 
     const scanId = brandId || `shadow_${Date.now()}`
     const orchestrator = new ScanOrchestrator(
-      supabase,
+      adminDb,
       createLlmCallAdapter(),
       createQueryLlmAdapter(),
       createScrapeAdapter(),
@@ -412,9 +413,10 @@ async function handleV3Scan(
   scanInput: ScanInput
 ) {
   try {
+    const adminDb = createAdminClient()
     const scanId = brandId || `v3_${Date.now()}`
     const orchestrator = new ScanOrchestrator(
-      supabase,
+      adminDb,
       createLlmCallAdapter(),
       createQueryLlmAdapter(),
       createScrapeAdapter(),
