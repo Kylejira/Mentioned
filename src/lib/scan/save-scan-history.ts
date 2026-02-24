@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase-admin';
+import { createClient as createServerClient } from '@/lib/supabase-server';
 
 interface ScanResult {
   productUrl: string;
@@ -17,7 +18,13 @@ interface ScanResult {
 
 export async function saveScanHistory(userId: string, scanResult: ScanResult) {
   try {
-    const supabase = createAdminClient();
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch {
+      console.warn('[saveScanHistory] Admin client unavailable, falling back to server client');
+      supabase = await createServerClient();
+    }
     
     const { error } = await supabase
       .from('scan_history')

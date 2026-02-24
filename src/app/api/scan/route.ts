@@ -13,7 +13,7 @@ export const maxDuration = 240 // 4 minutes max
 export const dynamic = "force-dynamic"
 
 const PRO_WHITELIST = (process.env.PRO_WHITELIST_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean)
-const SCAN_VERSION = process.env.SCAN_VERSION || "v2"
+const SCAN_VERSION = process.env.SCAN_VERSION || "v3"
 
 // ── v3 adapter functions ──────────────────────────────────────────────
 
@@ -388,9 +388,10 @@ export async function POST(request: NextRequest) {
       console.error("[API] Error saving scan history:", historyError)
     }
 
+    console.log(`[API v2] ✅ Returning result: brandName="${result.brandName}", category="${result.category}", score=${result.visibilityScore?.total || 0}`)
     return NextResponse.json(result)
   } catch (error) {
-    console.error("[API] Scan error:", error)
+    console.error("[API] ❌ Scan error:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
       { error: `Scan failed: ${errorMessage}. Please try again.` },
@@ -478,14 +479,16 @@ async function handleV3Scan(
             timestamp: new Date().toISOString(),
           },
         })
+        console.log(`[API v3] ✅ scan_history saved for user ${user.id}, brand="${brandName}"`)
       } catch (historyErr) {
-        console.error("[API v3] Error saving scan history:", historyErr)
+        console.error("[API v3] ❌ Error saving scan history:", historyErr)
       }
     }
 
+    console.log(`[API v3] ✅ Returning result: brandName="${legacyResult.brandName}", category="${legacyResult.category}", score=${legacyResult.visibilityScore?.total}`)
     return NextResponse.json(legacyResult)
   } catch (err) {
-    console.error("[API v3] Scan failed:", err)
+    console.error("[API v3] ❌ Scan failed:", err)
     const msg = err instanceof Error ? err.message : "Unknown error"
     return NextResponse.json({ error: `Scan failed: ${msg}` }, { status: 500 })
   }

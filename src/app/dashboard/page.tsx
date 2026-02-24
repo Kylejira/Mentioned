@@ -893,7 +893,7 @@ function CompetitorComparison({
 export default function DashboardPage() {
   const router = useRouter()
   const { showToast } = useToast()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const subscription = useSubscription()
   const [queriesExpanded, setQueriesExpanded] = useState(false)
   const [expandedQueryIndex, setExpandedQueryIndex] = useState<number | null>(null)
@@ -921,82 +921,85 @@ export default function DashboardPage() {
     window.location.reload()
   }
 
-  // Load scan data: compare DB and localStorage, use the newest
+  // Load scan data: localStorage first (authoritative for current session), DB fallback
   useEffect(() => {
+    if (authLoading) return
+
+    let cancelled = false
+
     const loadData = async () => {
-      let dbResult: { data: any; timestamp: string } | null = null
-      let localResult: { data: any; timestamp: string } | null = null
-
-      // SOURCE 1: Database (scan_history, per-user)
-      try {
-        console.log("[Dashboard] Fetching latest scan from database...")
-        const response = await fetch("/api/scan-history/latest")
-
-        if (response.ok) {
-          const { scan } = await response.json()
-          if (scan?.fullResult) {
-            const ts = scan.fullResult.timestamp || scan.scannedAt || ""
-            console.log("[Dashboard] DB scan:", {
-              brandName: scan.fullResult.brandName,
-              timestamp: ts,
-            })
-            dbResult = { data: scan.fullResult, timestamp: ts }
-          }
-        }
-      } catch (e) {
-        console.error("[Dashboard] Error fetching from database:", e)
-      }
-
-      // SOURCE 2: localStorage (user-scoped key first, then legacy)
+      // STEP 1: Check localStorage FIRST (always has the freshest scan for this session)
       try {
         const userKey = user ? `${SCAN_RESULT_KEY}_${user.id}` : null
         const stored = (userKey && localStorage.getItem(userKey)) || localStorage.getItem(SCAN_RESULT_KEY)
 
         if (stored) {
           const parsed = JSON.parse(stored)
-          const ts = parsed.timestamp || ""
-          console.log("[Dashboard] localStorage scan:", {
+          console.log("[Dashboard] Found scan in localStorage:", {
             brandName: parsed.brandName,
-            timestamp: ts,
+            category: parsed.category,
+            timestamp: parsed.timestamp,
+            source: userKey && localStorage.getItem(userKey) ? "user-scoped" : "legacy",
           })
-          localResult = { data: parsed, timestamp: ts }
+
+          if (cancelled) return
+          setRawScanData(parsed)
+          const transformed = transformScanResult(parsed)
+          if (transformed) {
+            setScanData(transformed)
+            setHasRealData(true)
+            setIsLoading(false)
+            return
+          }
         }
       } catch (e) {
-        console.error("[Dashboard] Error loading from localStorage:", e)
+        console.error("[Dashboard] Error reading localStorage:", e)
       }
 
-      // Pick the newest source
-      let best: any = null
-      if (dbResult && localResult) {
-        const dbTime = new Date(dbResult.timestamp).getTime() || 0
-        const localTime = new Date(localResult.timestamp).getTime() || 0
-        best = localTime >= dbTime ? localResult.data : dbResult.data
-        console.log("[Dashboard] Using", localTime >= dbTime ? "localStorage" : "database",
-          "(db:", dbResult.timestamp, "local:", localResult.timestamp, ")")
-      } else {
-        best = (dbResult || localResult)?.data ?? null
-      }
+      // STEP 2: Fall back to database (for cross-session, e.g. new browser/device)
+      try {
+        console.log("[Dashboard] No localStorage data, fetching from database...")
+        const response = await fetch("/api/scan-history/latest")
 
-      if (best) {
-        setRawScanData(best)
-        const transformed = transformScanResult(best)
-        if (transformed) {
-          setScanData(transformed)
-          setHasRealData(true)
-          setIsLoading(false)
-          return
+        if (cancelled) return
+
+        if (response.ok) {
+          const { scan } = await response.json()
+          if (scan?.fullResult) {
+            console.log("[Dashboard] Loaded scan from database:", {
+              brandName: scan.fullResult.brandName,
+              category: scan.fullResult.category,
+              score: scan.score,
+              scannedAt: scan.scannedAt,
+            })
+
+            if (cancelled) return
+            setRawScanData(scan.fullResult)
+            const transformed = transformScanResult(scan.fullResult)
+            if (transformed) {
+              setScanData(transformed)
+              setHasRealData(true)
+              setIsLoading(false)
+              return
+            }
+          }
         }
+      } catch (e) {
+        console.error("[Dashboard] Error fetching from database:", e)
       }
 
-      // Fall back to mock data
-      console.log("[Dashboard] No scan data found, using mock data")
+      if (cancelled) return
+
+      // STEP 3: No data anywhere — show empty state
+      console.log("[Dashboard] No scan data found anywhere")
       setScanData(mockScanData)
       setHasRealData(false)
       setIsLoading(false)
     }
 
     loadData()
-  }, [user?.id])
+    return () => { cancelled = true }
+  }, [user?.id, authLoading])
 
   // Use the loaded data or show loading state
   const data = scanData || mockScanData
