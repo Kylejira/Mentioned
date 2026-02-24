@@ -12,16 +12,17 @@ import { Button } from "@/components/ui/button"
 import { FormInput } from "@/components/ui/form-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, ArrowRight, X, Check, Loader2, User, AlertCircle, Lock, Info } from "lucide-react"
+import { ArrowLeft, ArrowRight, X, Check, Loader2, User, AlertCircle, Lock, Info, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface FormData {
   brandName: string
   websiteUrl: string
-  productDescription: string
-  categories: string[]
+  coreProblem: string
+  targetBuyer: string
+  differentiators: string
   competitors: string[]
-  customQueries: string[]
+  buyerQuestions: string
 }
 
 type LoadingStep = {
@@ -33,7 +34,6 @@ type LoadingStep = {
 const FORM_STORAGE_KEY = "mentioned_check_form"
 
 const SCAN_RESULT_KEY_BASE = "mentioned_scan_result"
-// Helper to get user-scoped localStorage key
 function getScanResultKey(userId?: string | null): string {
   return userId ? `${SCAN_RESULT_KEY_BASE}_${userId}` : SCAN_RESULT_KEY_BASE
 }
@@ -49,25 +49,24 @@ export default function CheckPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
   const scanAbortRef = useRef<AbortController | null>(null)
-  const scanSessionRef = useRef<string | null>(null) // Unique ID for current scan session
-  const formDataRef = useRef<FormData | null>(null) // Store form data at scan start
+  const scanSessionRef = useRef<string | null>(null)
+  const formDataRef = useRef<FormData | null>(null)
   const [formData, setFormData] = useState<FormData>({
     brandName: "",
     websiteUrl: "",
-    productDescription: "",
-    categories: [],
+    coreProblem: "",
+    targetBuyer: "",
+    differentiators: "",
     competitors: [],
-    customQueries: [],
+    buyerQuestions: "",
   })
-  const [categoryInput, setCategoryInput] = useState("")
   const [competitorInput, setCompetitorInput] = useState("")
-  const [customQueryInput, setCustomQueryInput] = useState("")
   const [loadingSteps, setLoadingSteps] = useState<LoadingStep[]>([
-    { id: "queries", label: "Generating test queries", status: "pending" },
+    { id: "profile", label: "Scanning your website", status: "pending" },
+    { id: "queries", label: "Generating AI search queries", status: "pending" },
     { id: "chatgpt", label: "Querying ChatGPT", status: "pending" },
     { id: "claude", label: "Querying Claude", status: "pending" },
-    { id: "analysis", label: "Analyzing results", status: "pending" },
-    { id: "recommendations", label: "Generating recommendations", status: "pending" },
+    { id: "analysis", label: "Analyzing & scoring results", status: "pending" },
   ])
   const [loadingElapsed, setLoadingElapsed] = useState(0)
 
@@ -86,12 +85,12 @@ export default function CheckPage() {
 
   // Save form data to localStorage whenever it changes
   useEffect(() => {
-    if (formData.brandName || formData.websiteUrl || formData.productDescription) {
+    if (formData.brandName || formData.websiteUrl || formData.coreProblem) {
       localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData))
     }
   }, [formData])
 
-  // Form validation
+  // URL validation
   const isValidUrl = (url: string) => {
     if (!url) return false
     const urlPattern = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}|^https?:\/\/.+/
@@ -101,84 +100,15 @@ export default function CheckPage() {
   const isFormValid =
     formData.brandName.trim() !== "" &&
     isValidUrl(formData.websiteUrl) &&
-    formData.productDescription.trim() !== ""
-
-  // Generate category queries based on input
-  const generateQueries = useCallback(() => {
-    if (!formData.productDescription || !formData.brandName) return []
-
-    const desc = formData.productDescription.toLowerCase()
-    
-    let category = "software"
-    let useCase = ""
-
-    if (desc.includes("project management")) category = "project management"
-    else if (desc.includes("crm") || desc.includes("customer relationship")) category = "CRM"
-    else if (desc.includes("email") && desc.includes("marketing")) category = "email marketing"
-    else if (desc.includes("analytics")) category = "analytics"
-    else if (desc.includes("design")) category = "design"
-    else if (desc.includes("sales")) category = "sales"
-    else if (desc.includes("hr") || desc.includes("human resources")) category = "HR"
-    else if (desc.includes("accounting") || desc.includes("finance")) category = "accounting"
-    else if (desc.includes("marketing")) category = "marketing"
-    else if (desc.includes("collaboration")) category = "collaboration"
-    else if (desc.includes("communication")) category = "communication"
-    else {
-      const words = formData.productDescription.split(" ").slice(0, 3).join(" ")
-      category = words
-    }
-
-    if (desc.includes("for ")) {
-      const forIndex = desc.indexOf("for ")
-      useCase = formData.productDescription.slice(forIndex + 4).split(/[.,]/)[0].trim()
-    } else if (desc.includes("teams")) {
-      useCase = "teams"
-    } else if (desc.includes("startups")) {
-      useCase = "startups"
-    } else if (desc.includes("enterprise")) {
-      useCase = "enterprise"
-    }
-
-    const queries = [`Best ${category} tools`]
-    if (useCase) {
-      queries.push(`${category.charAt(0).toUpperCase() + category.slice(1)} for ${useCase}`)
-    }
-    queries.push(`${formData.brandName} alternatives`)
-
-    return queries
-  }, [formData.productDescription, formData.brandName])
-
-  const queries = generateQueries()
-
-  // Handle category addition
-  const addCategory = () => {
-    const trimmed = categoryInput.trim().toLowerCase()
-    if (
-      trimmed &&
-      formData.categories.length < 3 &&
-      !formData.categories.map(c => c.toLowerCase()).includes(trimmed)
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        categories: [...prev.categories, categoryInput.trim()],
-      }))
-      setCategoryInput("")
-    }
-  }
-
-  const removeCategory = (category: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      categories: prev.categories.filter((c) => c !== category),
-    }))
-  }
+    formData.coreProblem.trim().length >= 15 &&
+    formData.targetBuyer.trim().length >= 8
 
   // Handle competitor addition
   const addCompetitor = () => {
     const trimmed = competitorInput.trim()
     if (
       trimmed &&
-      formData.competitors.length < 3 &&
+      formData.competitors.length < 5 &&
       !formData.competitors.includes(trimmed)
     ) {
       setFormData((prev) => ({
@@ -196,65 +126,23 @@ export default function CheckPage() {
     }))
   }
 
-  // Handle custom query addition
-  const addCustomQuery = () => {
-    const trimmed = customQueryInput.trim()
-    if (
-      trimmed &&
-      formData.customQueries.length < 2 &&
-      !formData.customQueries.includes(trimmed)
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        customQueries: [...prev.customQueries, trimmed],
-      }))
-      setCustomQueryInput("")
-    }
-  }
-
-  const removeCustomQuery = (query: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      customQueries: prev.customQueries.filter((q) => q !== query),
-    }))
-  }
-
-  // Extract category from description
-  const extractCategory = (description: string): string => {
-    const desc = description.toLowerCase()
-    if (desc.includes("project management")) return "project management"
-    if (desc.includes("crm")) return "CRM"
-    if (desc.includes("email marketing")) return "email marketing"
-    if (desc.includes("analytics")) return "analytics"
-    if (desc.includes("design")) return "design"
-    if (desc.includes("sales")) return "sales"
-    if (desc.includes("hr")) return "HR"
-    if (desc.includes("accounting")) return "accounting"
-    if (desc.includes("marketing")) return "marketing"
-    return "software"
-  }
-
   // Save brand data to database
   const saveBrandData = async () => {
     if (!user) return
 
     const supabase = createClient()
-    if (!supabase) return // Skip if Supabase not configured
+    if (!supabase) return
 
     setIsSaving(true)
 
     try {
-      // Check if user already has a brand
       const { data: existingBrands } = await supabase
         .from("brands")
         .select("id")
         .eq("user_id", user.id)
         .limit(1)
 
-      const category = extractCategory(formData.productDescription)
-
       if (existingBrands && existingBrands.length > 0) {
-        // Update existing brand
         const brandId = existingBrands[0].id
 
         await supabase
@@ -262,12 +150,11 @@ export default function CheckPage() {
           .update({
             name: formData.brandName,
             url: formData.websiteUrl,
-            description: formData.productDescription,
-            category,
+            description: formData.coreProblem,
+            category: "software",
           })
           .eq("id", brandId)
 
-        // Delete existing competitors and add new ones
         await supabase.from("competitors").delete().eq("brand_id", brandId)
 
         if (formData.competitors.length > 0) {
@@ -279,15 +166,14 @@ export default function CheckPage() {
           )
         }
       } else {
-        // Create new brand
         const { data: newBrand } = await supabase
           .from("brands")
           .insert({
             user_id: user.id,
             name: formData.brandName,
             url: formData.websiteUrl,
-            description: formData.productDescription,
-            category,
+            description: formData.coreProblem,
+            category: "software",
           })
           .select()
           .single()
@@ -302,7 +188,6 @@ export default function CheckPage() {
         }
       }
 
-      // Clear saved form data
       localStorage.removeItem(FORM_STORAGE_KEY)
     } catch (error) {
       console.error("Error saving brand:", error)
@@ -315,19 +200,16 @@ export default function CheckPage() {
   const handleSubmit = async () => {
     if (!isFormValid) return
 
-    // If Supabase is configured and user is not authenticated, show auth prompt
     if (isSupabaseConfigured() && !user) {
       setShowAuthPrompt(true)
       return
     }
 
-    // Check if user can run a scan (subscription check)
     if (user && !subscription.canScan) {
       setShowUpgradePrompt(true)
       return
     }
 
-    // Save data and start loading
     if (user) {
       await saveBrandData()
     }
@@ -336,18 +218,15 @@ export default function CheckPage() {
 
   // Handle auth prompt actions
   const handleAuthAction = (action: "login" | "signup") => {
-    // Form data is already saved to localStorage
     router.push(`/${action}?redirect=/check`)
   }
 
   // Continue after returning from auth
   useEffect(() => {
-    // If user just authenticated and we have saved form data, continue
     if (user && !authLoading) {
       const saved = localStorage.getItem(FORM_STORAGE_KEY)
       if (saved && showAuthPrompt) {
         setShowAuthPrompt(false)
-        // Auto-submit after auth
         handleSubmit()
       }
     }
@@ -370,35 +249,23 @@ export default function CheckPage() {
 
   // Run actual scan
   useEffect(() => {
-    if (!isLoading) {
-      return
-    }
+    if (!isLoading) return
     
-    // Generate a unique session ID for this scan attempt
-    // This prevents duplicate scans even if the effect re-runs
     const currentSessionId = `scan_${Date.now()}_${Math.random().toString(36).slice(2)}`
     
-    // CRITICAL: If a scan session already exists, don't start another
     if (scanSessionRef.current) {
       console.log("[Check] Scan session already active:", scanSessionRef.current, "- skipping duplicate")
       return
     }
     
-    // Lock this session
     scanSessionRef.current = currentSessionId
-    console.log("[Check] Starting scan session:", currentSessionId)
-    
-    // Store form data at scan start so we don't depend on it changing
     formDataRef.current = { ...formData }
 
     const runScan = async () => {
-      // Use the stored form data, not the current state
       const scanFormData = formDataRef.current!
       
-      // Reset error state
       setScanError(null)
       
-      // Create abort controller for cancellation
       const abortController = new AbortController()
       scanAbortRef.current = abortController
 
@@ -423,45 +290,36 @@ export default function CheckPage() {
         }
       }
 
-      // ONLY use category if user MANUALLY selected one
-      // If no manual selection, pass null to let AI extract the best category from website
-      const category = scanFormData.categories.length > 0 
-        ? scanFormData.categories[0] 
-        : null // Don't auto-extract - let AI determine from website content
-      
-      // CRITICAL: Clear ALL stale data before starting new scan
+      // Clear stale data
       try {
         localStorage.removeItem(getScanResultKey(user?.id))
-        localStorage.removeItem(SCAN_RESULT_KEY_BASE) // Also clear legacy key
+        localStorage.removeItem(SCAN_RESULT_KEY_BASE)
         localStorage.removeItem("mentioned_last_scan")
-        localStorage.removeItem(FORM_STORAGE_KEY) // Also clear old form data
-        console.log("[Check] Cleared ALL stale data from localStorage")
+        localStorage.removeItem(FORM_STORAGE_KEY)
       } catch (e) {
         console.error("[Check] Failed to clear localStorage:", e)
       }
-      
-      // Log the EXACT data we're about to scan - this is critical for debugging
-      const scanInput = {
-        brandName: scanFormData.brandName,
-        url: scanFormData.websiteUrl,
-        category,
-        categories: scanFormData.categories,
-        competitors: scanFormData.competitors,
-        timestamp: new Date().toISOString()
-      }
+
+      // Parse buyer questions from textarea (one per line)
+      const buyerQuestions = scanFormData.buyerQuestions
+        .split("\n")
+        .map(q => q.trim())
+        .filter(q => q.length >= 10)
+        .slice(0, 10)
+
       console.log("[Check] =============================================")
-      console.log("[Check] STARTING SCAN WITH THIS DATA:")
-      console.log("[Check] Brand Name:", scanInput.brandName)
-      console.log("[Check] URL:", scanInput.url)
-      console.log("[Check] Category:", category || "(AI will detect from website)")
-      console.log("[Check] User categories:", scanFormData.categories.length > 0 ? scanFormData.categories.join(", ") : "none")
+      console.log("[Check] STARTING SCAN WITH DATA:")
+      console.log("[Check] Brand Name:", scanFormData.brandName)
+      console.log("[Check] URL:", scanFormData.websiteUrl)
+      console.log("[Check] Core Problem:", scanFormData.coreProblem.slice(0, 80))
+      console.log("[Check] Target Buyer:", scanFormData.targetBuyer)
+      console.log("[Check] Buyer Questions:", buyerQuestions.length)
       console.log("[Check] =============================================")
 
       // Start progress animation
-      const stepIds = ["queries", "chatgpt", "claude", "analysis", "recommendations"]
+      const stepIds = ["profile", "queries", "chatgpt", "claude", "analysis"]
       let currentStepIndex = 0
 
-      // Progress simulation while API runs
       const progressInterval = setInterval(() => {
         if (currentStepIndex < stepIds.length - 1) {
           setLoadingSteps((prev) =>
@@ -473,9 +331,8 @@ export default function CheckPage() {
           )
           currentStepIndex++
         }
-      }, 3000) // Move to next step every 3 seconds
+      }, 3000)
 
-      // Set first step as active
       setLoadingSteps((prev) =>
         prev.map((step, i) =>
           i === 0 ? { ...step, status: "active" } : step
@@ -483,38 +340,38 @@ export default function CheckPage() {
       )
 
       try {
-        // Determine if user has a paid plan (for enhanced scanning)
         const isPaidPlan = subscription.plan === "pro" || subscription.plan === "starter"
         
-        // Set a client-side timeout - 240 seconds max (4 minutes)
-        // If scan takes longer, show error screen - DO NOT auto-retry
-        const SCAN_TIMEOUT = 240000 // 4 minutes
+        const SCAN_TIMEOUT = 240000
         
-        // Create a timeout promise that will reject
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
             abortController.abort()
             reject(new Error("SCAN_TIMEOUT"))
           }, SCAN_TIMEOUT)
         })
+
+        // Ensure URL has protocol
+        let normalizedUrl = scanFormData.websiteUrl
+        if (!normalizedUrl.startsWith("http")) {
+          normalizedUrl = "https://" + normalizedUrl
+        }
         
-        // Race the fetch against the timeout
         const response = await Promise.race([
           fetch("/api/scan", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               brandId,
               brandName: scanFormData.brandName,
-              brandUrl: scanFormData.websiteUrl,
-              description: scanFormData.productDescription,
-              category,
-              categories: scanFormData.categories,
+              brandUrl: normalizedUrl,
+              // New v3 fields
+              coreProblem: scanFormData.coreProblem,
+              targetBuyer: scanFormData.targetBuyer,
+              differentiators: scanFormData.differentiators || undefined,
               competitors: scanFormData.competitors,
-              customQueries: scanFormData.customQueries,
-              isPaidPlan, // Enable enhanced scanning for paid users
+              buyerQuestions: buyerQuestions.length > 0 ? buyerQuestions : undefined,
+              isPaidPlan,
             }),
             signal: abortController.signal,
           }),
@@ -526,15 +383,14 @@ export default function CheckPage() {
         if (!response.ok) {
           let errorMessage = "Scan failed"
           try {
-          const errorData = await response.json()
+            const errorData = await response.json()
             errorMessage = errorData.error || errorMessage
           } catch {
-            // If response isn't JSON, try to get text
             try {
               const text = await response.text()
               if (text) errorMessage = text.slice(0, 100)
             } catch {
-              // Ignore if we can't read the response
+              // Ignore
             }
           }
           throw new Error(errorMessage)
@@ -547,94 +403,59 @@ export default function CheckPage() {
           throw new Error("Invalid response from server. Please try again.")
         }
 
-        // Save result to localStorage for dashboard
-        // CRITICAL: User-provided brandName MUST be preserved
-        // Category: use user selection if provided, otherwise use AI-detected from result
-        const finalCategory = category || result.category || "Software"
+        const finalCategory = result.category || "Software"
         
         const scanDataToSave = {
           ...result,
-          // Override with user-provided values - these should NEVER be changed
-          brandName: scanFormData.brandName,  // User's exact input
-          brandUrl: scanFormData.websiteUrl,
-          description: scanFormData.productDescription,
-          category: finalCategory,  // User-selected OR AI-detected
+          brandName: scanFormData.brandName,
+          brandUrl: normalizedUrl,
+          category: finalCategory,
           timestamp: new Date().toISOString(),
         }
         
-        console.log("[Check] =============================================")
-        console.log("[Check] SCAN COMPLETE - SAVING TO LOCALSTORAGE:")
-        console.log("[Check] Brand Name being saved:", scanDataToSave.brandName)
-        console.log("[Check] Category being saved:", scanDataToSave.category)
-        console.log("[Check] Category source:", category ? "User selected" : "AI detected")
-        console.log("[Check] Timestamp:", scanDataToSave.timestamp)
-        console.log("[Check] =============================================")
-        
         localStorage.setItem(getScanResultKey(user?.id), JSON.stringify(scanDataToSave))
-        
-        // Verify it was saved correctly
-        const verification = localStorage.getItem(getScanResultKey(user?.id))
-        if (verification) {
-          const parsed = JSON.parse(verification)
-          console.log("[Check] Verified localStorage brandName:", parsed.brandName)
-        }
 
-        // Clear form data
         localStorage.removeItem(FORM_STORAGE_KEY)
 
-        // Mark free scan as used (for free tier users)
         if (subscription.plan === "free") {
           await subscription.markFreeScanUsed()
         }
-        // Increment scan count for paid tiers
         if (subscription.plan === "starter") {
           await subscription.incrementScanCount()
         }
 
-        // Complete all steps
         setLoadingSteps((prev) =>
           prev.map((step) => ({ ...step, status: "complete" }))
         )
 
-        // Clear session before navigating (scan completed successfully)
-        console.log("[Check] Scan completed, clearing session:", scanSessionRef.current)
         scanSessionRef.current = null
         
-        // Navigate to dashboard
         setTimeout(() => {
           router.push("/dashboard")
         }, 500)
       } catch (error) {
         clearInterval(progressInterval)
         
-        // Clear session on error so user can retry
-        console.log("[Check] Scan error, clearing session:", scanSessionRef.current)
         scanSessionRef.current = null
         
-        if (error instanceof Error && error.name === "AbortError") {
-          // Scan was cancelled by user - not an error, just return
-          return
-        }
+        if (error instanceof Error && error.name === "AbortError") return
 
         console.error("[Check] Scan error:", error)
         
-        // Clear any stale data to prevent issues on retry
         try {
           localStorage.removeItem(getScanResultKey(user?.id))
-          localStorage.removeItem(SCAN_RESULT_KEY_BASE) // Also clear legacy key
+          localStorage.removeItem(SCAN_RESULT_KEY_BASE)
           localStorage.removeItem("mentioned_last_scan")
         } catch (e) {
           console.error("[Check] Failed to clear localStorage on error:", e)
         }
         
-        // Mark current step as error
         setLoadingSteps((prev) =>
           prev.map((step) => 
             step.status === "active" ? { ...step, status: "error" } : step
           )
         )
         
-        // Provide user-friendly error messages - DO NOT auto-retry
         let errorMessage = "Something went wrong. Please try again."
         if (error instanceof Error) {
           if (error.message === "SCAN_TIMEOUT") {
@@ -649,23 +470,16 @@ export default function CheckPage() {
         }
         
         setScanError(errorMessage)
-        // IMPORTANT: Do NOT set isLoading to false then true - that would restart the scan
-        // Just let the error state show
       }
     }
 
     runScan()
 
-    // IMPORTANT: Do NOT clear session in cleanup - it would cause loops when deps change
-    // Session is only cleared on: successful completion, error, or explicit retry
     return () => {
-      // Only abort the request, don't clear session
       if (scanAbortRef.current) {
         scanAbortRef.current.abort()
       }
     }
-  // Minimal dependencies - only isLoading should trigger this
-  // router is stable, user captured at scan start via ref
   }, [isLoading, router])
 
   // Auth prompt overlay
@@ -714,13 +528,8 @@ export default function CheckPage() {
     )
   }
 
-  // Go back to form after error - DO NOT auto-retry
   const handleRetry = () => {
-    // Clear scan session so user can start a new scan
-    console.log("[Check] Retry: clearing session")
     scanSessionRef.current = null
-    
-    // Clear all scan-related state
     setScanError(null)
     setIsLoading(false)
     setIsSaving(false)
@@ -728,24 +537,17 @@ export default function CheckPage() {
     setLoadingSteps((prev) =>
       prev.map((step) => ({ ...step, status: "pending" }))
     )
-    // Clear any stale scan data from localStorage
     try {
       localStorage.removeItem(getScanResultKey(user?.id))
-      localStorage.removeItem(SCAN_RESULT_KEY_BASE) // Also clear legacy key
+      localStorage.removeItem(SCAN_RESULT_KEY_BASE)
       localStorage.removeItem("mentioned_last_scan")
     } catch (e) {
       console.error("[Check] Failed to clear localStorage:", e)
     }
-    // DO NOT auto-trigger the scan - let user click "Check visibility" again
-    // Just reset the form state so they can try again manually
   }
 
-  // Cancel scan
   const handleCancel = () => {
-    // Clear scan session so user can start a new scan
-    console.log("[Check] Cancel: clearing session")
     scanSessionRef.current = null
-    
     if (scanAbortRef.current) {
       scanAbortRef.current.abort()
     }
@@ -816,9 +618,7 @@ export default function CheckPage() {
 
                 {!isSaving && (
                   <>
-                    {/* Progress section - optimized for 2 minute max scan time */}
                     <div className="w-full max-w-xs mx-auto mb-8">
-                      {/* Elapsed time and estimate */}
                       <div className="flex items-center justify-between text-sm mb-2">
                         <span className="text-muted-foreground">
                           {Math.floor(loadingElapsed / 60)}:{String(loadingElapsed % 60).padStart(2, '0')} elapsed
@@ -833,19 +633,14 @@ export default function CheckPage() {
                         </span>
                       </div>
                       
-                      {/* Progress bar - smooth animation over 2 min timeline */}
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
                           style={{ 
                             width: `${Math.min(
-                              // 0-40s: 0-40% (fast initial progress)
                               loadingElapsed < 40 ? loadingElapsed * 1 :
-                              // 40-120s: 40-75% (steady progress)
                               loadingElapsed < 120 ? 40 + (loadingElapsed - 40) * 0.44 :
-                              // 120-180s: 75-90% (slower as we finalize)
                               loadingElapsed < 180 ? 75 + (loadingElapsed - 120) * 0.25 :
-                              // 180-240s: 90-97% (very slow final stretch)
                               90 + Math.min((loadingElapsed - 180) * 0.12, 7),
                               97
                             )}%` 
@@ -853,7 +648,6 @@ export default function CheckPage() {
                         />
                       </div>
                       
-                      {/* Percentage */}
                       <div className="text-center mt-2">
                         <span className="text-lg font-semibold text-foreground">
                           {Math.min(
@@ -868,16 +662,16 @@ export default function CheckPage() {
                     </div>
 
                     <div className="flex justify-center mb-6">
-                  <div className="flex gap-1.5">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="size-2 rounded-full bg-primary animate-pulse-subtle"
-                        style={{ animationDelay: `${i * 0.2}s` }}
-                      />
-                    ))}
-                  </div>
-                </div>
+                      <div className="flex gap-1.5">
+                        {[0, 1, 2].map((i) => (
+                          <div
+                            key={i}
+                            className="size-2 rounded-full bg-primary animate-pulse-subtle"
+                            style={{ animationDelay: `${i * 0.2}s` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
 
                     <div className="space-y-4 text-left mb-8">
                       {loadingSteps.map((step) => (
@@ -946,7 +740,8 @@ export default function CheckPage() {
     )
   }
 
-  // Form state
+  // ── Main Form ──────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -983,66 +778,67 @@ export default function CheckPage() {
             Check your AI visibility
           </h1>
           <p className="text-muted-foreground mt-2">
-            Tell us about your product and we&apos;ll see how AI tools perceive it.
+            Tell us about your product and we&apos;ll see how AI tools recommend it.
           </p>
         </div>
 
         {/* Form */}
         <div className="space-y-10">
-          {/* Step 1: Brand name */}
+
+          {/* ── STEP 1: Your Product ── */}
           <section className="space-y-6">
             <StepIndicator number={1} title="Your product" />
+
             <div className="space-y-2">
               <FormInput
                 label="Brand name"
-                placeholder="e.g., Notion, Figma, Slack"
+                placeholder="e.g., Notion, Linear, Cal.com"
                 value={formData.brandName}
+                maxLength={80}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, brandName: e.target.value }))
                 }
               />
+            </div>
+
+            <div className="space-y-2">
+              <FormInput
+                label="Website URL"
+                placeholder="https://yourproduct.com"
+                value={formData.websiteUrl}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, websiteUrl: e.target.value }))
+                }
+                error={
+                  formData.websiteUrl && !isValidUrl(formData.websiteUrl)
+                    ? "Please enter a valid URL"
+                    : undefined
+                }
+              />
               <p className="text-xs text-muted-foreground">
-                Use your exact brand name as it appears on your website
+                We&apos;ll scan your site to build your AI visibility profile.
               </p>
             </div>
           </section>
 
-          {/* Step 2: Website */}
+          {/* ── STEP 2: Your Market ── */}
           <section className="space-y-6">
-            <StepIndicator number={2} title="Your website" />
-            <FormInput
-              label="Website URL"
-              placeholder="e.g., notion.so"
-              value={formData.websiteUrl}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, websiteUrl: e.target.value }))
-              }
-              error={
-                formData.websiteUrl && !isValidUrl(formData.websiteUrl)
-                  ? "Please enter a valid URL"
-                  : undefined
-              }
-            />
-          </section>
+            <StepIndicator number={2} title="Your market" />
 
-          {/* Step 3: Product description */}
-          <section className="space-y-6">
-            <StepIndicator number={3} title="What you do" />
+            {/* Core Problem */}
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-medium text-foreground">
-                What does your product do?
+              <Label htmlFor="coreProblem" className="text-sm font-medium text-foreground">
+                What problem does your product solve? *
               </Label>
               <textarea
-                id="description"
-                placeholder="e.g., Premium stock music licensing platform for video creators, filmmakers, and content creators with royalty-free music and sound effects"
-                value={formData.productDescription}
+                id="coreProblem"
+                placeholder="e.g., Teams waste hours coordinating schedules across time zones. We eliminate back-and-forth booking."
+                value={formData.coreProblem}
+                maxLength={300}
                 onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    productDescription: e.target.value,
-                  }))
+                  setFormData((prev) => ({ ...prev, coreProblem: e.target.value }))
                 }
-                rows={3}
+                rows={2}
                 className={cn(
                   "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
                   "placeholder:text-muted-foreground/60",
@@ -1053,134 +849,80 @@ export default function CheckPage() {
               />
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
-                  Be specific — include your category, target audience, and key features
+                  Describe the #1 pain point your customers had before finding you. This directly shapes the AI queries we test.
                 </p>
-                <DescriptionQuality length={formData.productDescription.length} />
+                <CharCount current={formData.coreProblem.length} min={15} max={300} />
               </div>
             </div>
 
-            {queries.length > 0 && formData.productDescription.length > 10 && (
-              <Card className="animate-fade-in">
-                <CardContent className="py-5">
-                  <p className="text-sm font-medium text-foreground mb-3">
-                    We&apos;ll check how AI responds to:
-                  </p>
-                  <ul className="space-y-2">
-                    {queries.map((query, index) => (
-                      <li
-                        key={index}
-                        className="text-sm text-muted-foreground flex items-center gap-2"
-                      >
-                        <span className="text-muted-foreground/50">•</span>
-                        &quot;{query}&quot;
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-          </section>
-
-          {/* Step 4: Categories */}
-          <section className="space-y-6">
-            <StepIndicator number={4} title="Search categories" />
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-foreground">
-                What categories should AI search for?
+            {/* Target Buyer */}
+            <div className="space-y-2">
+              <Label htmlFor="targetBuyer" className="text-sm font-medium text-foreground">
+                Who is your ideal customer? *
               </Label>
-              
-              {formData.categories.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.categories.map((category) => (
-                    <span
-                      key={category}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary font-medium"
-                    >
-                      {category}
-                      <button
-                        type="button"
-                        onClick={() => removeCategory(category)}
-                        className="text-primary/60 hover:text-primary transition-colors"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {formData.categories.length < 3 && (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g., CRM, project management, marketing automation, SEO, AI tools..."
-                    value={categoryInput}
-                    onChange={(e) => setCategoryInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        addCategory()
-                      }
-                    }}
-                    className={cn(
-                      "flex h-11 flex-1 rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
-                      "placeholder:text-muted-foreground/60",
-                      "hover:border-border/80",
-                      "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={addCategory}
-                    disabled={!categoryInput.trim()}
-                  >
-                    Add
-                  </Button>
-                </div>
-              )}
-              
+              <input
+                id="targetBuyer"
+                type="text"
+                placeholder="e.g., Remote-first startup founders with 10-50 employees"
+                value={formData.targetBuyer}
+                maxLength={150}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, targetBuyer: e.target.value }))
+                }
+                className={cn(
+                  "flex h-11 w-full rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
+                  "placeholder:text-muted-foreground/60",
+                  "hover:border-border/80",
+                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
+                )}
+              />
               <p className="text-xs text-muted-foreground">
-                Add 1-3 categories your brand competes in — this helps AI ask the right questions
-                {formData.categories.length > 0 && ` (${formData.categories.length}/3)`}
+                Who searches for tools like yours? Be specific about role, company size, or industry.
               </p>
-              
-              {/* Category suggestions */}
-              {formData.categories.length < 3 && (
-                <div className="pt-2">
-                  <p className="text-xs text-muted-foreground mb-2">Popular categories:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {["CRM", "project management", "marketing automation", "SEO", "AI tools", "SaaS", "e-commerce", "fintech", "HR software", "analytics", "collaboration", "productivity", "developer tools", "email marketing"].map((suggestion) => (
-                      !formData.categories.map(c => c.toLowerCase()).includes(suggestion.toLowerCase()) && (
-                        <button
-                          key={suggestion}
-                          type="button"
-                          onClick={() => {
-                            if (formData.categories.length < 3) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                categories: [...prev.categories, suggestion],
-                              }))
-                            }
-                          }}
-                          className="px-2.5 py-1 text-xs bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-md transition-colors"
-                        >
-                          {suggestion}
-                        </button>
-                      )
-                    ))}
-                  </div>
-                </div>
-              )}
+            </div>
+
+            {/* Differentiators */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="differentiators" className="text-sm font-medium text-foreground">
+                  What makes you different?
+                </Label>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-full text-xs text-primary font-medium">
+                  <Sparkles className="size-3" />
+                  Recommended
+                </span>
+              </div>
+              <textarea
+                id="differentiators"
+                placeholder="e.g., Only scheduling tool with native async video messages. 10x faster than Calendly for team-wide availability. No login required for invitees."
+                value={formData.differentiators}
+                maxLength={300}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, differentiators: e.target.value }))
+                }
+                rows={2}
+                className={cn(
+                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "placeholder:text-muted-foreground/60",
+                  "hover:border-border/80",
+                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "resize-none"
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                Your unique advantages over competitors. These shape the feature-specific queries we test.
+              </p>
             </div>
           </section>
 
-          {/* Step 5: Competitors */}
+          {/* ── STEP 3: Competitive Context ── */}
           <section className="space-y-6">
-            <StepIndicator number={5} title="Competitors" optional />
+            <StepIndicator number={3} title="Competitive context" optional />
+
+            {/* Competitors */}
             <div className="space-y-3">
               <Label className="text-sm font-medium text-foreground">
-                Competitors to compare
+                Top competitors
               </Label>
               
               {formData.competitors.length > 0 && (
@@ -1203,11 +945,11 @@ export default function CheckPage() {
                 </div>
               )}
 
-              {formData.competitors.length < 3 && (
+              {formData.competitors.length < 5 && (
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g., Asana, Monday.com, ClickUp"
+                    placeholder="e.g., Calendly, SavvyCal, Doodle"
                     value={competitorInput}
                     onChange={(e) => setCompetitorInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -1235,101 +977,37 @@ export default function CheckPage() {
               )}
               
               <p className="text-xs text-muted-foreground">
-                Add direct competitors users compare you to — we&apos;ll also discover others automatically
-                {formData.competitors.length > 0 && ` (${formData.competitors.length}/3)`}
+                We&apos;ll auto-detect competitors too, but naming yours improves accuracy.
+                {formData.competitors.length > 0 && ` (${formData.competitors.length}/5)`}
               </p>
             </div>
-          </section>
 
-          {/* Step 6: Custom Queries */}
-          <section className="space-y-6">
-            <StepIndicator number={6} title="Custom queries" optional />
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-foreground">
-                What questions do your customers ask?
+            {/* Real Buyer Questions */}
+            <div className="space-y-2">
+              <Label htmlFor="buyerQuestions" className="text-sm font-medium text-foreground">
+                Real buyer questions
               </Label>
-              
-              {formData.customQueries.length > 0 && (
-                <div className="space-y-2">
-                  {formData.customQueries.map((query) => (
-                    <div
-                      key={query}
-                      className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm text-foreground"
-                    >
-                      <span className="flex-1">&quot;{query}&quot;</span>
-                      <button
-                        type="button"
-                        onClick={() => removeCustomQuery(query)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {formData.customQueries.length < 2 && (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g., Best tool for managing remote teams"
-                    value={customQueryInput}
-                    onChange={(e) => setCustomQueryInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        addCustomQuery()
-                      }
-                    }}
-                    className={cn(
-                      "flex h-11 flex-1 rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
-                      "placeholder:text-muted-foreground/60",
-                      "hover:border-border/80",
-                      "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={addCustomQuery}
-                    disabled={!customQueryInput.trim()}
-                  >
-                    Add
-                  </Button>
-                </div>
-              )}
-              
+              <textarea
+                id="buyerQuestions"
+                placeholder={`Paste real questions from:\n• Support tickets or sales calls\n• Reddit/forum threads about your category\n• Questions prospects actually asked you\n\nExample:\nIs there a scheduling tool that works with Google and Outlook without requiring the other person to sign up?`}
+                value={formData.buyerQuestions}
+                maxLength={500}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, buyerQuestions: e.target.value }))
+                }
+                rows={4}
+                className={cn(
+                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "placeholder:text-muted-foreground/60",
+                  "hover:border-border/80",
+                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "resize-none"
+                )}
+              />
               <p className="text-xs text-muted-foreground">
-                Add 1-2 specific questions your ideal customers would ask AI
-                {formData.customQueries.length > 0 && ` (${formData.customQueries.length}/2)`}
+                Got real questions from prospects or forums? One question per line. Max 10.
               </p>
             </div>
-          </section>
-
-          {/* Pro tips section */}
-          <section className="pt-2">
-            <Card className="bg-muted/30 border-border/50">
-              <CardContent className="py-4">
-                <p className="text-xs font-medium text-foreground mb-2">
-                  💡 Tips for better results
-                </p>
-                <ul className="text-xs text-muted-foreground space-y-1.5">
-                  <li className="flex items-start gap-2">
-                    <span className="text-muted-foreground/60 mt-0.5">•</span>
-                    <span><strong>Description:</strong> Include your category, target audience, and what makes you different</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-muted-foreground/60 mt-0.5">•</span>
-                    <span><strong>Competitors:</strong> Add 1-3 brands users directly compare you to</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-muted-foreground/60 mt-0.5">•</span>
-                    <span><strong>Brand name:</strong> Use your exact name as it appears on your site</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
           </section>
 
           {/* Helper hint */}
@@ -1346,15 +1024,23 @@ export default function CheckPage() {
               disabled={!isFormValid}
               onClick={handleSubmit}
             >
-              Check my visibility
+              Run AI Visibility Scan
               <ArrowRight className="ml-1" />
             </Button>
             {!isFormValid && (
               <p className="text-sm text-muted-foreground text-center mt-3">
-                Fill in all required fields to continue
+                {!formData.brandName.trim()
+                  ? "Enter your brand name to continue"
+                  : !isValidUrl(formData.websiteUrl)
+                  ? "Enter a valid website URL"
+                  : formData.coreProblem.trim().length < 15
+                  ? "Describe the problem your product solves (at least 15 characters)"
+                  : formData.targetBuyer.trim().length < 8
+                  ? "Describe your target customer (at least 8 characters)"
+                  : "Fill in all required fields to continue"
+                }
               </p>
             )}
-            {/* Show message if user has used free scan */}
             {user && subscription.freeScanUsed && !subscription.canScan && (
               <div className="mt-4 p-4 bg-muted/50 rounded-xl border border-border">
                 <div className="flex items-center gap-3">
@@ -1408,36 +1094,28 @@ function StepIndicator({
   )
 }
 
-function DescriptionQuality({ length }: { length: number }) {
-  if (length === 0) return null
+function CharCount({ current, min, max }: { current: number; min: number; max: number }) {
+  if (current === 0) return null
   
-  if (length < 30) {
+  if (current < min) {
     return (
-      <span className="text-xs text-status-error">
-        Too short — add more detail
+      <span className="text-xs text-status-error whitespace-nowrap">
+        {min - current} more needed
       </span>
     )
   }
   
-  if (length < 60) {
+  if (current > max * 0.9) {
     return (
-      <span className="text-xs text-status-warning">
-        Good start — a bit more detail helps
-      </span>
-    )
-  }
-  
-  if (length < 150) {
-    return (
-      <span className="text-xs text-status-success">
-        Great length
+      <span className="text-xs text-muted-foreground whitespace-nowrap">
+        {current}/{max}
       </span>
     )
   }
   
   return (
-    <span className="text-xs text-muted-foreground">
-      {length} characters
+    <span className="text-xs text-status-success whitespace-nowrap">
+      Good
     </span>
   )
 }
