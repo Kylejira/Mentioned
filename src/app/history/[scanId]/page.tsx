@@ -214,7 +214,8 @@ export default function HistoricalScanPage({ params }: PageProps) {
       descriptionAccurate: scanData.sources?.claude?.descriptionAccurate ?? false,
     },
   ]
-  const queries = scanData.queries_tested || []
+  const rawQueries = scanData.queries_tested || []
+  const queries = Array.isArray(rawQueries) ? rawQueries : []
   const competitors = scanData.competitor_results || []
   const signals = scanData.signals || []
   const actions = scanData.actions || []

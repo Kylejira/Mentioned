@@ -207,12 +207,16 @@ ${action.why}
           descriptionAccurate: apiResult.sources?.claude?.descriptionAccurate || false,
         },
       ],
-      queries: (apiResult.queries_tested || apiResult.queries || []).map((q: any) => ({
-        query: q.query || q,
-        chatgpt: q.chatgpt ?? q.chatGPT ?? false,
-        claude: q.claude ?? q.Claude ?? false,
-        isCustom: q.isCustom || false,
-      })),
+      queries: (() => {
+        const raw = apiResult.queries_tested || apiResult.queries || []
+        if (!Array.isArray(raw)) return []
+        return raw.map((q: any) => ({
+          query: q.query || q,
+          chatgpt: q.chatgpt ?? q.chatGPT ?? false,
+          claude: q.claude ?? q.Claude ?? false,
+          isCustom: q.isCustom || false,
+        }))
+      })(),
       competitors: (apiResult.competitor_results || []).map((c: any) => ({
         name: c.name,
         mentioned: c.mentioned || false,
@@ -220,7 +224,7 @@ ${action.why}
         description: c.description || null,
         mentionCount: c.mentionCount || 0,
         topThreeCount: c.topThreeCount || 0,
-        totalQueries: c.totalQueries || apiResult.queries_tested?.length || 6,
+        totalQueries: c.totalQueries || (Array.isArray(apiResult.queries_tested) ? apiResult.queries_tested.length : apiResult.queries_tested) || 6,
         outranksUser: c.outranksUser || false,
         isDiscovered: c.isDiscovered || false,
       })),

@@ -523,7 +523,8 @@ function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?: strin
       description: v3.profile.tagline,
     },
     sources: {},
-    queries_tested: v3.query_count,
+    queries_tested: [],
+    query_count: v3.query_count,
     signals: [],
     actions: [],
     competitor_results: v3.competitors.map((c) => ({
