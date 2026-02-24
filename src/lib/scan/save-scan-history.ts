@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase-server';
+import { createAdminClient } from '@/lib/supabase-admin';
 
 interface ScanResult {
   productUrl: string;
@@ -12,12 +12,12 @@ interface ScanResult {
   claudeScore?: number | null;
   chatgptMentioned?: boolean | null;
   claudeMentioned?: boolean | null;
-  fullResult?: Record<string, unknown> | null; // Full scan result for dashboard
+  fullResult?: Record<string, unknown> | null;
 }
 
 export async function saveScanHistory(userId: string, scanResult: ScanResult) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     
     const { error } = await supabase
       .from('scan_history')

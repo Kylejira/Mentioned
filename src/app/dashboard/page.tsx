@@ -11,6 +11,7 @@ import { StatusIcon } from "@/components/ui/status-icon"
 import { SlideOver } from "@/components/ui/slide-over"
 import { SkeletonCard } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/toast"
+import { useAuth } from "@/lib/auth"
 import { useSubscription } from "@/lib/subscription"
 import { UpgradePrompt } from "@/components/upgrade-prompt"
 import { ScansRemaining } from "@/components/scans-remaining"
@@ -892,6 +893,7 @@ function CompetitorComparison({
 export default function DashboardPage() {
   const router = useRouter()
   const { showToast } = useToast()
+  const { user } = useAuth()
   const subscription = useSubscription()
   const [queriesExpanded, setQueriesExpanded] = useState(false)
   const [expandedQueryIndex, setExpandedQueryIndex] = useState<number | null>(null)
@@ -910,9 +912,11 @@ export default function DashboardPage() {
   const [generatingActionId, setGeneratingActionId] = useState<string | null>(null)
   const [generatedActionContent, setGeneratedActionContent] = useState<{actionId: string; content: string} | null>(null)
 
-  // Force clear stale data function
   const clearCachedData = () => {
     localStorage.removeItem(SCAN_RESULT_KEY)
+    if (user?.id) {
+      localStorage.removeItem(`${SCAN_RESULT_KEY}_${user.id}`)
+    }
     console.log("[Dashboard] Cache cleared manually")
     window.location.reload()
   }
@@ -953,9 +957,10 @@ export default function DashboardPage() {
         console.error("[Dashboard] Error fetching from database:", e)
       }
       
-      // STEP 2: Fall back to localStorage (for scans before this fix was deployed)
+      // STEP 2: Fall back to localStorage (check user-scoped key first, then legacy)
       try {
-        const stored = localStorage.getItem(SCAN_RESULT_KEY)
+        const userKey = user ? `${SCAN_RESULT_KEY}_${user.id}` : null
+        const stored = (userKey && localStorage.getItem(userKey)) || localStorage.getItem(SCAN_RESULT_KEY)
         console.log("[Dashboard] Trying localStorage fallback...")
         
         if (stored) {
@@ -991,7 +996,7 @@ export default function DashboardPage() {
     }
 
     loadData()
-  }, [])
+  }, [user?.id])
 
   // Use the loaded data or show loading state
   const data = scanData || mockScanData
