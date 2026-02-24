@@ -7,24 +7,27 @@ Respond ONLY with valid JSON matching this exact schema:
 {
   "brand_name": "string",
   "domain": "string",
-  "tagline": "string",
-  "category": "string",
-  "subcategory": "string",
+  "tagline": "string (the product's main value proposition in one sentence)",
+  "category": "string (specific product category, e.g. 'Merchant of Record', 'Project Management', 'Email Marketing' — NOT generic terms like 'SaaS' or 'Software')",
+  "subcategory": "string (even more specific niche, e.g. 'Digital product payment platform', 'Issue tracker for engineering teams')",
   "target_audience": "string",
   "core_features": ["string"],
   "pricing_model": "string",
   "competitors_mentioned": ["string"],
   "key_differentiators": ["string"],
-  "use_cases": ["string"],
+  "use_cases": ["string (specific scenarios like 'Selling online courses', 'Managing sprint backlogs')"],
   "brand_aliases": ["string"],
   "core_problem": "string",
   "target_buyer": "string"
 }
 
 Rules:
-- brand_aliases: include common abbreviations, the domain without TLD, and any alternate names found on the site
+- category: Be SPECIFIC. "Payment Processing" is better than "FinTech". "Merchant of Record for digital products" is better than "ECommerce". Think about what category a user would search for.
+- subcategory: Even more specific niche positioning. This should describe what makes the product distinct within its category.
+- brand_aliases: include common abbreviations, the domain without TLD, CamelCase variants, and any alternate names found on the site
 - core_features: max 8, prioritize by prominence on the page
 - competitors_mentioned: only include if explicitly named on the site
+- use_cases: specific scenarios where someone would use this product (max 6)
 - core_problem: identify the primary pain point the product addresses
 - target_buyer: identify the specific person/role who would buy this
 - If a field cannot be determined, use empty string or empty array
@@ -41,12 +44,19 @@ export class SaaSProfiler {
   /**
    * Build profile from BOTH scraped content AND form input.
    * Form data takes precedence for fields the user explicitly provided.
+   * When no competitors are found, uses LLM to discover likely competitors.
    */
   async profile(url: string, input?: ScanInput): Promise<SaaSProfile> {
     const scraped = await this.scrapeAndExtract(url)
 
-    if (!input) return scraped
-    return this.mergeWithFormInput(scraped, input)
+    const merged = input ? this.mergeWithFormInput(scraped, input) : scraped
+
+    if (merged.competitors_mentioned.length === 0) {
+      const discovered = await this.discoverCompetitors(merged)
+      merged.competitors_mentioned = discovered
+    }
+
+    return merged
   }
 
   private async scrapeAndExtract(url: string): Promise<SaaSProfile> {
@@ -150,6 +160,37 @@ export class SaaSProfiler {
       target_buyer: profile.target_buyer || "",
       user_differentiators: profile.user_differentiators || "",
       buyer_questions: profile.buyer_questions || [],
+    }
+  }
+
+  private async discoverCompetitors(profile: SaaSProfile): Promise<string[]> {
+    const prompt = `You are a SaaS market analyst. Given this product, list its top 5-8 direct competitors.
+
+Product: ${profile.brand_name}
+Category: ${profile.category} / ${profile.subcategory}
+Description: ${profile.tagline}
+Target audience: ${profile.target_audience || profile.target_buyer}
+Core problem: ${profile.core_problem || "N/A"}
+Key features: ${profile.core_features.slice(0, 5).join(", ")}
+
+Rules:
+- Only include REAL, well-known products that compete in the same space
+- Include both large incumbents and direct alternatives
+- Do NOT include the product itself
+- If the product is a niche player, include the dominant players in that niche
+
+Respond ONLY with a JSON array of product names:
+["Competitor1", "Competitor2", ...]`
+
+    try {
+      const raw = await this.llmCall(prompt)
+      const cleaned = raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim()
+      const competitors: string[] = JSON.parse(cleaned)
+      console.log(`[Profiler] Discovered ${competitors.length} competitors via LLM: ${competitors.join(", ")}`)
+      return competitors.filter(c => c.toLowerCase() !== profile.brand_name.toLowerCase()).slice(0, 8)
+    } catch {
+      console.warn("[Profiler] LLM competitor discovery failed")
+      return []
     }
   }
 

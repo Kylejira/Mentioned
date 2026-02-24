@@ -146,13 +146,19 @@ export class QueryGenerator {
     config: IntentConfig
   ): Promise<GeneratedQuery[]> {
     const contextParts: string[] = [
-      `Category: ${profile.category} / ${profile.subcategory}`,
+      `Category: ${profile.category}`,
     ]
+    if (profile.subcategory) {
+      contextParts.push(`Specific niche: ${profile.subcategory}`)
+    }
+    if (profile.tagline) {
+      contextParts.push(`Product description: ${profile.tagline}`)
+    }
 
-    if (config.formFields.includes("core_problem") && profile.core_problem) {
+    if (profile.core_problem) {
       contextParts.push(`CORE PROBLEM: ${profile.core_problem}`)
     }
-    if (config.formFields.includes("target_buyer") && profile.target_buyer) {
+    if (profile.target_buyer) {
       contextParts.push(`TARGET BUYER: ${profile.target_buyer}`)
     }
     if (config.formFields.includes("key_differentiators") || config.formFields.includes("user_differentiators")) {
@@ -167,10 +173,10 @@ export class QueryGenerator {
     if (config.formFields.includes("core_features") && profile.core_features.length > 0) {
       contextParts.push(`Core features: ${profile.core_features.join(", ")}`)
     }
-    if (config.formFields.includes("competitors_mentioned") && profile.competitors_mentioned.length > 0) {
+    if (profile.competitors_mentioned.length > 0) {
       contextParts.push(`Known competitors: ${profile.competitors_mentioned.join(", ")}`)
     }
-    if (config.formFields.includes("use_cases") && profile.use_cases.length > 0) {
+    if (profile.use_cases && profile.use_cases.length > 0) {
       contextParts.push(`Use cases: ${profile.use_cases.join(", ")}`)
     }
     if (config.formFields.includes("pricing_model") && profile.pricing_model) {
@@ -194,6 +200,8 @@ CRITICAL RULES:
 3. Vary the phrasing — don't start every query the same way
 4. Each query should be 5-20 words
 5. Reference specific details from the PRODUCT CONTEXT above — do NOT write generic queries
+6. Be SPECIFIC to the product's niche. If the product is a "merchant of record for digital products", ask about THAT — not about generic "payment processing" or "ecommerce" which is too broad.
+7. Use the SPECIFIC NICHE and USE CASES to ground queries in the exact problem space this product serves.
 
 Generate exactly ${config.count} queries. Return ONLY a JSON array of strings:
 ["query 1", "query 2", ...]`

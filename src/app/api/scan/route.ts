@@ -47,7 +47,7 @@ function createQueryLlmAdapter(): (query: string, provider: "openai" | "claude")
     } else {
       if (!anthropic) anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
       const res = await anthropic.messages.create({
-        model: "claude-3-haiku-20240307",
+        model: "claude-3-5-haiku-20241022",
         max_tokens: 1500,
         temperature: 0,
         messages: [{ role: "user", content: query }],

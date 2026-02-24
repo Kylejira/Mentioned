@@ -109,7 +109,7 @@ Text: "${fuzzyResult.snippet}"`
   private regexMatch(text: string, brand: string): DetectionResult {
     const escaped = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     const pattern = new RegExp(
-      `(?:^|[\\s,;:("'\\-])` + escaped + `(?:[\\s,;:)"'\\-.!?]|$)`,
+      `(?:^|[\\s,;:("'\\-*\\[#_/])` + escaped + `(?:[\\s,;:)"'\\-*\\].!?#_/]|$)`,
       "i"
     )
     const match = pattern.exec(text)
