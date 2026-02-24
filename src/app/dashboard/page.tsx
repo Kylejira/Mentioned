@@ -921,75 +921,75 @@ export default function DashboardPage() {
     window.location.reload()
   }
 
-  // Load scan data: DB first (per-user), then localStorage fallback, then mock
+  // Load scan data: compare DB and localStorage, use the newest
   useEffect(() => {
     const loadData = async () => {
-      // STEP 1: Try to load from database (per-user, authoritative source)
+      let dbResult: { data: any; timestamp: string } | null = null
+      let localResult: { data: any; timestamp: string } | null = null
+
+      // SOURCE 1: Database (scan_history, per-user)
       try {
         console.log("[Dashboard] Fetching latest scan from database...")
         const response = await fetch("/api/scan-history/latest")
-        
+
         if (response.ok) {
           const { scan } = await response.json()
-          
           if (scan?.fullResult) {
-            console.log("[Dashboard] Loaded scan from database:", {
+            const ts = scan.fullResult.timestamp || scan.scannedAt || ""
+            console.log("[Dashboard] DB scan:", {
               brandName: scan.fullResult.brandName,
-              category: scan.fullResult.category,
-              score: scan.score,
-              scannedAt: scan.scannedAt,
+              timestamp: ts,
             })
-            
-            setRawScanData(scan.fullResult)
-            const transformed = transformScanResult(scan.fullResult)
-            
-            if (transformed) {
-              setScanData(transformed)
-              setHasRealData(true)
-              setIsLoading(false)
-              return
-            }
-          } else {
-            console.log("[Dashboard] No scan found in database for this user")
+            dbResult = { data: scan.fullResult, timestamp: ts }
           }
         }
       } catch (e) {
         console.error("[Dashboard] Error fetching from database:", e)
       }
-      
-      // STEP 2: Fall back to localStorage (check user-scoped key first, then legacy)
+
+      // SOURCE 2: localStorage (user-scoped key first, then legacy)
       try {
         const userKey = user ? `${SCAN_RESULT_KEY}_${user.id}` : null
         const stored = (userKey && localStorage.getItem(userKey)) || localStorage.getItem(SCAN_RESULT_KEY)
-        console.log("[Dashboard] Trying localStorage fallback...")
-        
+
         if (stored) {
           const parsed = JSON.parse(stored)
-          
-          console.log("[Dashboard] Found localStorage data:", {
+          const ts = parsed.timestamp || ""
+          console.log("[Dashboard] localStorage scan:", {
             brandName: parsed.brandName,
-            category: parsed.category,
-            timestamp: parsed.timestamp,
+            timestamp: ts,
           })
-          
-          setRawScanData(parsed)
-          const transformed = transformScanResult(parsed)
-          
-          if (transformed) {
-            setScanData(transformed)
-            setHasRealData(true)
-            setIsLoading(false)
-            return
-          }
-        } else {
-          console.log("[Dashboard] No localStorage data found either")
+          localResult = { data: parsed, timestamp: ts }
         }
       } catch (e) {
         console.error("[Dashboard] Error loading from localStorage:", e)
       }
-      
-      // STEP 3: Fall back to mock data
-      console.log("[Dashboard] Using mock data")
+
+      // Pick the newest source
+      let best: any = null
+      if (dbResult && localResult) {
+        const dbTime = new Date(dbResult.timestamp).getTime() || 0
+        const localTime = new Date(localResult.timestamp).getTime() || 0
+        best = localTime >= dbTime ? localResult.data : dbResult.data
+        console.log("[Dashboard] Using", localTime >= dbTime ? "localStorage" : "database",
+          "(db:", dbResult.timestamp, "local:", localResult.timestamp, ")")
+      } else {
+        best = (dbResult || localResult)?.data ?? null
+      }
+
+      if (best) {
+        setRawScanData(best)
+        const transformed = transformScanResult(best)
+        if (transformed) {
+          setScanData(transformed)
+          setHasRealData(true)
+          setIsLoading(false)
+          return
+        }
+      }
+
+      // Fall back to mock data
+      console.log("[Dashboard] No scan data found, using mock data")
       setScanData(mockScanData)
       setHasRealData(false)
       setIsLoading(false)
