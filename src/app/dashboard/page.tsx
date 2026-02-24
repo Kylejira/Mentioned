@@ -937,10 +937,18 @@ export default function DashboardPage() {
           const parsed = JSON.parse(stored)
           console.log("[Dashboard] Found scan in localStorage:", {
             brandName: parsed.brandName,
-            category: parsed.category,
+            status: parsed.status,
             timestamp: parsed.timestamp,
-            source: userKey && localStorage.getItem(userKey) ? "user-scoped" : "legacy",
           })
+
+          // If a scan is in progress or failed, don't show stale DB data
+          if (parsed.status === "scanning" || parsed.status === "failed") {
+            console.log(`[Dashboard] Scan status: ${parsed.status} — not loading stale data`)
+            if (cancelled) return
+            setHasRealData(false)
+            setIsLoading(false)
+            return
+          }
 
           if (cancelled) return
           setRawScanData(parsed)

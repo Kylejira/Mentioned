@@ -488,9 +488,14 @@ async function handleV3Scan(
     console.log(`[API v3] ✅ Returning result: brandName="${legacyResult.brandName}", category="${legacyResult.category}", score=${legacyResult.visibilityScore?.total}`)
     return NextResponse.json(legacyResult)
   } catch (err) {
-    console.error("[API v3] ❌ Scan failed:", err)
     const msg = err instanceof Error ? err.message : "Unknown error"
-    return NextResponse.json({ error: `Scan failed: ${msg}` }, { status: 500 })
+    const stack = err instanceof Error ? err.stack?.split("\n").slice(0, 3).join(" | ") : ""
+    console.error(`[API v3] ❌ Scan failed: ${msg}`)
+    console.error(`[API v3] ❌ Stack: ${stack}`)
+    return NextResponse.json(
+      { error: `Scan failed: ${msg}`, phase: msg.match(/Phase \d+ \([^)]+\)/)?.[0] || "unknown" },
+      { status: 500 }
+    )
   }
 }
 

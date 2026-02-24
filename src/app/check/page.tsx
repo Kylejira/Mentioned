@@ -290,14 +290,21 @@ export default function CheckPage() {
         }
       }
 
-      // Clear stale data
+      // Save a "scanning" marker so the dashboard knows a scan is in progress
+      // (prevents showing stale data from a different brand)
       try {
-        localStorage.removeItem(getScanResultKey(user?.id))
+        const pendingData = JSON.stringify({
+          brandName: scanFormData.brandName,
+          brandUrl: scanFormData.websiteUrl,
+          status: "scanning",
+          timestamp: new Date().toISOString(),
+        })
+        localStorage.setItem(getScanResultKey(user?.id), pendingData)
         localStorage.removeItem(SCAN_RESULT_KEY_BASE)
         localStorage.removeItem("mentioned_last_scan")
         localStorage.removeItem(FORM_STORAGE_KEY)
       } catch (e) {
-        console.error("[Check] Failed to clear localStorage:", e)
+        console.error("[Check] Failed to set scan marker:", e)
       }
 
       // Parse buyer questions from textarea (one per line)
@@ -443,11 +450,16 @@ export default function CheckPage() {
         console.error("[Check] Scan error:", error)
         
         try {
-          localStorage.removeItem(getScanResultKey(user?.id))
+          const failedData = JSON.stringify({
+            brandName: formDataRef.current?.brandName || "",
+            status: "failed",
+            timestamp: new Date().toISOString(),
+          })
+          localStorage.setItem(getScanResultKey(user?.id), failedData)
           localStorage.removeItem(SCAN_RESULT_KEY_BASE)
           localStorage.removeItem("mentioned_last_scan")
         } catch (e) {
-          console.error("[Check] Failed to clear localStorage on error:", e)
+          console.error("[Check] Failed to update scan marker:", e)
         }
         
         setLoadingSteps((prev) =>

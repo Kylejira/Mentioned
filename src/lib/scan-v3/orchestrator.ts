@@ -47,55 +47,88 @@ export class ScanOrchestrator {
   }
 
   async runScan(scanId: string, url: string, input?: ScanInput): Promise<ScanResult> {
-    // Phase 1: Profile — merges scraped data with form input when available
-    const profile = await this.profiler.profile(url, input)
+    console.log(`[Orchestrator] Starting scan ${scanId} for ${url}`)
 
-    // Phase 2: Generate + validate queries
-    const rawQueries = await this.generator.generate(profile)
-    const validator = new QueryValidator(this.llmCall)
-    const validatedQueries = await validator.validate(rawQueries, profile)
-
-    // Final enforcement: truncate to plan limit BEFORE any LLM query execution
-    const cappedQueries = validatedQueries.slice(0, this.limits.maxQueries)
-    await this.queryRepo.store(scanId, cappedQueries)
-
-    // Phase 3: Build alias registry for symmetric detection
-    let aliasRegistry = buildAliasRegistry(profile)
-    if (this.limits.enableSemanticConfirm && profile.competitors_mentioned.length > 0) {
-      aliasRegistry = await enrichAliasesWithLlm(
-        profile.competitors_mentioned,
-        this.llmCall,
-        aliasRegistry
-      )
+    let profile: SaaSProfile
+    try {
+      profile = await this.profiler.profile(url, input)
+      console.log(`[Orchestrator] Phase 1 ✅ Profile: ${profile.brand_name} (${profile.category})`)
+    } catch (err) {
+      throw new Error(`Phase 1 (Profile) failed: ${err instanceof Error ? err.message : err}`)
     }
 
-    const detection = new DetectionEngine(
-      profile.brand_name,
-      profile.brand_aliases,
-      this.limits.enableSemanticConfirm ? this.llmCall : undefined,
-      aliasRegistry
-    )
+    let cappedQueries: ValidatedQuery[]
+    try {
+      const rawQueries = await this.generator.generate(profile)
+      console.log(`[Orchestrator] Phase 2a ✅ Generated ${rawQueries.length} queries`)
+      const validator = new QueryValidator(this.llmCall)
+      const validatedQueries = await validator.validate(rawQueries, profile)
+      console.log(`[Orchestrator] Phase 2b ✅ Validated ${validatedQueries.length} queries`)
+      cappedQueries = validatedQueries.slice(0, this.limits.maxQueries)
+    } catch (err) {
+      throw new Error(`Phase 2 (Query Gen) failed: ${err instanceof Error ? err.message : err}`)
+    }
 
-    // Phase 4: Execute queries against LLM providers
-    const analyses = await this.executeQueries(
-      cappedQueries,
-      detection,
-      profile
-    )
+    try {
+      await this.queryRepo.store(scanId, cappedQueries)
+      console.log(`[Orchestrator] Phase 2c ✅ Stored ${cappedQueries.length} queries`)
+    } catch (err) {
+      console.error(`[Orchestrator] Phase 2c ⚠️ Query store failed (non-fatal): ${err instanceof Error ? err.message : err}`)
+    }
 
-    // Phase 5: Score
+    let detection: DetectionEngine
+    try {
+      let aliasRegistry = buildAliasRegistry(profile)
+      if (this.limits.enableSemanticConfirm && profile.competitors_mentioned.length > 0) {
+        aliasRegistry = await enrichAliasesWithLlm(
+          profile.competitors_mentioned,
+          this.llmCall,
+          aliasRegistry
+        )
+      }
+      detection = new DetectionEngine(
+        profile.brand_name,
+        profile.brand_aliases,
+        this.limits.enableSemanticConfirm ? this.llmCall : undefined,
+        aliasRegistry
+      )
+      console.log(`[Orchestrator] Phase 3 ✅ Alias registry built`)
+    } catch (err) {
+      throw new Error(`Phase 3 (Alias) failed: ${err instanceof Error ? err.message : err}`)
+    }
+
+    let analyses: ResponseAnalysis[]
+    try {
+      analyses = await this.executeQueries(cappedQueries, detection, profile)
+      console.log(`[Orchestrator] Phase 4 ✅ Executed queries, got ${analyses.length} analyses`)
+    } catch (err) {
+      throw new Error(`Phase 4 (Execute) failed: ${err instanceof Error ? err.message : err}`)
+    }
+
     const score = this.scoring.score({
       analyses,
       total_queries: cappedQueries.length,
     })
+    console.log(`[Orchestrator] Phase 5 ✅ Score: ${score.final_score}/100`)
 
-    // Phase 6: Track competitors
-    const domain = new URL(url).hostname.replace("www.", "")
-    const competitors = await this.competitorTracker.track(domain, analyses)
+    let competitors: CompetitorRecord[]
+    try {
+      const domain = new URL(url).hostname.replace("www.", "")
+      competitors = await this.competitorTracker.track(domain, analyses)
+      console.log(`[Orchestrator] Phase 6 ✅ Tracked ${competitors.length} competitors`)
+    } catch (err) {
+      console.error(`[Orchestrator] Phase 6 ⚠️ Competitor tracking failed (non-fatal): ${err instanceof Error ? err.message : err}`)
+      competitors = []
+    }
 
-    // Phase 7: Persist
-    await this.persistResults(scanId, input, profile, score, cappedQueries.length)
+    try {
+      await this.persistResults(scanId, input, profile, score, cappedQueries.length)
+      console.log(`[Orchestrator] Phase 7 ✅ Results persisted`)
+    } catch (err) {
+      console.error(`[Orchestrator] Phase 7 ⚠️ Persist failed (non-fatal): ${err instanceof Error ? err.message : err}`)
+    }
 
+    console.log(`[Orchestrator] Scan complete ✅ score=${score.final_score}`)
     return {
       scan_id: scanId,
       profile,
