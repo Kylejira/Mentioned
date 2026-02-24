@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Mentioned — Ending Scene</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --b:#2563EB;--bg:#0a0e1a;--g:#10B981;--r:#E74444;--y:#F7B500;
+  --gpt:#10a37f;--cl:#d97706;
+  --f:'DM Sans',sans-serif;
+  --card:rgba(17,17,24,.8);--card2:rgba(30,41,59,.7);
+  --brd:rgba(255,255,255,.08);--brd2:rgba(255,255,255,.05);
+  --tx:#f0f0f5;--mt:rgba(255,255,255,.4);--mt2:rgba(255,255,255,.3);
+}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050810;font-family:var(--f);-webkit-font-smoothing:antialiased}
+body{display:flex;align-items:center;justify-content:center}
+
+/* Scene */
+.S{width:1920px;height:1080px;position:relative;overflow:hidden;background:var(--bg);flex-shrink:0;transform-origin:center center;perspective:1800px}
+
+/* BG layers */
+.bg-grid{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.015) 1px,transparent 1px);background-size:40px 40px;z-index:0}
+.bg-glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(100px);z-index:0}
+.bg-glow.a{width:1100px;height:1100px;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(37,99,235,.06)}
+.bg-glow.b{width:700px;height:700px;bottom:-10%;right:-5%;background:rgba(16,185,129,.035)}
+.bg-noise{position:absolute;inset:0;opacity:.02;z-index:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+.vig{position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at center,transparent 40%,rgba(0,0,0,.65) 100%);z-index:1;pointer-events:none}
+
+/* Center content */
+.center{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;pointer-events:none}
+
+/* Logo pill */
+.logo-pill{display:inline-flex;align-items:center;gap:10px;padding:8px 20px 8px 10px;background:rgba(255,255,255,.05);border:1px solid var(--brd);border-radius:999px;backdrop-filter:blur(16px);opacity:0;transform:translateY(-16px);margin-bottom:32px}
+.logo-pill.on{animation:slideDown .7s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes slideDown{to{opacity:1;transform:translateY(0)}}
+.lp-icon{width:28px;height:28px;border-radius:8px;overflow:hidden;flex-shrink:0}
+.lp-icon img{width:100%;height:100%;object-fit:contain;display:block}
+.lp-text{font-size:14px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.01em}
+
+/* Headline */
+.headline{font-size:76px;font-weight:800;color:var(--tx);letter-spacing:-3px;line-height:1.05;text-align:center;margin-bottom:20px;overflow:hidden}
+.hw{display:inline-block;opacity:0;transform:translateY(28px);filter:blur(4px)}
+.hw.on{animation:wordIn .6s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes wordIn{to{opacity:1;transform:translateY(0);filter:blur(0)}}
+.hw.blue{color:var(--b)}
+.hw.blue.on{animation:wordInBlue .6s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes wordInBlue{0%{opacity:0;transform:translateY(28px);filter:blur(4px);text-shadow:none}60%{text-shadow:0 0 40px rgba(37,99,235,.6)}100%{opacity:1;transform:translateY(0);filter:blur(0);text-shadow:0 0 0 transparent}}
+
+/* Subtext */
+.subtext{font-size:19px;color:var(--mt);font-weight:400;text-align:center;opacity:0;transform:translateY(10px);margin-bottom:36px;line-height:1.5}
+.subtext.on{animation:fadeUp .6s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.subtext b{color:white;font-weight:600}
+
+/* CTA */
+.cta{display:inline-flex;align-items:center;gap:8px;padding:16px 44px;background:var(--b);color:white;font-family:var(--f);font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 24px rgba(37,99,235,.4);opacity:0;transform:scale(.8);pointer-events:auto;letter-spacing:.01em}
+.cta.on{animation:ctaIn .55s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes ctaIn{to{opacity:1;transform:scale(1)}}
+.cta.glow{animation:ctaGlow 3s ease-in-out infinite}
+@keyframes ctaGlow{0%,100%{box-shadow:0 4px 24px rgba(37,99,235,.4)}50%{box-shadow:0 4px 48px rgba(37,99,235,.55)}}
+.url{font-size:13px;color:var(--mt2);font-weight:500;margin-top:16px;opacity:0;letter-spacing:.02em}
+.url.on{animation:fadeUp .5s ease forwards}
+
+/* ======= FLOATING BADGES ======= */
+.badge{position:absolute;z-index:5;opacity:0;will-change:transform,opacity;transform-style:preserve-3d}
+
+/* Glass card base */
+.gc{background:var(--card);border:1px solid var(--brd);border-radius:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:16px 20px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.gc-sm{background:var(--card);border:1px solid var(--brd);border-radius:12px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:10px 16px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.gc-pill{background:var(--card);border:1px solid var(--brd);border-radius:999px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:8px 18px;box-shadow:0 4px 16px rgba(0,0,0,.2);display:inline-flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.55);font-weight:500;white-space:nowrap}
+
+/* Card typography */
+.gc-hdr{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--mt);margin-bottom:10px}
+.gc-val{font-weight:800;line-height:1}
+.gc-sub{font-size:11px;color:var(--mt);font-weight:500;margin-top:4px}
+
+/* Badge entrance — initial off-screen positions */
+.badge.from-l{transform:translateX(-200px) translateZ(-40px) rotateY(8deg);filter:blur(3px)}
+.badge.from-r{transform:translateX(200px) translateZ(-40px) rotateY(-8deg);filter:blur(3px)}
+.badge.from-t{transform:translateY(-180px) translateZ(-30px) rotateX(-6deg);filter:blur(3px)}
+.badge.from-b{transform:translateY(180px) translateZ(-30px) rotateX(6deg);filter:blur(3px)}
+
+/* Float animations (unique per card) */
+@keyframes f1{0%,100%{transform:translateY(0) translateZ(-10px) rotateX(1deg) rotateY(-2deg)}50%{transform:translateY(-9px) translateZ(-10px) rotateX(1deg) rotateY(-2deg)}}
+@keyframes f2{0%,100%{transform:translateY(0) translateZ(15px) rotateX(-1deg) rotateY(2deg)}50%{transform:translateY(-7px) translateZ(15px) rotateX(-1deg) rotateY(2deg)}}
+@keyframes f3{0%,100%{transform:translateY(0) translateZ(-20px) rotateX(0deg) rotateY(-1deg)}50%{transform:translateY(-11px) translateZ(-20px) rotateX(0deg) rotateY(-1deg)}}
+@keyframes f4{0%,100%{transform:translateY(0) translateZ(25px) rotateX(2deg) rotateY(1deg)}50%{transform:translateY(-8px) translateZ(25px) rotateX(2deg) rotateY(1deg)}}
+@keyframes f5{0%,100%{transform:translateY(0) translateZ(-15px) rotateX(-1deg) rotateY(-3deg)}50%{transform:translateY(-6px) translateZ(-15px) rotateX(-1deg) rotateY(-3deg)}}
+@keyframes f6{0%,100%{transform:translateY(0) translateZ(10px) rotateX(1deg) rotateY(2deg)}50%{transform:translateY(-10px) translateZ(10px) rotateX(1deg) rotateY(2deg)}}
+@keyframes f7{0%,100%{transform:translateY(0) translateZ(-5px) rotateX(-2deg) rotateY(1deg)}50%{transform:translateY(-5px) translateZ(-5px) rotateX(-2deg) rotateY(1deg)}}
+@keyframes f8{0%,100%{transform:translateY(0) translateZ(30px) rotateX(1deg) rotateY(-1deg)}50%{transform:translateY(-12px) translateZ(30px) rotateX(1deg) rotateY(-1deg)}}
+@keyframes f9{0%,100%{transform:translateY(0) translateZ(-25px)}50%{transform:translateY(-7px) translateZ(-25px)}}
+@keyframes fq{0%,100%{transform:translateY(0) translateZ(20px) rotateY(-1deg)}33%{transform:translateY(-10px) translateX(4px) translateZ(20px) rotateY(-1deg)}66%{transform:translateY(-6px) translateX(-3px) translateZ(20px) rotateY(-1deg)}}
+
+/* ---- Individual card content styles ---- */
+
+/* Score by Model */
+.sbm-row{display:flex;align-items:center;gap:9px;padding:6px 0}
+.sbm-row+.sbm-row{border-top:1px solid rgba(255,255,255,.04)}
+.sbm-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0}
+.sbm-name{font-size:12px;color:rgba(255,255,255,.65);font-weight:500;flex:1}
+.sbm-score{font-size:13px;font-weight:700;color:var(--tx);margin-right:8px}
+.sbm-bar{width:50px;height:5px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.06)}
+.sbm-bar-fill{height:100%;border-radius:3px}
+
+/* Outranking */
+.rnk-row{display:flex;align-items:center;gap:8px;padding:5px 0}
+.rnk-pos{font-size:12px;font-weight:700;color:var(--mt);width:22px}
+.rnk-name{font-size:12px;color:rgba(255,255,255,.65);font-weight:500;width:58px}
+.rnk-bar{flex:1;height:6px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.06)}
+.rnk-bar-fill{height:100%;border-radius:3px}
+
+/* Question bubble */
+.qb{display:flex;align-items:center;gap:10px}
+.qb-icon{width:26px;height:26px;border-radius:50%;background:var(--b);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.qb-text{font-size:12px;color:rgba(255,255,255,.5);font-weight:500;font-style:italic}
+
+/* Mention rate */
+.mr-wrap{display:flex;align-items:center;gap:14px}
+.mr-icon{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--b),#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0}
+.mr-body .gc-hdr{margin-bottom:4px}
+.mr-val{font-size:28px;font-weight:800;color:var(--b);line-height:1}
+
+/* Visibility score */
+.vs-num{display:flex;align-items:baseline;gap:2px}
+.vs-num .big{font-size:36px;font-weight:800;color:var(--g);line-height:1}
+.vs-num .sm{font-size:16px;font-weight:600;color:var(--mt)}
+.vs-status{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;font-weight:600;color:var(--g)}
+.vs-dot{width:6px;height:6px;border-radius:50%;background:var(--g)}
+.vs-bar{width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:8px;overflow:hidden}
+.vs-bar-fill{height:100%;width:87%;border-radius:2px;background:linear-gradient(90deg,var(--g),#34d399)}
+
+/* 500+ stat */
+.sp-num{font-size:44px;font-weight:800;color:var(--g);line-height:1}
+.sp-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--mt);margin-top:6px}
+
+/* Replay */
+.replay{position:absolute;bottom:24px;right:28px;z-index:50;display:flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(255,255,255,.04);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:999px;color:rgba(255,255,255,.35);font-family:var(--f);font-size:10px;font-weight:500;cursor:pointer;transition:all .2s}
+.replay:hover{background:rgba(255,255,255,.08);color:white}
+.replay svg{width:12px;height:12px}
+</style>
+</head>
+<body>
+<div class="S" id="S">
+
+<!-- BG -->
+<div class="bg-grid"></div>
+<div class="bg-glow a"></div>
+<div class="bg-glow b"></div>
+<div class="bg-noise"></div>
+<div class="vig"></div>
+
+<!-- CENTER CONTENT -->
+<div class="center">
+  <div class="logo-pill" id="lp"><div class="lp-icon"><img src="public/logo.png" alt="Mentioned"></div><span class="lp-text">mentioned.pro</span></div>
+  <div class="headline" id="hl">
+    <span class="hw" id="w0">First</span>
+    <span class="hw" id="w1">scan</span>
+    <span class="hw blue" id="w2">free</span><span class="hw" id="w3">,</span>
+    <span class="hw" id="w4">try</span>
+    <span class="hw" id="w5">it</span>
+    <span class="hw" id="w6">now.</span>
+  </div>
+  <div class="subtext" id="sub"><b>Mentioned</b> was built for founders selling software and digital products online.</div>
+  <button class="cta" id="cta">Check your AI visibility →</button>
+  <div class="url" id="urlText">mentioned.pro</div>
+</div>
+
+<!-- FLOATING BADGES -->
+
+<!-- Top-Left: Score by Model -->
+<div class="badge from-l" id="b0" style="left:8%;top:16%">
+  <div class="gc" style="width:220px">
+    <div class="gc-hdr">Score by Model</div>
+    <div class="sbm-row">
+      <div class="sbm-dot" style="background:var(--gpt)">G</div>
+      <span class="sbm-name">ChatGPT</span>
+      <span class="sbm-score">90</span>
+      <div class="sbm-bar"><div class="sbm-bar-fill" style="width:90%;background:var(--gpt)"></div></div>
+    </div>
+    <div class="sbm-row">
+      <div class="sbm-dot" style="background:var(--cl)">C</div>
+      <span class="sbm-name">Claude</span>
+      <span class="sbm-score">84</span>
+      <div class="sbm-bar"><div class="sbm-bar-fill" style="width:84%;background:var(--cl)"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Top-Right: Avg Position -->
+<div class="badge from-r" id="b1" style="right:9%;top:14%">
+  <div class="gc" style="width:170px;text-align:center">
+    <div class="gc-hdr">Avg Position</div>
+    <div class="gc-val" style="font-size:42px;color:var(--b)">#1.4</div>
+    <div class="gc-sub">across AI models</div>
+  </div>
+</div>
+
+<!-- Top-Center: Question Bubble -->
+<div class="badge from-t" id="b2" style="left:50%;top:5%;margin-left:-185px">
+  <div class="gc-pill" style="padding:10px 22px">
+    <div class="qb-icon">?</div>
+    <span class="qb-text">"What's the best scheduling tool for teams?"</span>
+  </div>
+</div>
+
+<!-- Middle-Left: Outranking -->
+<div class="badge from-l" id="b3" style="left:5%;top:50%;margin-top:-40px">
+  <div class="gc" style="width:210px">
+    <div class="gc-hdr">Outranking</div>
+    <div class="rnk-row"><span class="rnk-pos">#1</span><span class="rnk-name" style="color:var(--g);font-weight:600">You</span><div class="rnk-bar"><div class="rnk-bar-fill" style="width:92%;background:var(--g)"></div></div></div>
+    <div class="rnk-row"><span class="rnk-pos">#2</span><span class="rnk-name">Calendly</span><div class="rnk-bar"><div class="rnk-bar-fill" style="width:68%;background:var(--b)"></div></div></div>
+    <div class="rnk-row"><span class="rnk-pos">#3</span><span class="rnk-name">Acuity</span><div class="rnk-bar"><div class="rnk-bar-fill" style="width:45%;background:rgba(255,255,255,.12)"></div></div></div>
+  </div>
+</div>
+
+<!-- Middle-Right: Feature pills -->
+<div class="badge from-r" id="b4" style="right:6%;top:44%">
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="gc-pill" id="fp0">💡 Get actionable tips</div>
+    <div class="gc-pill" id="fp1">📊 Track over time</div>
+    <div class="gc-pill" id="fp2">✨ Generate content</div>
+  </div>
+</div>
+
+<!-- Bottom-Left: Mention Rate -->
+<div class="badge from-b" id="b5" style="left:10%;bottom:14%">
+  <div class="gc" style="width:195px;border-left:2px solid var(--b)">
+    <div class="mr-wrap">
+      <div class="mr-icon">AI</div>
+      <div class="mr-body">
+        <div class="gc-hdr" style="margin-bottom:2px">Mention Rate</div>
+        <div class="mr-val">85%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom-Right: Visibility Score -->
+<div class="badge from-b" id="b6" style="right:10%;bottom:12%">
+  <div class="gc" style="width:190px">
+    <div class="gc-hdr">Visibility Score</div>
+    <div class="vs-num"><span class="big">87</span><span class="sm">/100</span></div>
+    <div class="vs-status"><span class="vs-dot"></span>Excellent</div>
+    <div class="vs-bar"><div class="vs-bar-fill"></div></div>
+  </div>
+</div>
+
+<!-- Bottom-Center: Utility badges -->
+<div class="badge from-b" id="b7" style="left:50%;bottom:6%;margin-left:-170px">
+  <div style="display:flex;gap:14px">
+    <div class="gc-pill">⚡ 2 min average scan</div>
+    <div class="gc-pill"><span style="color:var(--g);font-size:8px">●</span> 20+ AI queries tested</div>
+  </div>
+</div>
+
+<!-- Far Bottom-Right: 500+ stat -->
+<div class="badge from-r" id="b8" style="right:6%;bottom:28%">
+  <div class="gc" style="width:150px;text-align:center">
+    <div class="sp-num">500+</div>
+    <div class="sp-label">Products Scanned</div>
+  </div>
+</div>
+
+<!-- Replay -->
+<button class="replay" id="rep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Replay</button>
+
+</div>
+
+<script>
+(function(){
+var S=document.getElementById('S');
+function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);S.style.transform='scale('+s+')'}
+fit();addEventListener('resize',fit);
+
+var T={};
+function $(i){return document.getElementById(i)}
+var dirs=['l','r','t','l','r','b','b','b','r'];
+var floats=[
+  {kf:'f1',dur:'7s'},{kf:'f2',dur:'8s'},{kf:'fq',dur:'9s'},{kf:'f3',dur:'6.5s'},
+  {kf:'f4',dur:'7.5s'},{kf:'f5',dur:'8.5s'},{kf:'f6',dur:'6s'},{kf:'f7',dur:'9.5s'},
+  {kf:'f8',dur:'7s'}
+];
+
+function reset(){
+  for(var k in T){clearTimeout(T[k])}T={};
+  $('lp').classList.remove('on');
+  for(var i=0;i<7;i++)$('w'+i).classList.remove('on');
+  $('sub').classList.remove('on');
+  $('cta').classList.remove('on','glow');
+  $('urlText').classList.remove('on');
+  for(var i=0;i<9;i++){
+    var b=$('b'+i);
+    b.style.opacity='';b.style.transform='';b.style.filter='';
+    b.style.animation='';b.style.transition='';
+    b.className='badge from-'+dirs[i];
+  }
+}
+
+function enterBadge(id,idx,delay){
+  T['be'+idx]=setTimeout(function(){
+    var b=$(id);
+    b.style.transition='opacity .75s cubic-bezier(.16,1,.3,1),transform .75s cubic-bezier(.16,1,.3,1),filter .75s cubic-bezier(.16,1,.3,1)';
+    void b.offsetHeight;
+    b.style.opacity='1';
+    b.style.transform='none';
+    b.style.filter='blur(0)';
+    T['bf'+idx]=setTimeout(function(){
+      b.style.transition='none';
+      var f=floats[idx];
+      b.style.animation=f.kf+' '+f.dur+' ease-in-out infinite';
+    },800);
+  },delay);
+}
+
+function run(){
+  reset();
+
+  // 0.5s: Logo pill
+  T.lp=setTimeout(function(){$('lp').classList.add('on')},500);
+
+  // 1.5s: Headline words stagger
+  var words=7,wStart=1500;
+  for(var i=0;i<words;i++){(function(idx){
+    T['w'+idx]=setTimeout(function(){$('w'+idx).classList.add('on')},wStart+idx*140);
+  })(i)}
+
+  // 2.8s: Subtext
+  T.sub=setTimeout(function(){$('sub').classList.add('on')},2800);
+
+  // 3.2s: CTA button bounce in
+  T.cta=setTimeout(function(){$('cta').classList.add('on')},3200);
+  T.ctag=setTimeout(function(){$('cta').classList.add('glow')},3700);
+
+  // 3.5s: URL
+  T.url=setTimeout(function(){$('urlText').classList.add('on')},3500);
+
+  // 3.8-6s: Badges fly in, staggered from different directions
+  var badgeTimings=[3800,4000,4200,4500,4800,5100,5300,5600,5100];
+  for(var i=0;i<9;i++){
+    enterBadge('b'+i,i,badgeTimings[i]);
+  }
+}
+
+$('rep').addEventListener('click',run);
+run();
+})();
+</script>
+</body>
+</html>

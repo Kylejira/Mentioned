@@ -49,10 +49,23 @@ export class ScanOrchestrator {
   async runScan(scanId: string, url: string, input?: ScanInput): Promise<ScanResult> {
     console.log(`[Orchestrator] Starting scan ${scanId} for ${url}`)
 
+    console.log(`══ STAGE 1: SCAN INPUT ══`)
+    console.log(`Brand: ${input?.brand_name || "N/A"}`)
+    console.log(`URL: ${url}`)
+    console.log(`Competitors: ${JSON.stringify(input?.competitors || [])}`)
+    console.log(`Core problem: ${input?.core_problem || "N/A"}`)
+    console.log(`Target buyer: ${input?.target_buyer || "N/A"}`)
+
     let profile: SaaSProfile
     try {
       profile = await this.profiler.profile(url, input)
-      console.log(`[Orchestrator] Phase 1 ✅ Profile: ${profile.brand_name} (${profile.category})`)
+      console.log(`══ STAGE 2: PROFILE ══`)
+      console.log(`Profile brand: ${profile.brand_name}`)
+      console.log(`Profile aliases: ${JSON.stringify(profile.brand_aliases)}`)
+      console.log(`Profile category: ${profile.category}`)
+      console.log(`Profile competitors: ${JSON.stringify(profile.competitors_mentioned)}`)
+      console.log(`Profile core_problem: ${profile.core_problem || "N/A"}`)
+      console.log(`Profile target_buyer: ${profile.target_buyer || "N/A"}`)
     } catch (err) {
       throw new Error(`Phase 1 (Profile) failed: ${err instanceof Error ? err.message : err}`)
     }
@@ -60,11 +73,17 @@ export class ScanOrchestrator {
     let cappedQueries: ValidatedQuery[]
     try {
       const rawQueries = await this.generator.generate(profile)
-      console.log(`[Orchestrator] Phase 2a ✅ Generated ${rawQueries.length} queries`)
+      console.log(`══ STAGE 3: QUERIES ══`)
+      console.log(`Raw queries generated: ${rawQueries.length}`)
       const validator = new QueryValidator(this.llmCall)
       const validatedQueries = await validator.validate(rawQueries, profile)
-      console.log(`[Orchestrator] Phase 2b ✅ Validated ${validatedQueries.length} queries`)
+      console.log(`Validated queries: ${validatedQueries.length}`)
       cappedQueries = validatedQueries.slice(0, this.limits.maxQueries)
+      console.log(`Capped queries (max ${this.limits.maxQueries}): ${cappedQueries.length}`)
+      console.log(`Sample queries (first 5): ${JSON.stringify(cappedQueries.slice(0, 5).map(q => q.text))}`)
+      const intentDist: Record<string, number> = {}
+      for (const q of cappedQueries) { intentDist[q.intent] = (intentDist[q.intent] || 0) + 1 }
+      console.log(`Intent distribution: ${JSON.stringify(intentDist)}`)
     } catch (err) {
       throw new Error(`Phase 2 (Query Gen) failed: ${err instanceof Error ? err.message : err}`)
     }
@@ -100,7 +119,21 @@ export class ScanOrchestrator {
     let analyses: ResponseAnalysis[]
     try {
       analyses = await this.executeQueries(cappedQueries, detection, profile)
-      console.log(`[Orchestrator] Phase 4 ✅ Executed queries, got ${analyses.length} analyses`)
+      console.log(`══ STAGE 5: DETECTION RESULTS ══`)
+      console.log(`Total analyses: ${analyses.length}`)
+      const mentionsFound = analyses.filter(a => a.brand_detection.detected).length
+      console.log(`Mentions found: ${mentionsFound} / ${analyses.length}`)
+      const methodsUsed = [...new Set(analyses.map(a => a.brand_detection.method))]
+      console.log(`Detection methods used: ${JSON.stringify(methodsUsed)}`)
+      const byProvider: Record<string, { total: number; detected: number }> = {}
+      for (const a of analyses) {
+        if (!byProvider[a.provider]) byProvider[a.provider] = { total: 0, detected: 0 }
+        byProvider[a.provider].total++
+        if (a.brand_detection.detected) byProvider[a.provider].detected++
+      }
+      console.log(`By provider: ${JSON.stringify(byProvider)}`)
+      const emptyResponses = analyses.filter(a => !a.raw_response || a.raw_response.trim().length === 0).length
+      console.log(`Empty responses: ${emptyResponses}`)
     } catch (err) {
       throw new Error(`Phase 4 (Execute) failed: ${err instanceof Error ? err.message : err}`)
     }
@@ -109,7 +142,10 @@ export class ScanOrchestrator {
       analyses,
       total_queries: cappedQueries.length,
     })
-    console.log(`[Orchestrator] Phase 5 ✅ Score: ${score.final_score}/100`)
+    console.log(`══ STAGE 6: SCORE ══`)
+    console.log(`Final score: ${score.final_score}/100`)
+    console.log(`Mention rate: ${score.mention_rate}`)
+    console.log(`Score breakdown: ${JSON.stringify(score)}`)
 
     let competitors: CompetitorRecord[]
     try {
@@ -128,6 +164,15 @@ export class ScanOrchestrator {
       console.error(`[Orchestrator] Phase 7 ⚠️ Persist failed (non-fatal): ${err instanceof Error ? err.message : err}`)
     }
 
+    // Manual detection sanity check
+    const testText = `For selling digital products, I'd recommend ${profile.brand_name}. It handles payments, tax compliance, and delivery.`
+    const testResult = detection.detect(testText, profile.brand_name)
+    console.log(`══ MANUAL DETECTION TEST ══`)
+    console.log(`Test brand: "${profile.brand_name}"`)
+    console.log(`Test aliases: ${JSON.stringify(profile.brand_aliases)}`)
+    console.log(`Test text: "${testText}"`)
+    console.log(`Test detected: ${testResult.detected}, method: ${testResult.method}, conf: ${testResult.confidence}`)
+
     console.log(`[Orchestrator] Scan complete ✅ score=${score.final_score}`)
     return {
       scan_id: scanId,
@@ -145,6 +190,7 @@ export class ScanOrchestrator {
   ): Promise<ResponseAnalysis[]> {
     const analyses: ResponseAnalysis[] = []
     const providers: ("openai" | "claude")[] = ["openai", "claude"]
+    let logCount = 0
 
     const tasks = queries.flatMap((query) =>
       providers.map(async (provider): Promise<ResponseAnalysis | null> => {
@@ -159,6 +205,23 @@ export class ScanOrchestrator {
               profile.brand_name,
               brandResult
             )
+          }
+
+          if (logCount < 6) {
+            logCount++
+            console.log(`[Detection] [${provider}] Q: "${query.text.slice(0, 80)}"`)
+            console.log(`[Detection]   Response (200ch): "${response.slice(0, 200).replace(/\n/g, " ")}"`)
+            console.log(`[Detection]   Brand="${profile.brand_name}" detected=${finalBrandResult.detected} method=${finalBrandResult.method} conf=${finalBrandResult.confidence}`)
+            if (!finalBrandResult.detected) {
+              const lowerResp = response.toLowerCase()
+              const lowerBrand = profile.brand_name.toLowerCase()
+              const brandInResponse = lowerResp.includes(lowerBrand)
+              console.log(`[Detection]   ⚠ Simple includes("${lowerBrand}"): ${brandInResponse}`)
+              if (brandInResponse) {
+                const idx = lowerResp.indexOf(lowerBrand)
+                console.log(`[Detection]   ⚠ Context: "...${response.slice(Math.max(0, idx - 30), idx + lowerBrand.length + 30)}..."`)
+              }
+            }
           }
 
           const competitorResults = detection.detectAll(

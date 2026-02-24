@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Mentioned — How AI Scanning Works</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --b:#2563EB;--bg:#060a14;--card:#fff;--brd:#E5E7EB;--tx:#1E293B;--mt:#64748B;--lt:#9CA3AF;
+  --g:#10B981;--y:#F7B500;--r:#E74444;--gpt:#10a37f;--cl:#d97706;
+  --f:'DM Sans',sans-serif;--m:'JetBrains Mono',monospace;
+}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#030508;font-family:var(--f);-webkit-font-smoothing:antialiased}
+body{display:flex;align-items:center;justify-content:center}
+.S{width:1920px;height:1080px;position:relative;overflow:hidden;background:var(--bg);flex-shrink:0;transform-origin:center center;perspective:2000px}
+
+/* BG */
+.bg-grid{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.012) 1px,transparent 1px);background-size:40px 40px;animation:gd 25s linear infinite}
+@keyframes gd{to{background-position:40px 40px}}
+.glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(80px)}
+.glow.a{width:900px;height:900px;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(37,99,235,.07);animation:gp 7s ease-in-out infinite}
+.glow.b{width:600px;height:600px;bottom:-120px;left:10%;background:rgba(16,185,129,.03);animation:gp 9s ease-in-out infinite 2s}
+@keyframes gp{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.35;transform:translate(-50%,-50%) scale(1.15)}}
+.vig{position:absolute;inset:0;background:radial-gradient(ellipse,transparent 30%,rgba(0,0,0,.7) 100%);z-index:1;pointer-events:none}
+.stars{position:absolute;inset:0;pointer-events:none}
+.star{position:absolute;border-radius:50%;background:white;animation:tw linear infinite}
+@keyframes tw{0%,100%{opacity:.05}50%{opacity:.6}}
+.particles{position:absolute;inset:0;z-index:1;pointer-events:none}
+.ptcl{position:absolute;border-radius:50%;animation:pr linear infinite}
+@keyframes pr{0%{transform:translateY(0) scale(1);opacity:0}5%{opacity:.6}95%{opacity:.6}100%{transform:translateY(-500px) scale(.2);opacity:0}}
+
+/* Phase system */
+.ph{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .6s cubic-bezier(.4,0,.2,1),visibility 0s .6s;overflow:hidden;transform-style:preserve-3d}
+.ph.on{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .6s cubic-bezier(.4,0,.2,1),visibility 0s}
+
+/* ===== P1 ===== */
+.p1w{transform-style:preserve-3d;opacity:0;transform:rotateX(6deg) translateZ(-40px) translateY(20px)}
+.p1on .p1w{animation:p1i .9s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes p1i{to{opacity:1;transform:none}}
+.p1-title{font-size:26px;font-weight:700;color:white;margin-bottom:24px;letter-spacing:-.02em;text-align:center;opacity:0}
+.p1on .p1-title{animation:fi .6s ease forwards .1s}
+@keyframes fi{to{opacity:1}}
+.sbar{display:flex;align-items:center;width:620px;height:62px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:0 8px 0 24px;gap:12px;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.03)}
+.sbar .ic{color:var(--lt);flex-shrink:0}
+.sbar .tt{flex:1;font-size:17px;color:white;font-weight:500;overflow:hidden;white-space:nowrap}
+.sbar .cur{display:inline-block;width:2px;height:20px;background:var(--b);vertical-align:middle;animation:bk 1s step-end infinite}
+@keyframes bk{50%{opacity:0}}
+.sbtn{height:46px;padding:0 28px;border-radius:10px;background:var(--b);color:white;border:none;font-family:var(--f);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 24px rgba(37,99,235,.25);flex-shrink:0;transition:transform .15s}
+.sbtn.pulse{animation:bp .6s ease-in-out 2}
+@keyframes bp{50%{box-shadow:0 4px 40px rgba(37,99,235,.5);transform:scale(1.04)}}
+.p1x .p1w{animation:p1o .5s ease forwards!important}
+@keyframes p1o{to{opacity:0;transform:scale(1.1);filter:blur(12px)}}
+/* Explosion particles */
+.expl{position:absolute;inset:0;pointer-events:none;z-index:25}
+.ep{position:absolute;border-radius:50%;pointer-events:none;opacity:0}
+.ep.go{animation:epf var(--d) cubic-bezier(.16,1,.3,1) forwards}
+@keyframes epf{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
+.shock{position:absolute;top:50%;left:50%;width:0;height:0;border-radius:50%;border:2px solid rgba(37,99,235,.35);z-index:24;pointer-events:none;transform:translate(-50%,-50%)}
+.shock.go{animation:shk .7s ease-out forwards}
+@keyframes shk{to{width:1400px;height:1400px;border-color:transparent}}
+
+/* ===== P2 ===== */
+.p2w{width:100%;height:100%;position:relative;transform-style:preserve-3d}
+.orb-w{position:absolute;display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;transform-style:preserve-3d}
+.orb-w.on{animation:oi 1s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes oi{0%{opacity:0;transform:scale(.2) translateZ(-300px)}100%{opacity:1;transform:scale(1) translateZ(0)}}
+.orb{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;position:relative;animation:of 3.5s ease-in-out infinite}
+@keyframes of{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.orb::before{content:'';position:absolute;inset:-8px;border-radius:50%;background:inherit;opacity:.1;filter:blur(20px);z-index:-1}
+.orb::after{content:'';position:absolute;inset:-20px;border-radius:50%;border:1.5px solid;opacity:.12;animation:rng 3s ease-in-out infinite}
+@keyframes rng{50%{transform:scale(1.2);opacity:.05}}
+.orb.gp{background:linear-gradient(135deg,#0cad80,#10a37f);box-shadow:0 0 70px rgba(16,163,127,.3)}
+.orb.gp::after{border-color:var(--gpt)}
+.orb.ca{background:linear-gradient(135deg,#e8922b,#d97706);box-shadow:0 0 70px rgba(217,119,6,.3)}
+.orb.ca::after{border-color:var(--cl)}
+.olbl{font-size:14px;font-weight:600;color:white}
+
+/* Mini chat windows */
+.chatw{position:absolute;border-radius:12px;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,.5);opacity:0;transform:translateY(20px) scale(.92);width:380px}
+.chatw.on{animation:cwi .7s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes cwi{to{opacity:1;transform:translateY(0) scale(1)}}
+.chatw.gpt-chat{background:#343541;left:50%;margin-left:-620px;top:50%;margin-top:40px}
+.chatw.cl-chat{background:#F7F5F0;left:50%;margin-left:240px;top:50%;margin-top:40px}
+.cw-hdr{height:32px;display:flex;align-items:center;padding:0 14px;gap:6px;font-size:11px;font-weight:600}
+.gpt-chat .cw-hdr{background:#2A2B32;color:rgba(255,255,255,.7)}
+.cl-chat .cw-hdr{background:#EBE7DF;color:#5D4E37}
+.cw-dot{width:6px;height:6px;border-radius:50%}
+.cw-body{padding:14px;min-height:130px}
+.cw-msg{border-radius:10px;padding:10px 14px;font-size:11px;line-height:1.5;margin-bottom:8px;max-width:90%}
+.gpt-chat .cw-msg.user{background:#40414F;color:rgba(255,255,255,.85);margin-left:auto}
+.gpt-chat .cw-msg.ai{background:transparent;color:rgba(255,255,255,.75)}
+.cl-chat .cw-msg.user{background:#E8E4DC;color:#3D3929}
+.cl-chat .cw-msg.ai{background:#fff;color:#3D3929;border:1px solid #E2DED6}
+.cw-msg .hl{background:rgba(37,99,235,.2);color:var(--b);padding:0 3px;border-radius:3px;font-weight:600}
+.cw-msg.ai{opacity:0}
+.cw-msg.ai.on{animation:fi .4s ease forwards}
+/* Typing indicator */
+.typing{display:inline-flex;gap:3px;padding:4px 0}
+.typing span{width:5px;height:5px;border-radius:50%;animation:tdot 1.2s ease-in-out infinite}
+.gpt-chat .typing span{background:rgba(255,255,255,.4)}
+.cl-chat .typing span{background:rgba(61,57,41,.3)}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* Center convergence */
+#beamCv{position:absolute;inset:0;z-index:0;pointer-events:none}
+
+/* ===== P3 ===== */
+.p3w{width:100%;height:100%;position:relative;perspective:1600px;transform-style:preserve-3d}
+.wc{position:absolute;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.55);opacity:0;transform-style:preserve-3d;will-change:transform,opacity}
+.wc .chrome{height:28px;display:flex;align-items:center;padding:0 10px;gap:4px}
+.wc .chrome .dot{width:6px;height:6px;border-radius:50%}
+.wc .chrome .ubar{flex:1;margin-left:6px;height:16px;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:8px;font-family:var(--m);overflow:hidden;white-space:nowrap}
+.wc .body{position:relative;overflow:hidden;padding:12px 14px}
+.wc .body .nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid}
+.wc .body .logo-t{font-weight:700;font-size:11px}
+.wc .body .nav-links{display:flex;gap:6px;margin-left:auto}
+.wc .body .nav-links span{font-size:7px;opacity:.5}
+.wc .body .hero-hl{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:6px}
+.wc .body .hero-sub{font-size:8px;opacity:.6;margin-bottom:8px;line-height:1.4}
+.wc .body .tag-row{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.wc .body .tag-row span{padding:2px 6px;border-radius:3px;font-size:7px;font-weight:600}
+.wc .body .rating{display:flex;align-items:center;gap:3px;font-size:8px;margin-bottom:6px}
+.wc .body .stars-i{color:#F59E0B;font-size:10px}
+.wc .body .para{font-size:8px;line-height:1.5;opacity:.55;margin-bottom:4px}
+.wc .body .mention-hl{background:rgba(37,99,235,.15);border-left:2px solid var(--b);padding:4px 8px;border-radius:0 4px 4px 0;font-size:8px;line-height:1.4;opacity:0;transition:opacity .4s}
+.wc .body .mention-hl.on{opacity:1;box-shadow:0 0 20px rgba(37,99,235,.1)}
+.wc .scan-line{position:absolute;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent 10%,var(--b) 50%,transparent 90%);opacity:0;z-index:5;top:28px}
+.wc.scanning .scan-line{animation:scln 1.2s ease-in-out forwards}
+@keyframes scln{0%{top:28px;opacity:0}8%{opacity:.8}92%{opacity:.8}100%{top:100%;opacity:0}}
+.wc .badge{position:absolute;top:34px;right:10px;padding:3px 9px;border-radius:6px;font-size:8px;font-weight:700;opacity:0;z-index:6;backdrop-filter:blur(4px)}
+.wc .badge.ok{background:rgba(16,185,129,.12);color:var(--g);border:1px solid rgba(16,185,129,.2)}
+.wc .badge.no{background:rgba(231,68,68,.1);color:var(--r);border:1px solid rgba(231,68,68,.2)}
+.wc .badge.on{animation:bpop .35s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes bpop{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}
+/* Floating URLs */
+.furl{position:absolute;font-size:10px;color:rgba(37,99,235,.25);font-family:var(--m);white-space:nowrap;opacity:0;z-index:2}
+.furl.on{animation:furlIn .8s ease forwards}
+@keyframes furlIn{to{opacity:1}}
+
+/* Reddit dark card */
+.wc.reddit{background:#1A1A1B;color:#D7DADC}
+.wc.reddit .chrome{background:#272729}.wc.reddit .chrome .ubar{background:#343536;color:#818384}
+.wc.reddit .body .nav{border-color:#343536}.wc.reddit .body .logo-t{color:#FF4500}
+.wc.reddit .body .hero-hl{color:#D7DADC}.wc.reddit .body .hero-sub{color:#818384}
+.wc.reddit .body .tag-row span{background:#272729;color:#818384}
+/* G2 */
+.wc.g2{background:#fff;color:var(--tx)}
+.wc.g2 .chrome{background:#F8F9FA}.wc.g2 .chrome .ubar{background:#EBEDF0;color:var(--mt)}
+.wc.g2 .body .nav{border-color:#E5E7EB}.wc.g2 .body .logo-t{color:#FF492C}
+.wc.g2 .body .tag-row span{background:#FFF3EE;color:#FF492C}
+/* TechCrunch */
+.wc.tc{background:#fff;color:var(--tx)}
+.wc.tc .chrome{background:#0A9946}.wc.tc .chrome .ubar{background:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.wc.tc .body .nav{border-color:#E5E7EB}.wc.tc .body .logo-t{color:#0A9946}
+.wc.tc .body .tag-row span{background:#E6F7EE;color:#0A9946}
+/* ProductHunt */
+.wc.ph-card{background:#fff;color:var(--tx)}
+.wc.ph-card .chrome{background:#F8F9FA}.wc.ph-card .chrome .ubar{background:#EBEDF0;color:var(--mt)}
+.wc.ph-card .body .nav{border-color:#E5E7EB}.wc.ph-card .body .logo-t{color:#DA552F}
+.wc.ph-card .body .tag-row span{background:#FFF0EB;color:#DA552F}
+/* Forbes */
+.wc.forbes{background:#fff;color:var(--tx)}
+.wc.forbes .chrome{background:#1C1C1C}.wc.forbes .chrome .ubar{background:#333;color:#999}
+.wc.forbes .body .nav{border-color:#E5E7EB}.wc.forbes .body .logo-t{color:#1C1C1C;font-style:italic}
+.wc.forbes .body .tag-row span{background:#F5F5F5;color:#666}
+/* Capterra */
+.wc.capt{background:#fff;color:var(--tx)}
+.wc.capt .chrome{background:#044D80}.wc.capt .chrome .ubar{background:rgba(255,255,255,.15);color:rgba(255,255,255,.6)}
+.wc.capt .body .nav{border-color:#E5E7EB}.wc.capt .body .logo-t{color:#044D80}
+.wc.capt .body .tag-row span{background:#E8F4FC;color:#044D80}
+/* Zapier */
+.wc.zap{background:#fff;color:var(--tx)}
+.wc.zap .chrome{background:#FF4A00}.wc.zap .chrome .ubar{background:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.wc.zap .body .nav{border-color:#E5E7EB}.wc.zap .body .logo-t{color:#FF4A00}
+.wc.zap .body .tag-row span{background:#FFF0EB;color:#FF4A00}
+/* Trustpilot */
+.wc.tp{background:#fff;color:var(--tx)}
+.wc.tp .chrome{background:#00B67A}.wc.tp .chrome .ubar{background:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.wc.tp .body .nav{border-color:#E5E7EB}.wc.tp .body .logo-t{color:#00B67A}
+.wc.tp .body .tag-row span{background:#E6F9F1;color:#00B67A}
+/* PCMag */
+.wc.pcm{background:#fff;color:var(--tx)}
+.wc.pcm .chrome{background:#E21C21}.wc.pcm .chrome .ubar{background:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.wc.pcm .body .nav{border-color:#E5E7EB}.wc.pcm .body .logo-t{color:#E21C21}
+.wc.pcm .body .tag-row span{background:#FDEAEA;color:#E21C21}
+/* AltTo */
+.wc.alt{background:#fff;color:var(--tx)}
+.wc.alt .chrome{background:#F8F9FA}.wc.alt .chrome .ubar{background:#EBEDF0;color:var(--mt)}
+.wc.alt .body .nav{border-color:#E5E7EB}.wc.alt .body .logo-t{color:#3B82F6}
+.wc.alt .body .tag-row span{background:#EFF6FF;color:#3B82F6}
+
+/* ===== P4 ===== */
+.p4w{width:100%;height:100%;display:flex;align-items:center;justify-content:center;perspective:1400px;transform-style:preserve-3d}
+.rcard{width:720px;background:var(--card);border-radius:22px;box-shadow:0 40px 100px rgba(0,0,0,.55),0 0 80px rgba(37,99,235,.06);overflow:hidden;opacity:0;transform:scale(.75) rotateX(10deg) translateZ(-100px)}
+.rcard.on{animation:rci 1s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes rci{to{opacity:1;transform:none}}
+.rc-h{padding:20px 28px 12px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px}
+.rc-ico{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--b),#1d4ed8);display:flex;align-items:center;justify-content:center;color:white}
+.rc-t1{font-size:17px;font-weight:700;color:var(--tx)}.rc-t2{font-size:12px;color:var(--mt);margin-top:1px}
+.rc-bd{padding:22px 28px;display:flex;gap:28px;align-items:flex-start}
+.sring{position:relative;width:120px;height:120px;flex-shrink:0}
+.sring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.sring .trk{fill:none;stroke:#F1F3F5;stroke-width:10}
+.sring .fl{fill:none;stroke:var(--b);stroke-width:10;stroke-linecap:round;stroke-dasharray:314;stroke-dashoffset:314}
+.sring.go .fl{animation:rf 1.5s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes rf{to{stroke-dashoffset:85}}
+.sring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sring .sv{font-size:32px;font-weight:700;color:var(--tx)}.sring .sm{font-size:11px;color:var(--mt)}
+.rbs{flex:1;display:flex;flex-direction:column;gap:8px}
+.rb{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:11px;font-size:12px;font-weight:600;opacity:0;transform:translateX(20px)}
+.rb.on{animation:rbi .45s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes rbi{to{opacity:1;transform:none}}
+.rb.gr{background:rgba(16,185,129,.05);color:#059669;border:1px solid rgba(16,185,129,.1)}
+.rb.bl{background:rgba(37,99,235,.05);color:var(--b);border:1px solid rgba(37,99,235,.1)}
+.rb-d{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0}
+.rb.gr .rb-d{background:var(--g)}.rb.bl .rb-d{background:var(--b)}
+.rc-ch{padding:0 28px 14px;display:flex;align-items:flex-end;gap:9px;height:76px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bf{width:100%;border-radius:4px 4px 0 0;transform-origin:bottom;transform:scaleY(0);opacity:0}
+.bf.go{animation:bfu .55s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes bfu{to{opacity:1;transform:scaleY(1)}}
+.bl-l{font-size:8px;color:var(--mt);white-space:nowrap;font-weight:500}
+.rc-gp{padding:0 28px 16px}
+.gp-t{font-size:10px;font-weight:600;color:var(--mt);margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em}
+.gp-r{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F5F5F5;opacity:0;transform:translateX(12px)}
+.gp-r.on{animation:rbi .35s ease forwards}
+.gp-n{font-size:11px;color:var(--tx);font-weight:500}
+.gp-b{padding:2px 8px;border-radius:5px;font-size:9px;font-weight:700}
+.gp-b.td{background:rgba(247,181,0,.07);color:#b8860b;border:1px solid rgba(247,181,0,.12)}
+.gp-b.ip{background:rgba(217,119,6,.07);color:var(--cl);border:1px solid rgba(217,119,6,.12)}
+.fa{position:absolute;top:50%;right:16%;transform:translateY(-160px);background:rgba(37,99,235,.08);backdrop-filter:blur(14px);border:1px solid rgba(37,99,235,.15);border-radius:14px;padding:13px 18px;display:flex;align-items:center;gap:9px;color:white;font-size:12px;font-weight:600;opacity:0;box-shadow:0 8px 28px rgba(37,99,235,.1)}
+.fa.on{animation:fai .6s cubic-bezier(.16,1,.3,1) forwards,fbb 4s ease-in-out infinite .8s}
+@keyframes fai{to{opacity:1}}
+@keyframes fbb{0%,100%{transform:translateY(-160px)}50%{transform:translateY(-170px)}}
+.pdt{width:7px;height:7px;border-radius:50%;background:var(--b);flex-shrink:0;animation:pd 1.3s ease-in-out infinite}
+@keyframes pd{50%{opacity:.2;transform:scale(.6)}}
+
+/* ===== P5 ===== */
+.p5w{width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:36px;perspective:1400px;transform-style:preserve-3d}
+.acard{width:540px;background:var(--card);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden;opacity:0;transform:rotateY(-5deg) translateZ(-30px)}
+.acard.on{animation:aci .75s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes aci{to{opacity:1;transform:none}}
+.ac-h{padding:16px 22px 10px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:10px}
+.ac-ico{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--g),#059669);display:flex;align-items:center;justify-content:center;color:white}
+.ac-t1{font-size:14px;font-weight:700;color:var(--tx)}.ac-t2{font-size:9px;color:var(--mt);margin-top:1px}
+.crow{display:flex;align-items:flex-start;gap:11px;padding:10px 22px;border-bottom:1px solid #F5F5F5;opacity:0;transform:translateX(16px)}
+.crow.on{animation:rbi .35s ease forwards}
+.cbox{width:20px;height:20px;border-radius:5px;border:2px solid #D1D5DB;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.cbox.dn{background:var(--g);border-color:var(--g);animation:cbounce .4s cubic-bezier(.16,1,.3,1)}
+@keyframes cbounce{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+.cbox svg{width:11px;height:11px;color:white;opacity:0;transform:scale(.3);transition:all .3s cubic-bezier(.16,1,.3,1)}
+.cbox.dn svg{opacity:1;transform:scale(1)}
+.ci{flex:1}.clb{font-size:11px;font-weight:500;color:var(--tx)}
+.ctm{font-size:8px;color:var(--lt);margin-top:1px}
+.cpri{padding:2px 8px;border-radius:5px;font-size:8px;font-weight:700;flex-shrink:0;margin-top:1px}
+.cpri.cr{background:rgba(231,68,68,.06);color:var(--r);border:1px solid rgba(231,68,68,.1)}
+.cpri.hi{background:rgba(247,181,0,.06);color:#b8860b;border:1px solid rgba(247,181,0,.1)}
+.cpri.md{background:rgba(16,185,129,.06);color:#059669;border:1px solid rgba(16,185,129,.1)}
+.apr{padding:10px 22px 12px;display:flex;align-items:center;gap:9px}
+.apr-l{font-size:9px;font-weight:600;color:var(--mt)}
+.apr-bar{flex:1;height:5px;background:#F1F3F5;border-radius:3px;overflow:hidden}
+.apr-fill{height:100%;width:0;background:linear-gradient(90deg,var(--g),#34d399);border-radius:3px;transition:width .5s cubic-bezier(.16,1,.3,1)}
+.apr-pct{font-size:9px;font-weight:700;color:var(--g);min-width:24px;text-align:right}
+.gbtn{margin:0 22px 16px;height:42px;width:calc(100% - 44px);border-radius:10px;background:var(--b);color:white;border:none;font-family:var(--f);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 5px 20px rgba(37,99,235,.2);opacity:0;cursor:pointer}
+.gbtn.on{animation:rbi .45s ease forwards}
+.gbtn.glo{animation:bg 1.2s ease-in-out infinite}
+@keyframes bg{50%{box-shadow:0 5px 40px rgba(37,99,235,.45)}}
+/* Draft card */
+.dcard{position:absolute;right:14%;top:50%;transform:translateY(-50%) rotateY(5deg) translateZ(-20px);width:320px;background:var(--card);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;opacity:0}
+.dcard.on{animation:dci .65s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes dci{to{opacity:1;transform:translateY(-50%) rotateY(0) translateZ(0)}}
+.dc-h{padding:10px 14px 7px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:6px}
+.dc-ico{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--b),#1d4ed8);display:flex;align-items:center;justify-content:center;color:white}
+.dc-t{font-size:10px;font-weight:600;color:var(--tx)}.dc-bg{margin-left:auto;padding:1px 6px;border-radius:3px;background:rgba(37,99,235,.06);color:var(--b);font-size:7px;font-weight:700}
+.dc-bd{padding:11px 14px}
+.dc-ln{height:4px;border-radius:2px;background:#EBEDF0;margin-bottom:5px}
+.dc-ln.ttl{width:60%;height:6px;background:var(--tx);opacity:.08;margin-bottom:9px}
+.dc-ln.hl{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.1)}
+.dc-ft{padding:6px 14px 10px;display:flex;gap:6px}
+.dc-b{height:24px;padding:0 10px;border-radius:5px;border:none;font-family:var(--f);font-size:8px;font-weight:600;cursor:pointer}
+.dc-b.pr{background:var(--b);color:white}.dc-b.sc{background:#F1F3F5;color:var(--mt)}
+
+/* ===== FINAL ===== */
+.fin{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;opacity:0;pointer-events:none}
+.fin.on{animation:fni 1.2s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes fni{0%{opacity:0;transform:scale(.85) translateZ(-60px)}100%{opacity:1;transform:none}}
+.fin-glow{position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.35),transparent 70%);opacity:0;filter:blur(40px)}
+.fin.on .fin-glow{animation:fgl 1.5s ease forwards .3s}
+@keyframes fgl{0%{opacity:0;width:80px;height:80px}100%{opacity:1;width:450px;height:450px}}
+.fl-m{width:72px;height:72px;border-radius:18px;overflow:hidden;box-shadow:0 10px 50px rgba(37,99,235,.4);z-index:1;background:white}
+.fl-m img{width:100%;height:100%;object-fit:contain;display:block}
+.fl-n{font-size:38px;font-weight:700;color:#f0f0f5;letter-spacing:-.03em;z-index:1}
+.fl-ln{width:50px;height:2px;background:linear-gradient(90deg,transparent,var(--b),transparent);z-index:1}
+.fl-tag{font-size:15px;color:rgba(255,255,255,.65);font-weight:500;z-index:1}
+.fl-url{font-size:13px;color:#2563EB;font-weight:600;letter-spacing:.02em;z-index:1;margin-top:-4px}
+
+/* Replay */
+.replay{position:absolute;bottom:24px;right:28px;z-index:50;display:flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(255,255,255,.04);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:999px;color:rgba(255,255,255,.35);font-family:var(--f);font-size:10px;font-weight:500;cursor:pointer;transition:all .2s}
+.replay:hover{background:rgba(255,255,255,.08);color:white}
+.replay svg{width:12px;height:12px}
+</style>
+</head>
+<body>
+<div class="S" id="S">
+<div class="bg-grid"></div><div class="glow a"></div><div class="glow b"></div><div class="vig"></div>
+<div class="stars" id="stars"></div><div class="particles" id="particles"></div>
+
+<!-- P1 -->
+<div class="ph" id="p1"><div class="p1w"><div class="p1-title">Enter your product URL</div><div class="sbar"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div><div class="tt"><span id="tt"></span><span class="cur"></span></div><button class="sbtn" id="sb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Scan</button></div></div><div class="expl" id="expl"></div><div class="shock" id="shock"></div></div>
+
+<!-- P2 -->
+<div class="ph" id="p2"><div class="p2w">
+<canvas id="beamCv" width="1920" height="1080"></canvas>
+<div class="orb-w" id="og" style="left:50%;margin-left:-420px;top:50%;margin-top:-60px"><div class="orb gp">GPT</div><div class="olbl">ChatGPT</div></div>
+<div class="orb-w" id="oc" style="left:50%;margin-left:340px;top:50%;margin-top:-60px"><div class="orb ca">C</div><div class="olbl">Claude</div></div>
+<div class="chatw gpt-chat" id="gptChat"><div class="cw-hdr"><div class="cw-dot" style="background:#FF5F57"></div><div class="cw-dot" style="background:#FEBC2E"></div><div class="cw-dot" style="background:#28C840"></div><span style="margin-left:6px">ChatGPT</span></div><div class="cw-body"><div class="cw-msg user">What are the best project management tools for startups?</div><div class="cw-msg ai" id="gptAi"><div class="typing" id="gptTyp"><span></span><span></span><span></span></div><span id="gptTxt" style="display:none"></span></div></div></div>
+<div class="chatw cl-chat" id="clChat"><div class="cw-hdr"><div class="cw-dot" style="background:#FF5F57"></div><div class="cw-dot" style="background:#FEBC2E"></div><div class="cw-dot" style="background:#28C840"></div><span style="margin-left:6px">Claude</span></div><div class="cw-body"><div class="cw-msg user">Recommend software for team collaboration</div><div class="cw-msg ai" id="clAi"><div class="typing" id="clTyp"><span></span><span></span><span></span></div><span id="clTxt" style="display:none"></span></div></div></div>
+</div></div>
+
+<!-- P3 -->
+<div class="ph" id="p3"><div class="p3w" id="p3w">
+<div class="wc reddit" id="w0" style="width:340px" data-from="left"><div class="chrome"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div><div class="ubar">reddit.com/r/SaaS</div></div><div class="body"><div class="nav"><span class="logo-t">r/SaaS</span><div class="nav-links"><span>Hot</span><span>New</span><span>Top</span></div></div><div class="hero-hl">What's the best PM tool you've used this year?</div><div class="hero-sub">Posted by u/startupfounder · 127 upvotes · 84 comments</div><div class="tag-row"><span>Discussion</span><span>Tools</span></div><div class="mention-hl">💡 We switched to <b>YourProduct</b> last quarter and it's been a game changer for our remote team...</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc g2" id="w1" style="width:320px" data-from="top"><div class="chrome"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div><div class="ubar">g2.com/categories/project-management</div></div><div class="body"><div class="nav"><span class="logo-t">G2</span><div class="nav-links"><span>Reviews</span><span>Compare</span></div></div><div class="hero-hl">Best Project Management Software 2026</div><div class="rating"><span class="stars-i">★★★★★</span> 4.8 · 2,341 reviews</div><div class="tag-row"><span>#1 Leader</span><span>High Performer</span></div><div class="mention-hl"><b>YourProduct</b> rated 4.8/5 — "Best AI-powered PM tool we've tried"</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc tc" id="w2" style="width:350px" data-from="right"><div class="chrome"><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="ubar">techcrunch.com/category/apps</div></div><div class="body"><div class="nav"><span class="logo-t">TechCrunch</span><div class="nav-links"><span>Startups</span><span>AI</span></div></div><div class="hero-hl">The 10 Best Project Management Tools for 2026</div><div class="hero-sub">By Sarah Chen · March 2026 · 8 min read</div><div class="tag-row"><span>Apps</span><span>Productivity</span></div><div class="para">We tested 40+ tools and narrowed it down to the top picks. While Asana leads in enterprise...</div><div class="scan-line"></div></div><div class="badge no">✗ Not found</div></div>
+
+<div class="wc ph-card" id="w3" style="width:300px" data-from="bottom"><div class="chrome"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div><div class="ubar">producthunt.com/posts/yourproduct</div></div><div class="body"><div class="nav"><span class="logo-t">Product Hunt</span><div class="nav-links"><span>Products</span><span>Topics</span></div></div><div class="hero-hl">YourProduct — AI visibility for your SaaS</div><div class="hero-sub">🔺 487 upvotes · #3 Product of the Day</div><div class="tag-row"><span>SaaS</span><span>AI</span><span>Marketing</span></div><div class="mention-hl">Featured: "Finally a tool that shows if AI recommends your product"</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc forbes" id="w4" style="width:330px" data-from="left"><div class="chrome"><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="ubar">forbes.com/advisor/business/pm-tools</div></div><div class="body"><div class="nav"><span class="logo-t">Forbes Advisor</span><div class="nav-links"><span>Business</span><span>Software</span></div></div><div class="hero-hl">Best PM Software Of 2026</div><div class="hero-sub">Written by a Forbes Advisor Staff · Updated Feb 2026</div><div class="tag-row"><span>Editor's Choice</span><span>Best Value</span></div><div class="mention-hl"><b>YourProduct</b> — Best for AI-powered insights. Score: 4.6/5</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc capt" id="w5" style="width:310px" data-from="right"><div class="chrome"><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="ubar">capterra.com/project-management</div></div><div class="body"><div class="nav"><span class="logo-t">Capterra</span><div class="nav-links"><span>Reviews</span><span>Compare</span></div></div><div class="hero-hl">Top 20 Project Management Software</div><div class="rating"><span class="stars-i">★★★★☆</span> 4.5 · 892 reviews</div><div class="tag-row"><span>Verified</span><span>Shortlist 2026</span></div><div class="mention-hl"><b>YourProduct</b>: "Excellent AI features" — Verified User</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc zap" id="w6" style="width:340px" data-from="top"><div class="chrome"><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="ubar">zapier.com/blog/best-pm-software</div></div><div class="body"><div class="nav"><span class="logo-t">Zapier Blog</span><div class="nav-links"><span>Tools</span><span>Tips</span></div></div><div class="hero-hl">The 12 Best PM Apps in 2026</div><div class="hero-sub">By Elena Sharma · Updated January 2026</div><div class="tag-row"><span>Productivity</span><span>Guide</span></div><div class="mention-hl"><b>YourProduct</b> is worth considering if AI visibility matters to your team.</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc tp" id="w7" style="width:300px" data-from="bottom"><div class="chrome"><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="ubar">trustpilot.com/review/yourproduct</div></div><div class="body"><div class="nav"><span class="logo-t">Trustpilot</span><div class="nav-links"><span>Reviews</span><span>Categories</span></div></div><div class="hero-hl">YourProduct Reviews</div><div class="rating"><span class="stars-i">★★★★★</span> 4.7 · TrustScore Excellent</div><div class="tag-row"><span>Claimed</span><span>Verified</span></div><div class="para">Based on 234 reviews. Users praise the AI scanning accuracy and clean interface...</div><div class="scan-line"></div></div><div class="badge no">✗ Not found</div></div>
+
+<div class="wc pcm" id="w8" style="width:320px" data-from="left"><div class="chrome"><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="dot" style="background:rgba(255,255,255,.3)"></div><div class="ubar">pcmag.com/picks/best-pm-tools</div></div><div class="body"><div class="nav"><span class="logo-t">PCMag</span><div class="nav-links"><span>Reviews</span><span>Best Picks</span></div></div><div class="hero-hl">The Best PM Software for 2026</div><div class="hero-sub">By Rob Marvin · PCMag Editor · ★★★★</div><div class="tag-row"><span>Editors' Choice</span></div><div class="mention-hl"><b>YourProduct</b> earns our Editors' Choice for AI-driven project tools.</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="wc alt" id="w9" style="width:310px" data-from="right"><div class="chrome"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div><div class="ubar">alternativeto.net/software/asana</div></div><div class="body"><div class="nav"><span class="logo-t">AlternativeTo</span><div class="nav-links"><span>Apps</span><span>Lists</span></div></div><div class="hero-hl">Alternatives to Asana</div><div class="hero-sub">43 alternatives listed · Sorted by likes</div><div class="tag-row"><span>Free</span><span>Open Source</span><span>SaaS</span></div><div class="mention-hl"><b>YourProduct</b> — liked by 89 users as an Asana alternative</div><div class="scan-line"></div></div><div class="badge ok">✓ Mentioned</div></div>
+
+<div class="furl" id="u0" style="left:8%;top:52%">https://www.g2.com/categories/project-management</div>
+<div class="furl" id="u1" style="left:55%;top:85%">https://reddit.com/r/SaaS/best_tools_2026</div>
+<div class="furl" id="u2" style="left:25%;top:90%">https://forbes.com/advisor/business/software</div>
+</div></div>
+
+<!-- P4 -->
+<div class="ph" id="p4"><div class="p4w">
+<div class="rcard" id="rc"><div class="rc-h"><div class="rc-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><div class="rc-t1">Scan Results — yourproduct.com</div><div class="rc-t2">AI visibility analysis complete</div></div></div>
+<div class="rc-bd"><div class="sring" id="sr"><svg viewBox="0 0 120 120"><circle class="trk" cx="60" cy="60" r="50"/><circle class="fl" cx="60" cy="60" r="50"/></svg><div class="ctr"><span class="sv" id="sv">0</span><span class="sm">/100</span></div></div>
+<div class="rbs"><div class="rb gr" id="r1"><div class="rb-d"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>Mentioned by ChatGPT</div><div class="rb gr" id="r2"><div class="rb-d"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>Mentioned by Claude</div><div class="rb bl" id="r3"><div class="rb-d"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>5 competitors found</div></div></div>
+<div class="rc-ch"><div class="bcol"><div class="bf" style="height:52px;background:var(--b)"></div><div class="bl-l">You (73)</div></div><div class="bcol"><div class="bf" style="height:62px;background:#7c3aed"></div><div class="bl-l">Asana (85)</div></div><div class="bcol"><div class="bf" style="height:44px;background:#f59e0b"></div><div class="bl-l">Monday (60)</div></div><div class="bcol"><div class="bf" style="height:33px;background:#94a3b8"></div><div class="bl-l">Notion (45)</div></div><div class="bcol"><div class="bf" style="height:25px;background:#cbd5e1"></div><div class="bl-l">ClickUp (35)</div></div></div>
+<div class="rc-gp"><div class="gp-t">Content Gaps Detected</div><div class="gp-r"><span class="gp-n">Comparison page vs. Asana</span><span class="gp-b td">To-do</span></div><div class="gp-r"><span class="gp-n">FAQ section for AI queries</span><span class="gp-b td">To-do</span></div><div class="gp-r"><span class="gp-n">Use case pages (remote teams)</span><span class="gp-b ip">In progress</span></div></div></div>
+<div class="fa" id="fa"><div class="pdt"></div>3 optimization opportunities found</div>
+</div></div>
+
+<!-- P5 -->
+<div class="ph" id="p5"><div class="p5w">
+<div class="acard" id="ac"><div class="ac-h"><div class="ac-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div><div class="ac-t1">AI Visibility Checklist</div><div class="ac-t2">7 tasks · Personalized for yourproduct.com</div></div></div>
+<div class="crow" id="c0"><div class="cbox" id="x0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Register with Bing Webmaster Tools</div><div class="ctm">10 mins</div></div><span class="cpri cr">CRITICAL</span></div>
+<div class="crow" id="c1"><div class="cbox" id="x1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Create comparison page vs. Asana</div><div class="ctm">45 mins</div></div><span class="cpri cr">CRITICAL</span></div>
+<div class="crow" id="c2"><div class="cbox" id="x2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Add structured FAQ for AI queries</div><div class="ctm">30 mins</div></div><span class="cpri hi">HIGH</span></div>
+<div class="crow" id="c3"><div class="cbox" id="x3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Publish use-case pages</div><div class="ctm">1 hour</div></div><span class="cpri hi">HIGH</span></div>
+<div class="crow" id="c4"><div class="cbox" id="x4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Add testimonials &amp; case studies</div><div class="ctm">30 mins</div></div><span class="cpri md">MEDIUM</span></div>
+<div class="crow" id="c5"><div class="cbox" id="x5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Submit sitemap to Google &amp; Bing</div><div class="ctm">15 mins</div></div><span class="cpri md">MEDIUM</span></div>
+<div class="crow" id="c6"><div class="cbox" id="x6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="ci"><div class="clb">Add schema markup for AI context</div><div class="ctm">20 mins</div></div><span class="cpri md">MEDIUM</span></div>
+<div class="apr"><span class="apr-l">Progress</span><div class="apr-bar"><div class="apr-fill" id="pf"></div></div><span class="apr-pct" id="pp">0%</span></div>
+<button class="gbtn" id="gb"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4"/></svg>Generate Content Drafts</button>
+</div>
+<div class="dcard" id="dc"><div class="dc-h"><div class="dc-ico"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4"/></svg></div><div class="dc-t">AI-Generated Draft</div><div class="dc-bg">PREVIEW</div></div><div class="dc-bd"><div class="dc-ln ttl"></div><div class="dc-ln" style="width:95%"></div><div class="dc-ln" style="width:85%"></div><div class="dc-ln hl" style="width:75%"></div><div class="dc-ln" style="width:65%"></div><div class="dc-ln" style="width:90%"></div><div class="dc-ln hl" style="width:80%"></div><div class="dc-ln" style="width:45%"></div></div><div class="dc-ft"><button class="dc-b pr">Copy Draft</button><button class="dc-b sc">Edit</button></div></div>
+</div></div>
+
+<!-- Final -->
+<div class="fin" id="fin"><div class="fin-glow"></div><div class="fl-m"><img src="public/logo.png" alt="Mentioned"></div><div class="fl-n">Mentioned</div><div class="fl-ln"></div><div class="fl-tag">See if AI recommends your product</div><div class="fl-url">mentioned.pro</div></div>
+
+<button class="replay" id="rep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Replay</button>
+</div>
+
+<script>
+(function(){
+var S=document.getElementById('S');
+function fit(){var s=Math.min(innerWidth/1920,innerHeight/1080);S.style.transform='scale('+s+')'}
+fit();addEventListener('resize',fit);
+
+// BG
+var sc=document.getElementById('stars');for(var i=0;i<50;i++){var s=document.createElement('div');s.className='star';s.style.cssText='width:'+(1+Math.random()*1.5)+'px;height:'+(1+Math.random()*1.5)+'px;left:'+Math.random()*1920+'px;top:'+Math.random()*1080+'px;animation-duration:'+(2+Math.random()*5)+'s;animation-delay:'+Math.random()*4+'s';sc.appendChild(s)}
+var pc=document.getElementById('particles');for(var i=0;i<25;i++){var p=document.createElement('div');p.className='ptcl';var sz=1.5+Math.random()*2;p.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*1920+'px;top:'+(300+Math.random()*780)+'px;animation-duration:'+(10+Math.random()*14)+'s;animation-delay:'+Math.random()*10+'s;background:'+(Math.random()>.5?'rgba(37,99,235,.18)':'rgba(16,185,129,.12)');pc.appendChild(p)}
+
+// Beam canvas
+var cv=document.getElementById('beamCv'),ctx=cv.getContext('2d');var beamOn=false,beamId;
+function beams(){if(!beamOn){ctx.clearRect(0,0,1920,1080);return}ctx.clearRect(0,0,1920,1080);var t=performance.now()/1000;var lx=590,ly=530,rx=1350,ry=530;
+for(var i=0;i<8;i++){var o=i*.5;ctx.beginPath();ctx.moveTo(lx,ly);ctx.bezierCurveTo(lx+260,ly+Math.sin(t*2.5+o)*110,rx-260,ry+Math.cos(t*2+o)*110,rx,ry);ctx.strokeStyle='rgba(37,99,235,'+(0.05+Math.sin(t*3+i)*.025)+')';ctx.lineWidth=1.5+Math.sin(t+i)*.5;ctx.stroke()}
+for(var i=0;i<6;i++){var pr=((t*.5+i*.167)%1);var tt=pr;var cy1=ly+Math.sin(t*2.5+i*.4)*100,cy2=ry+Math.cos(t*2+i*.4)*100;var x=Math.pow(1-tt,3)*lx+3*Math.pow(1-tt,2)*tt*(lx+260)+3*(1-tt)*tt*tt*(rx-260)+tt*tt*tt*rx;var y=Math.pow(1-tt,3)*ly+3*Math.pow(1-tt,2)*tt*cy1+3*(1-tt)*tt*tt*cy2+tt*tt*tt*ry;ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fillStyle='rgba(37,99,235,.08)';ctx.fill();ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle='rgba(37,99,235,.5)';ctx.fill();ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fillStyle='rgba(140,180,255,.7)';ctx.fill()}
+beamId=requestAnimationFrame(beams)}
+
+var gptHTML='Based on my analysis, the top tools include <span class="hl">yourproduct.com</span>, Asana, and Monday.com. <span class="hl">YourProduct</span> stands out for...';
+var clHTML='I\'d recommend considering <span class="hl">YourProduct</span> for its AI-powered features, along with Notion and ClickUp for...';
+function streamHTML(el,html,ms){el.style.display='';el.innerHTML='';var breaks=[0],inTag=false;for(var i=0;i<html.length;i++){if(html[i]==='<')inTag=true;if(html[i]==='>')inTag=false;if(!inTag&&html[i]===' ')breaks.push(i+1)}breaks.push(html.length);var step=0;function go(){if(step>=breaks.length)return;el.innerHTML=html.substring(0,breaks[step]);step++;if(step<breaks.length)setTimeout(go,ms)}go()}
+
+var T={},WC=10,CK=7;
+function cl(){for(var k in T){clearTimeout(T[k]);clearInterval(T[k])}T={};beamOn=false;cancelAnimationFrame(beamId);ctx.clearRect(0,0,1920,1080)}
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function hide(){$$('.ph').forEach(function(p){p.classList.remove('on')});$('fin').classList.remove('on')}
+
+function rP1(){$('p1').classList.remove('p1on','p1x');$('tt').textContent='';$('sb').classList.remove('pulse');$('shock').classList.remove('go');$('expl').innerHTML=''}
+function rP2(){$('og').classList.remove('on');$('oc').classList.remove('on');$('gptChat').classList.remove('on');$('clChat').classList.remove('on');$('gptAi').classList.remove('on');$('clAi').classList.remove('on');$('gptTyp').style.display='';$('gptTxt').style.display='none';$('gptTxt').innerHTML='';$('clTyp').style.display='';$('clTxt').style.display='none';$('clTxt').innerHTML=''}
+function rP3(){for(var i=0;i<WC;i++){var c=$('w'+i);if(c){c.style.opacity='0';c.style.transform='';c.style.left='';c.style.top='';c.classList.remove('scanning');c.querySelector('.badge').classList.remove('on');var m=c.querySelector('.mention-hl');if(m)m.classList.remove('on')}}$$('.furl').forEach(function(u){u.classList.remove('on')})}
+function rP4(){$('rc').classList.remove('on');$('sr').classList.remove('go');$('sv').textContent='0';['r1','r2','r3'].forEach(function(i){$(i).classList.remove('on')});$$('.bf').forEach(function(b){b.classList.remove('go')});$$('.gp-r').forEach(function(g){g.classList.remove('on')});$('fa').classList.remove('on')}
+function rP5(){$('ac').classList.remove('on');for(var i=0;i<CK;i++){$('c'+i).classList.remove('on');$('x'+i).classList.remove('dn')}$('gb').classList.remove('on','glo');$('pf').style.width='0';$('pp').textContent='0%';$('dc').classList.remove('on')}
+
+function countUp(el,to,dur){var st=performance.now();(function tk(n){var p=Math.min((n-st)/dur,1);el.textContent=Math.round(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tk)})(st)}
+
+function explode(){
+  var ex=$('expl');ex.innerHTML='';
+  for(var i=0;i<40;i++){var p=document.createElement('div');p.className='ep';var a=Math.random()*Math.PI*2;var d=100+Math.random()*400;p.style.cssText='left:50%;top:50%;width:'+(3+Math.random()*5)+'px;height:'+(3+Math.random()*5)+'px;background:'+(Math.random()>.3?'rgba(37,99,235,'+(0.4+Math.random()*0.4)+')':'rgba(255,255,255,'+(0.2+Math.random()*0.3)+')');p.style.setProperty('--tx',Math.cos(a)*d+'px');p.style.setProperty('--ty',Math.sin(a)*d+'px');p.style.setProperty('--d',(0.5+Math.random()*0.6)+'s');ex.appendChild(p);requestAnimationFrame(function(){p.classList.add('go')})}
+}
+
+// 3D card positioning — dramatic angles + scale variation
+var cardPos=[
+  {x:3,y:14,z:-60,rx:-5,ry:12,s:1.05},{x:36,y:10,z:30,rx:4,ry:-8,s:0.92},{x:60,y:12,z:-80,rx:-3,ry:10,s:1.08},
+  {x:10,y:46,z:50,rx:6,ry:-6,s:0.88},{x:40,y:52,z:-40,rx:-5,ry:8,s:1.02},{x:66,y:44,z:40,rx:3,ry:-10,s:0.95},
+  {x:20,y:28,z:-70,rx:5,ry:7,s:1.1},{x:53,y:30,z:60,rx:-6,ry:-5,s:0.9},
+  {x:6,y:66,z:30,rx:4,ry:9,s:0.93},{x:46,y:68,z:-30,rx:-4,ry:-7,s:1.05}
+];
+function flyCard(id,idx,delay){
+  var c=$(id);if(!c)return;var pos=cardPos[idx];var from=c.dataset.from;var sx,sy;
+  if(from==='left'){sx='-600px';sy='0'}else if(from==='right'){sx='2400px';sy='0'}
+  else if(from==='top'){sx='0';sy='-500px'}else{sx='0';sy='1300px'}
+  c.style.left=pos.x+'%';c.style.top=pos.y+'%';
+  T['wf'+idx]=setTimeout(function(){c.style.opacity='1';
+  c.animate([
+    {opacity:0,transform:'translate('+sx+','+sy+') scale('+(pos.s*.4)+') rotateX('+(pos.rx*3)+'deg) rotateY('+(pos.ry*3)+'deg) translateZ('+(pos.z-250)+'px)'},
+    {opacity:1,transform:'scale('+pos.s+') rotateX('+pos.rx+'deg) rotateY('+pos.ry+'deg) translateZ('+pos.z+'px)'}
+  ],{duration:850,easing:'cubic-bezier(.16,1,.3,1)',fill:'forwards'})},delay);
+}
+
+function run(){
+  cl();hide();rP1();rP2();rP3();rP4();rP5();
+
+  // Brief blank beat, then P1 (0.2-2.8s)
+  T.start=setTimeout(function(){
+  $('p1').classList.add('on');
+  T._1=setTimeout(function(){$('p1').classList.add('p1on')},100);
+  var tt=$('tt'),url='yourproduct.com',ci=0;
+  function tc(){if(ci<url.length){tt.textContent+=url[ci];ci++;T.tc=setTimeout(tc,60)}}
+  T.ts=setTimeout(tc,400);
+  T.bp=setTimeout(function(){$('sb').classList.add('pulse')},1500);
+  T.ex=setTimeout(function(){explode();$('shock').classList.add('go')},2100);
+  T.px=setTimeout(function(){$('p1').classList.add('p1x')},2200);
+  },200);
+
+  // P2 (3-7s)
+  T.P2=setTimeout(function(){
+    hide();$('p2').classList.add('on');
+    T.o1=setTimeout(function(){$('og').classList.add('on')},100);
+    T.o2=setTimeout(function(){$('oc').classList.add('on')},350);
+    T.bm=setTimeout(function(){beamOn=true;beams()},500);
+    T.gc=setTimeout(function(){$('gptChat').classList.add('on')},800);
+    T.cc=setTimeout(function(){$('clChat').classList.add('on')},1100);
+    T.ga=setTimeout(function(){$('gptAi').classList.add('on');T.gt=setTimeout(function(){$('gptTyp').style.display='none';streamHTML($('gptTxt'),gptHTML,50)},700)},1400);
+    T.ca=setTimeout(function(){$('clAi').classList.add('on');T.ct=setTimeout(function(){$('clTyp').style.display='none';streamHTML($('clTxt'),clHTML,50)},700)},1800);
+  },3000);
+
+  // P3 (7-12s)
+  T.P3=setTimeout(function(){
+    hide();beamOn=false;$('p3').classList.add('on');
+    for(var i=0;i<WC;i++){(function(idx){
+      var d=50+idx*120;
+      flyCard('w'+idx,idx,d);
+      T['sc'+idx]=setTimeout(function(){var c=$('w'+idx);if(c)c.classList.add('scanning')},d+350);
+      T['mh'+idx]=setTimeout(function(){var c=$('w'+idx);if(c){var m=c.querySelector('.mention-hl');if(m)m.classList.add('on')}},d+900);
+      T['bg'+idx]=setTimeout(function(){var c=$('w'+idx);if(c)c.querySelector('.badge').classList.add('on')},d+1200);
+    })(i)}
+    $$('.furl').forEach(function(u,i){T['u'+i]=setTimeout(function(){u.classList.add('on')},1200+i*350)});
+    T.die=setTimeout(function(){for(var i=0;i<WC;i++){var c=$('w'+i);if(!c)continue;c.animate([{opacity:1},{opacity:0,transform:'translate('+((960-parseInt(c.style.left||'50'))*.4)+'px,'+((400-parseInt(c.style.top||'50'))*.4)+'px) scale(.1) translateZ(-300px)'}],{duration:650,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'})}},4200);
+  },7000);
+
+  // P4 (12-16s)
+  T.P4=setTimeout(function(){
+    hide();$('p4').classList.add('on');
+    T.rc=setTimeout(function(){$('rc').classList.add('on')},60);
+    T.sg=setTimeout(function(){$('sr').classList.add('go');countUp($('sv'),73,1200)},400);
+    T.r1=setTimeout(function(){$('r1').classList.add('on')},1000);
+    T.r2=setTimeout(function(){$('r2').classList.add('on')},1200);
+    T.r3=setTimeout(function(){$('r3').classList.add('on')},1400);
+    $$('.bf').forEach(function(b,i){T['b'+i]=setTimeout(function(){b.classList.add('go')},1600+i*150)});
+    $$('.gp-r').forEach(function(g,i){T['g'+i]=setTimeout(function(){g.classList.add('on')},2400+i*120)});
+    T.fa=setTimeout(function(){$('fa').classList.add('on')},2700);
+  },12000);
+
+  // P5 (16-19s) — two waves: items appear, then checks
+  T.P5=setTimeout(function(){
+    hide();$('p5').classList.add('on');
+    T.ac=setTimeout(function(){$('ac').classList.add('on')},60);
+    var done=0;
+    for(var i=0;i<CK;i++){(function(idx){
+      T['ci'+idx]=setTimeout(function(){$('c'+idx).classList.add('on')},200+idx*180);
+    })(i)}
+    for(var i=0;i<CK;i++){(function(idx){
+      T['xi'+idx]=setTimeout(function(){$('x'+idx).classList.add('dn');done++;$('pf').style.width=Math.round(done/CK*100)+'%';$('pp').textContent=Math.round(done/CK*100)+'%'},1500+idx*130);
+    })(i)}
+    var after=1500+CK*130+120;
+    T.gb=setTimeout(function(){$('gb').classList.add('on')},after);
+    T.gg=setTimeout(function(){$('gb').classList.add('glo')},after+150);
+    T.dc=setTimeout(function(){$('dc').classList.add('on')},after+400);
+  },16000);
+
+  // Final (19.5-23s)
+  T.FIN=setTimeout(function(){hide();$('fin').classList.add('on')},19500);
+  T.LOOP=setTimeout(run,23000);
+}
+
+$('rep').addEventListener('click',run);
+run();
+})();
+</script>
+</body>
+</html>
