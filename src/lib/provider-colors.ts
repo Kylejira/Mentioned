@@ -4,6 +4,7 @@ export interface ProviderMeta {
   color: string
   bgColor: string
   lightBg: string
+  hex: string
 }
 
 const PROVIDERS: Record<string, ProviderMeta> = {
@@ -13,6 +14,7 @@ const PROVIDERS: Record<string, ProviderMeta> = {
     color: "text-[#10a37f]",
     bgColor: "bg-[#10a37f]",
     lightBg: "bg-[#10a37f]/10",
+    hex: "#10a37f",
   },
   claude: {
     label: "Claude",
@@ -20,6 +22,7 @@ const PROVIDERS: Record<string, ProviderMeta> = {
     color: "text-[#cc785c]",
     bgColor: "bg-[#cc785c]",
     lightBg: "bg-[#cc785c]/10",
+    hex: "#cc785c",
   },
   gemini: {
     label: "Gemini",
@@ -27,6 +30,7 @@ const PROVIDERS: Record<string, ProviderMeta> = {
     color: "text-[#4285F4]",
     bgColor: "bg-[#4285F4]",
     lightBg: "bg-[#4285F4]/10",
+    hex: "#4285F4",
   },
 }
 
@@ -36,6 +40,7 @@ const FALLBACK: ProviderMeta = {
   color: "text-foreground",
   bgColor: "bg-muted-foreground",
   lightBg: "bg-muted",
+  hex: "#888888",
 }
 
 export function getProviderMeta(provider: string): ProviderMeta {

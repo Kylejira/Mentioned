@@ -909,6 +909,8 @@ export default function DashboardPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState<"scan" | "generate" | "checklist" | "history" | null>(null)
   const [showScanLimitModal, setShowScanLimitModal] = useState(false)
   const [providerComparisonData, setProviderComparisonData] = useState<unknown>(null)
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringLoading, setRecurringLoading] = useState(false)
 
   // NEW: Content generation state for action items
   const [generatingActionId, setGeneratingActionId] = useState<string | null>(null)
@@ -1170,6 +1172,28 @@ export default function DashboardPage() {
   const handleRegenerateActionContent = (actionItem: ActionItem) => {
     setGeneratedActionContent(null)
     handleGenerateActionContent(actionItem)
+  }
+
+  const handleToggleRecurring = async () => {
+    const newValue = !isRecurring
+    setRecurringLoading(true)
+    try {
+      const res = await fetch("/api/scan/recurring", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brandUrl: data.brand.website, enabled: newValue }),
+      })
+      if (res.ok) {
+        setIsRecurring(newValue)
+        showToast(newValue ? "Weekly scans enabled" : "Weekly scans disabled")
+      } else {
+        showToast("Failed to update recurring setting", "error")
+      }
+    } catch {
+      showToast("Failed to update recurring setting", "error")
+    } finally {
+      setRecurringLoading(false)
+    }
   }
 
   // Get source icon
@@ -1489,7 +1513,7 @@ export default function DashboardPage() {
         {/* Section: Provider Comparison (placeholder) */}
         {data.visibilityScore?.byModel && (
           <section>
-            <ProviderComparison data={data.visibilityScore.byModel} />
+            <ProviderComparison data={data.visibilityScore.byModel} totalQueries={data.queries?.length} />
           </section>
         )}
 
@@ -2258,11 +2282,34 @@ export default function DashboardPage() {
               <span className="hidden sm:inline">•</span>
               <span>Sources: ChatGPT, Claude</span>
             </div>
-            <Button variant="secondary" size="sm" onClick={handleRunNewScan}>
-              <RefreshCw className="size-3.5 mr-1.5" />
-              Run new scan
-              {!subscription.canScan && <Lock className="size-3 ml-1.5" />}
-            </Button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleToggleRecurring}
+                disabled={recurringLoading}
+                className="flex items-center gap-2 text-xs"
+              >
+                <div className={cn(
+                  "relative w-8 h-[18px] rounded-full transition-colors",
+                  isRecurring ? "bg-primary" : "bg-muted-foreground/30"
+                )}>
+                  <div className={cn(
+                    "absolute top-[2px] size-[14px] rounded-full bg-white transition-transform shadow-sm",
+                    isRecurring ? "translate-x-[15px]" : "translate-x-[2px]"
+                  )} />
+                </div>
+                <span className={cn(
+                  "transition-colors",
+                  isRecurring ? "text-foreground" : "text-muted-foreground"
+                )}>
+                  Run weekly
+                </span>
+              </button>
+              <Button variant="secondary" size="sm" onClick={handleRunNewScan}>
+                <RefreshCw className="size-3.5 mr-1.5" />
+                Run new scan
+                {!subscription.canScan && <Lock className="size-3 ml-1.5" />}
+              </Button>
+            </div>
           </div>
         </section>
       </div>
