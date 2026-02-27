@@ -41,6 +41,7 @@ import { mockScanData, formatScanDate, type Action, type ScanData, type Visibili
 import { ProviderComparison } from "@/components/ProviderComparison"
 import { ScoreDelta } from "./components/score-delta"
 import { ShareOfVoice } from "./components/share-of-voice"
+import { QueryExplorer } from "./components/query-explorer"
 import ReactMarkdown from "react-markdown"
 
 const SCAN_RESULT_KEY = "mentioned_scan_result" // Legacy key (shared across users)
@@ -930,6 +931,9 @@ export default function DashboardPage() {
   const [recurringLoading, setRecurringLoading] = useState(false)
   const [scanDeltas, setScanDeltas] = useState<Record<string, any> | null>(null)
   const [shareOfVoice, setShareOfVoice] = useState<any>(null)
+  const [currentScanId, setCurrentScanId] = useState<string | null>(null)
+
+  const [activeActionCategory, setActiveActionCategory] = useState<string>("all")
 
   // NEW: Content generation state for action items
   const [generatingActionId, setGeneratingActionId] = useState<string | null>(null)
@@ -977,6 +981,7 @@ export default function DashboardPage() {
           setRawScanData(parsed)
           if (parsed._deltas) setScanDeltas(parsed._deltas)
           if (parsed._share_of_voice) setShareOfVoice(parsed._share_of_voice)
+          if (parsed._scanId) setCurrentScanId(parsed._scanId)
           const transformed = transformScanResult(parsed)
           if (transformed) {
             setScanData(transformed)
@@ -1010,6 +1015,7 @@ export default function DashboardPage() {
             setRawScanData(scan.fullResult)
             if (scan.deltas) setScanDeltas(scan.deltas)
             if (scan.shareOfVoice) setShareOfVoice(scan.shareOfVoice)
+            if (scan.latestScanId) setCurrentScanId(scan.latestScanId)
             const transformed = transformScanResult(scan.fullResult)
             if (transformed) {
               setScanData(transformed)
@@ -1544,6 +1550,13 @@ export default function DashboardPage() {
         <section>
           <ShareOfVoice data={shareOfVoice} />
         </section>
+
+        {/* Section: Query Explorer */}
+        {currentScanId && (
+          <section>
+            <QueryExplorer scanId={currentScanId} brandName={data.brand.name} />
+          </section>
+        )}
 
         {/* Why Not Mentioned Section - Only show for non-recommended status */}
         {data.status !== "recommended" && data.whyNotMentioned && (
@@ -2127,9 +2140,39 @@ export default function DashboardPage() {
           })()}
 
           {/* Show new action items if available */}
-          {data.actionItems && data.actionItems.length > 0 ? (
+          {data.actionItems && data.actionItems.length > 0 ? (() => {
+            const hasCategories = data.actionItems.some((a: any) => a.category)
+            const filteredActions = activeActionCategory === "all"
+              ? data.actionItems
+              : data.actionItems.filter((a: any) => a.category === activeActionCategory)
+
+            return (
             <div className="space-y-4">
-              {data.actionItems.slice(0, 3).map((actionItem, index) => (
+              {hasCategories && (
+                <div className="flex items-center gap-2 mb-4">
+                  {["all", "content", "technical", "authority", "positioning"].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveActionCategory(cat)}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition ${
+                        activeActionCategory === cat
+                          ? "bg-gray-900 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </button>
+                  ))}
+                  <span className="text-xs text-gray-400 ml-2">
+                    {filteredActions.length} action{filteredActions.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
+              {filteredActions.length === 0 ? (
+                <p className="text-sm text-gray-400 py-4 text-center">
+                  No {activeActionCategory} actions in this plan
+                </p>
+              ) : filteredActions.map((actionItem, index) => (
                 <div key={actionItem.id || `action-${index}`} className="border border-border rounded-lg p-5">
                   <div className="flex items-start gap-4">
                     {/* Number Badge - use index for sequential numbering */}
@@ -2138,12 +2181,22 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      {/* Header with title and effort */}
+                      {/* Header with title and badges */}
                       <div className="flex justify-between items-start mb-3">
                         <h4 className="font-semibold text-foreground text-lg">
                           {actionItem.title}
                         </h4>
                         <div className="flex items-center gap-2 shrink-0 ml-4">
+                          {(actionItem as any).badges?.includes('quick_win') && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
+                              ⚡ Quick Win
+                            </span>
+                          )}
+                          {(actionItem as any).badges?.includes('high_impact') && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">
+                              🎯 High Impact
+                            </span>
+                          )}
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             actionItem.impact === 'high' 
                               ? 'bg-status-success-muted text-status-success-foreground' 
@@ -2182,6 +2235,33 @@ export default function DashboardPage() {
                         <p className="text-muted-foreground/70 text-sm mt-2 italic">
                           {actionItem.competitor_example}
                         </p>
+                      )}
+
+                      {/* Scored metadata (new action plans) */}
+                      {(actionItem as any).impact_score && (
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>Impact: <strong className="text-gray-700">{(actionItem as any).impact_score}/10</strong></span>
+                          <span>Effort: <strong className="text-gray-700">{(actionItem as any).effort_score}/10</strong></span>
+                        </div>
+                      )}
+                      {((actionItem as any).category || (actionItem as any).timeline) && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {(actionItem as any).category && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              (actionItem as any).category === 'content' ? 'bg-blue-100 text-blue-700' :
+                              (actionItem as any).category === 'technical' ? 'bg-purple-100 text-purple-700' :
+                              (actionItem as any).category === 'authority' ? 'bg-green-100 text-green-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {(actionItem as any).category}
+                            </span>
+                          )}
+                          {(actionItem as any).timeline && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                              {(actionItem as any).timeline.replace('_', ' ')}
+                            </span>
+                          )}
+                        </div>
                       )}
 
                       {/* Generate Button */}
@@ -2247,7 +2327,8 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-          ) : (
+            )
+          })() : (
             /* Fallback to old actions if no action items */
           <div className="space-y-4">
             {data.actions.map((action, index) => (

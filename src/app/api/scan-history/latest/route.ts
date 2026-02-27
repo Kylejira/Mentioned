@@ -41,6 +41,7 @@ export async function GET() {
     // Try to fetch summary enrichments (deltas, share_of_voice) from the scans table
     let deltas = null
     let shareOfVoice = null
+    let latestScanId: string | null = null
     try {
       const productUrl = data.product_url
       if (productUrl) {
@@ -48,24 +49,30 @@ export async function GET() {
 
         const { data: scanRow } = await supabase
           .from("scans")
-          .select("summary")
+          .select("id, summary")
           .eq("status", "not_mentioned")
           .order("created_at", { ascending: false })
           .limit(1)
           .single()
 
-        if (scanRow?.summary) {
-          summary = scanRow.summary as Record<string, unknown>
+        if (scanRow) {
+          latestScanId = scanRow.id as string
+          if (scanRow.summary) {
+            summary = scanRow.summary as Record<string, unknown>
+          }
         } else {
           const { data: altRow } = await supabase
             .from("scans")
-            .select("summary")
+            .select("id, summary")
             .in("status", ["low_visibility", "recommended"])
             .order("created_at", { ascending: false })
             .limit(1)
             .single()
-          if (altRow?.summary) {
-            summary = altRow.summary as Record<string, unknown>
+          if (altRow) {
+            latestScanId = altRow.id as string
+            if (altRow.summary) {
+              summary = altRow.summary as Record<string, unknown>
+            }
           }
         }
 
@@ -89,6 +96,7 @@ export async function GET() {
         fullResult: data.full_result,
         deltas,
         shareOfVoice,
+        latestScanId,
       },
     })
   } catch (err) {

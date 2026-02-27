@@ -7,6 +7,7 @@ import { OpenAIProvider, ClaudeProvider, GeminiProvider } from "@/lib/providers"
 import type { AIProvider } from "@/lib/providers"
 import type { LlmProviderName } from "@/lib/scan-v3"
 import { scrapeUrl } from "@/lib/scraper"
+import { getAllowedProviders, getMaxQueries, getConcurrencyLimit } from "@/lib/plans/enforce"
 import { log } from "@/lib/logger"
 
 const logger = log.create("scan-runner")
@@ -19,6 +20,7 @@ export interface ScanConfig {
   category?: string
   planTier: PlanTier
   input: ScanInput
+  effectivePlan?: string
 }
 
 function createProgressUpdater(db: SupabaseClient, scanId: string) {
@@ -87,12 +89,60 @@ export async function runScan(config: ScanConfig): Promise<ScanRunResult> {
     throw new Error("OPENAI_API_KEY not configured")
   }
 
-  const { adapter: queryAdapter, names: activeProviders } = getActiveProviders()
+  // Resolve effective plan for enforcement (defaults to 'free' on any error)
+  let userPlan = config.effectivePlan || "free"
+  if (!config.effectivePlan && userId) {
+    try {
+      const lookupDb = createAdminClient()
+      const { data: sub } = await lookupDb
+        .from("subscriptions")
+        .select("plan")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .single()
+      userPlan = sub?.plan || "free"
+    } catch {
+      userPlan = "free"
+    }
+  }
 
-  logger.info("Starting scan", { scanId, brand: brandName, url: brandUrl, plan: planTier, providers: activeProviders })
+  logger.info("Scan executing with plan:", { userPlan, planTier })
+
+  const { adapter: queryAdapter, names: availableProviders } = getActiveProviders()
+
+  // ENFORCEMENT 1: Provider gating — filter providers by plan allowlist
+  let activeProviders: LlmProviderName[]
+  try {
+    const allowed = getAllowedProviders(userPlan)
+    activeProviders = availableProviders.filter(p => allowed.includes(p))
+    if (activeProviders.length === 0) activeProviders = availableProviders.slice(0, 2)
+    logger.info("Provider enforcement applied", { userPlan, allowed, active: activeProviders })
+  } catch {
+    activeProviders = availableProviders
+  }
+
+  logger.info("Starting scan", { scanId, brand: brandName, url: brandUrl, plan: planTier, effectivePlan: userPlan, providers: activeProviders })
 
   const adminDb = createAdminClient()
   const onProgress = createProgressUpdater(adminDb, scanId)
+
+  // ENFORCEMENT 2: Cap queries and concurrency by plan
+  let limitsOverride: Record<string, number> | undefined
+  try {
+    const planMaxQueries = getMaxQueries(userPlan)
+    const planConcurrency = getConcurrencyLimit(userPlan)
+    limitsOverride = {
+      maxQueries: planMaxQueries,
+      maxConcurrentLlmCalls: planConcurrency,
+    }
+    logger.info("Query/concurrency enforcement applied", {
+      userPlan,
+      planMaxQueries,
+      planConcurrency,
+    })
+  } catch {
+    // Fall through with original planTier limits
+  }
 
   const orchestrator = new ScanOrchestrator(
     adminDb,
@@ -100,7 +150,8 @@ export async function runScan(config: ScanConfig): Promise<ScanRunResult> {
     queryAdapter,
     createScrapeAdapter(),
     planTier,
-    activeProviders
+    activeProviders,
+    limitsOverride
   )
 
   const v3Result = await orchestrator.runScan(scanId, brandUrl, input, onProgress)

@@ -45,9 +45,10 @@ export class ScanOrchestrator {
     private queryLlm: (query: string, provider: LlmProviderName) => Promise<string>,
     private scrapeUrl: (url: string) => Promise<string>,
     plan: PlanTier = "free",
-    activeProviders?: LlmProviderName[]
+    activeProviders?: LlmProviderName[],
+    limitsOverride?: Partial<ScanLimits>
   ) {
-    this.limits = resolveLimits(plan)
+    this.limits = { ...resolveLimits(plan), ...limitsOverride }
     this.activeProviders = activeProviders ?? ["openai", "claude"]
     this.profiler = new SaaSProfiler(llmCall, scrapeUrl)
     this.generator = new QueryGenerator(llmCall, this.limits)

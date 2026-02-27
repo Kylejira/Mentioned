@@ -5,6 +5,7 @@ import { generateStrategicPlan } from "@/lib/strategic/generate-plan"
 import { computeProviderComparison } from "@/lib/scan-v3/scoring/provider-comparison"
 import { computeScoreDeltas } from "@/lib/scan-v3/scoring/compute-deltas"
 import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
+import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { log } from "@/lib/logger"
 import type { ScanJobData, ScanJobResult } from "@/lib/queue/scan-queue"
@@ -17,6 +18,23 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
   logger.info("Job received", { jobId: job.id, scanId, brand: brandName, plan: planTier })
 
   const db = createAdminClient()
+
+  // Resolve effective plan for enforcement
+  let effectivePlan = "free"
+  try {
+    if (userId) {
+      const { data: sub } = await db
+        .from("subscriptions")
+        .select("plan")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .single()
+      effectivePlan = sub?.plan || "free"
+    }
+  } catch {
+    effectivePlan = "free"
+  }
+  logger.info("Scan executing with plan:", { effectivePlan, planTier })
 
   // Mark scan as processing
   await db
@@ -44,6 +62,7 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
         buyer_questions: job.data.buyerQuestions || [],
         plan_tier: planTier,
       },
+      effectivePlan,
     })
 
     await job.updateProgress(80)
@@ -110,26 +129,30 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
 
     await job.updateProgress(85)
 
-    // Generate strategic plan
-    await db
-      .from("scans")
-      .update({ status: "generating_strategy", stage: "strategy" })
-      .eq("id", scanId)
-
-    try {
-      const { persisted } = await generateStrategicPlan(scanId)
-      if (!persisted) {
-        logger.warn("Strategic plan generated but not persisted", { scanId })
-      }
-    } catch (strategyErr) {
-      logger.error("Strategic plan generation failed (non-fatal)", {
-        scanId,
-        error: strategyErr instanceof Error ? strategyErr.message : String(strategyErr),
-      })
+    // ENFORCEMENT 3: Strategic brain gated by plan
+    if (canUseStrategicBrain(effectivePlan)) {
       await db
         .from("scans")
-        .update({ status: "strategy_failed" })
+        .update({ status: "generating_strategy", stage: "strategy" })
         .eq("id", scanId)
+
+      try {
+        const { persisted } = await generateStrategicPlan(scanId)
+        if (!persisted) {
+          logger.warn("Strategic plan generated but not persisted", { scanId })
+        }
+      } catch (strategyErr) {
+        logger.error("Strategic plan generation failed (non-fatal)", {
+          scanId,
+          error: strategyErr instanceof Error ? strategyErr.message : String(strategyErr),
+        })
+        await db
+          .from("scans")
+          .update({ status: "strategy_failed" })
+          .eq("id", scanId)
+      }
+    } else {
+      logger.info("Strategic plan skipped (plan does not include strategic brain)", { scanId, effectivePlan })
     }
 
     await job.updateProgress(100)

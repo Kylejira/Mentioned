@@ -8,6 +8,7 @@ import { generateStrategicPlan } from "@/lib/strategic/generate-plan"
 import { computeProviderComparison } from "@/lib/scan-v3/scoring/provider-comparison"
 import { computeScoreDeltas } from "@/lib/scan-v3/scoring/compute-deltas"
 import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
+import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import { log } from "@/lib/logger"
 
 export const maxDuration = 240
@@ -42,11 +43,13 @@ export async function POST(request: NextRequest) {
 
     // ── Subscription / quota checks ──
     let planTier: PlanTier = "free"
+    let effectivePlan = "free"
     if (user) {
       const isWhitelisted = PRO_WHITELIST.includes(user.email?.toLowerCase() || "")
 
       if (isWhitelisted) {
         planTier = "pro"
+        effectivePlan = "pro_monthly"
       } else {
         const { data: subscription } = await supabase
           .from("subscriptions")
@@ -76,6 +79,7 @@ export async function POST(request: NextRequest) {
           }
         } else if (subscription.plan === "starter") {
           planTier = "pro"
+          effectivePlan = "starter"
           const scansUsed = subscription.scans_used_this_period || 0
           const scansLimit = subscription.scans_limit || 10
 
@@ -94,6 +98,9 @@ export async function POST(request: NextRequest) {
           }
         } else if (subscription?.plan === "pro") {
           planTier = "pro"
+          effectivePlan = subscription.plan
+        } else if (subscription?.plan) {
+          effectivePlan = subscription.plan
         }
       }
     }
@@ -191,6 +198,7 @@ export async function POST(request: NextRequest) {
         category: resolvedCategory,
         planTier,
         input: scanInput,
+        effectivePlan,
       })
 
       if (user) {
@@ -285,18 +293,23 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Generate strategic plan (non-blocking, don't fail the scan)
-      try {
-        await generateStrategicPlan(scanId)
-      } catch (strategyErr) {
-        logger.warn("Strategic plan generation failed (non-fatal)", {
-          scanId,
-          error: strategyErr instanceof Error ? strategyErr.message : String(strategyErr),
-        })
+      // ENFORCEMENT 3: Strategic brain gated by plan
+      if (canUseStrategicBrain(effectivePlan)) {
+        try {
+          await generateStrategicPlan(scanId)
+        } catch (strategyErr) {
+          logger.warn("Strategic plan generation failed (non-fatal)", {
+            scanId,
+            error: strategyErr instanceof Error ? strategyErr.message : String(strategyErr),
+          })
+        }
+      } else {
+        logger.info("Strategic plan skipped (plan does not include strategic brain)", { scanId, effectivePlan })
       }
 
       return NextResponse.json({
         ...result.legacyResult,
+        _scanId: scanId,
         ...(scanDeltas ? { _deltas: scanDeltas } : {}),
         ...(scanShareOfVoice ? { _share_of_voice: scanShareOfVoice } : {}),
       })
