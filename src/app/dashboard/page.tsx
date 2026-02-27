@@ -38,6 +38,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { mockScanData, formatScanDate, type Action, type ScanData, type VisibilityStatus, type VisibilityScore, type DimensionScore, type VisibilityGap, type ActionItem } from "@/lib/mock-data"
+import { ProviderComparison } from "@/components/ProviderComparison"
 import ReactMarkdown from "react-markdown"
 
 const SCAN_RESULT_KEY = "mentioned_scan_result" // Legacy key (shared across users)
@@ -907,7 +908,8 @@ export default function DashboardPage() {
   const [hasRealData, setHasRealData] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState<"scan" | "generate" | "checklist" | "history" | null>(null)
   const [showScanLimitModal, setShowScanLimitModal] = useState(false)
-  
+  const [providerComparisonData, setProviderComparisonData] = useState<unknown>(null)
+
   // NEW: Content generation state for action items
   const [generatingActionId, setGeneratingActionId] = useState<string | null>(null)
   const [generatedActionContent, setGeneratedActionContent] = useState<{actionId: string; content: string} | null>(null)
@@ -1483,6 +1485,13 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </section>
+
+        {/* Section: Provider Comparison (placeholder) */}
+        {data.visibilityScore?.byModel && (
+          <section>
+            <ProviderComparison data={data.visibilityScore.byModel} />
+          </section>
+        )}
 
         {/* Why Not Mentioned Section - Only show for non-recommended status */}
         {data.status !== "recommended" && data.whyNotMentioned && (

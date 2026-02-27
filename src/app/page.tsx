@@ -7,7 +7,6 @@ import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Check, X, TrendingUp, Target, Users } from "lucide-react"
 import { VisibilityGraph } from "@/components/VisibilityGraph"
-import { PlatformBreakdown } from "@/components/PlatformBreakdown"
 import { RotatingDashboardPreview } from "@/components/RotatingDashboardPreview"
 
 // Dynamic import for 3D floating bubbles (client-side only)
