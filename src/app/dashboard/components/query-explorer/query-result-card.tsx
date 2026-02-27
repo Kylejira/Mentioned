@@ -34,11 +34,22 @@ const CATEGORY_COLORS: Record<string, string> = {
   user_provided: 'bg-indigo-100 text-indigo-700',
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 function highlightBrand(text: string, brandName: string): string {
-  if (!brandName || !text) return text
-  const escaped = brandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const regex = new RegExp(`(\\b${escaped}\\b)`, 'gi')
-  return text.replace(regex, '<mark class="bg-yellow-200 px-0.5 rounded font-medium">$1</mark>')
+  if (!brandName || !text) return escapeHtml(text || '')
+
+  const sanitized = escapeHtml(text)
+  const escapedBrand = escapeHtml(brandName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(\\b${escapedBrand}\\b)`, 'gi')
+  return sanitized.replace(regex, '<mark class="bg-yellow-200 px-0.5 rounded font-medium">$1</mark>')
 }
 
 export function QueryResultCard({ result, brandName }: Props) {
@@ -55,7 +66,7 @@ export function QueryResultCard({ result, brandName }: Props) {
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {result.query_category && (
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${categoryColor}`}>
-              {result.query_category.replace('_', ' ')}
+              {result.query_category.replace(/_/g, ' ')}
             </span>
           )}
           <span className="text-sm text-gray-900 truncate">{result.query_text}</span>

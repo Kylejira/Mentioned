@@ -181,6 +181,8 @@ export async function POST(request: NextRequest) {
         competitors: competitors || [],
         buyerQuestions: buyerQuestions || customQueries || [],
         planTier,
+        effectivePlan,
+        userEmail: user?.email || undefined,
       }, { jobId: scanId })
 
       return NextResponse.json({ scanId, status: "queued" })

@@ -42,6 +42,8 @@ import { ProviderComparison } from "@/components/ProviderComparison"
 import { ScoreDelta } from "./components/score-delta"
 import { ShareOfVoice } from "./components/share-of-voice"
 import { QueryExplorer } from "./components/query-explorer"
+import { FeatureGate } from "@/components/ui/feature-gate"
+import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import ReactMarkdown from "react-markdown"
 
 const SCAN_RESULT_KEY = "mentioned_scan_result" // Legacy key (shared across users)
@@ -2118,6 +2120,11 @@ export default function DashboardPage() {
 
         {/* Section 5: Your Action Plan (with Content Generation) */}
         <section>
+          <FeatureGate
+            allowed={canUseStrategicBrain(subscription.plan || "free")}
+            featureName="AI Action Plan"
+            requiredPlan="Pro"
+          >
           {(() => {
             const score = data.visibilityScore?.overall || 0;
             const isExcellent = score >= 80;
@@ -2258,7 +2265,7 @@ export default function DashboardPage() {
                           )}
                           {(actionItem as any).timeline && (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                              {(actionItem as any).timeline.replace('_', ' ')}
+                              {(actionItem as any).timeline.replace(/_/g, ' ')}
                             </span>
                           )}
                         </div>
@@ -2381,6 +2388,7 @@ export default function DashboardPage() {
             ))}
           </div>
           )}
+          </FeatureGate>
         </section>
 
         {/* Section 6: Scan Footer */}

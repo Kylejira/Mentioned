@@ -33,6 +33,17 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     max_brands: 1,
     max_concurrent_llm: 10,
   },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    scans_per_month: 30,
+    providers: ["openai", "anthropic", "google", "perplexity"],
+    max_queries_per_scan: 60,
+    recurring_enabled: true,
+    strategic_brain_enabled: true,
+    max_brands: 1,
+    max_concurrent_llm: 15,
+  },
   pro_monthly: {
     id: "pro_monthly",
     name: "Pro",
@@ -69,5 +80,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
 }
 
 export function getPlanConfig(plan: string): PlanConfig {
-  return PLAN_CONFIGS[plan] || PLAN_CONFIGS.free
+  if (!plan) return PLAN_CONFIGS.free
+  const normalized = plan.toLowerCase().trim()
+  return PLAN_CONFIGS[normalized] || PLAN_CONFIGS.free
 }

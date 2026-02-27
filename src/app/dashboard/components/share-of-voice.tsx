@@ -25,24 +25,32 @@ export function ShareOfVoice({ data }: ShareOfVoiceProps) {
       </div>
 
       {/* Stacked Bar */}
-      <div className="flex h-10 rounded-lg overflow-hidden mb-4">
-        {data.brands.slice(0, 6).map((brand: any, i: number) => (
-          <div
-            key={brand.name}
-            style={{ width: `${Math.max(brand.share_pct, 3)}%` }}
-            className={`flex items-center justify-center text-xs font-medium truncate px-1 ${
-              brand.is_self
-                ? 'bg-blue-600 text-white'
-                : i % 2 === 0
-                  ? 'bg-gray-300 text-gray-700'
-                  : 'bg-gray-200 text-gray-600'
-            }`}
-            title={`${brand.name}: ${brand.share_pct}%`}
-          >
-            {brand.share_pct >= 8 ? `${brand.name} ${brand.share_pct}%` : ''}
+      {(() => {
+        const MIN_WIDTH_PCT = 3
+        const barBrands = data.brands.slice(0, 6)
+        const totalRawPct = barBrands.reduce((sum: number, b: any) => sum + Math.max(b.share_pct, MIN_WIDTH_PCT), 0)
+        const scale = totalRawPct > 100 ? 100 / totalRawPct : 1
+        return (
+          <div className="flex h-10 rounded-lg overflow-hidden mb-4">
+            {barBrands.map((brand: any, i: number) => (
+              <div
+                key={brand.name}
+                style={{ width: `${Math.max(brand.share_pct, MIN_WIDTH_PCT) * scale}%` }}
+                className={`flex items-center justify-center text-xs font-medium truncate px-1 ${
+                  brand.is_self
+                    ? 'bg-blue-600 text-white'
+                    : i % 2 === 0
+                      ? 'bg-gray-300 text-gray-700'
+                      : 'bg-gray-200 text-gray-600'
+                }`}
+                title={`${brand.name}: ${brand.share_pct}%`}
+              >
+                {brand.share_pct >= 8 ? `${brand.name} ${brand.share_pct}%` : ''}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )
+      })()}
 
       {/* Ranked Table */}
       <div className="space-y-1">

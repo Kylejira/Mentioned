@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { saveScanHistory } from "@/lib/scan-history"
 import { ScanOrchestrator, type ScanResult as V3ScanResult, type ScanInput } from "@/lib/scan-v3"
-import type { PlanTier } from "@/lib/scan-v3"
+import type { PlanTier, ScanLimits } from "@/lib/scan-v3"
 import { OpenAIProvider, ClaudeProvider, GeminiProvider } from "@/lib/providers"
 import type { AIProvider } from "@/lib/providers"
 import type { LlmProviderName } from "@/lib/scan-v3"
@@ -127,7 +127,7 @@ export async function runScan(config: ScanConfig): Promise<ScanRunResult> {
   const onProgress = createProgressUpdater(adminDb, scanId)
 
   // ENFORCEMENT 2: Cap queries and concurrency by plan
-  let limitsOverride: Record<string, number> | undefined
+  let limitsOverride: Partial<ScanLimits> | undefined
   try {
     const planMaxQueries = getMaxQueries(userPlan)
     const planConcurrency = getConcurrencyLimit(userPlan)

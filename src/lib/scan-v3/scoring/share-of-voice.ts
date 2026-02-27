@@ -19,6 +19,7 @@ export interface ShareOfVoice {
 interface MentionEntry {
   total: number
   byProvider: Record<string, number>
+  displayName: string
 }
 
 export async function computeShareOfVoice(
@@ -41,21 +42,24 @@ export async function computeShareOfVoice(
   if (!results || results.length === 0) return empty
 
   const brandMentions: Record<string, MentionEntry> = {}
+  const selfKey = brandName.toLowerCase().trim()
 
-  function ensure(name: string): MentionEntry {
-    if (!brandMentions[name]) {
-      brandMentions[name] = { total: 0, byProvider: {} }
+  function ensure(key: string, displayName: string): MentionEntry {
+    if (!brandMentions[key]) {
+      brandMentions[key] = { total: 0, byProvider: {}, displayName }
     }
-    return brandMentions[name]
+    return brandMentions[key]
   }
 
-  function increment(name: string, provider: string) {
-    const entry = ensure(name)
+  function increment(rawName: string, provider: string) {
+    if (!rawName || typeof rawName !== "string") return
+    const key = rawName.toLowerCase().trim()
+    const entry = ensure(key, rawName)
     entry.total++
     entry.byProvider[provider] = (entry.byProvider[provider] || 0) + 1
   }
 
-  ensure(brandName)
+  ensure(selfKey, brandName)
 
   for (const row of results) {
     const provider = row.provider as string
@@ -87,7 +91,7 @@ export async function computeShareOfVoice(
     }
   }
 
-  const brands: BrandShare[] = Object.entries(brandMentions).map(([name, entry]) => {
+  const brands: BrandShare[] = Object.entries(brandMentions).map(([key, entry]) => {
     const share = totalMentions > 0 ? entry.total / totalMentions : 0
 
     const per_provider: Record<string, { mentions: number; share: number }> = {}
@@ -100,8 +104,8 @@ export async function computeShareOfVoice(
     }
 
     return {
-      name,
-      is_self: name === brandName,
+      name: entry.displayName,
+      is_self: key === selfKey,
       total_mentions: entry.total,
       share,
       share_pct: Math.round(share * 100),

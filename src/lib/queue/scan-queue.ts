@@ -14,6 +14,8 @@ export interface ScanJobData {
   competitors?: string[]
   buyerQuestions?: string[]
   planTier: "free" | "pro"
+  effectivePlan?: string
+  userEmail?: string
 }
 
 export interface ScanJobResult {

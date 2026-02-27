@@ -17,6 +17,13 @@ export function QueryExplorer({ scanId, brandName }: Props) {
   const [mentionedOnly, setMentionedOnly] = useState(false)
 
   useEffect(() => {
+    setData(null)
+    setProviderFilter('all')
+    setCategoryFilter('all')
+    setMentionedOnly(false)
+  }, [scanId])
+
+  useEffect(() => {
     if (isOpen && scanId && !data) {
       setLoading(true)
       fetch(`/api/scan/${scanId}/queries`)
@@ -82,7 +89,7 @@ export function QueryExplorer({ scanId, brandName }: Props) {
                   >
                     <option value="all">All categories</option>
                     {data.filters.categories.map((cat: string) => (
-                      <option key={cat} value={cat}>{cat.replace('_', ' ')}</option>
+                      <option key={cat} value={cat}>{cat.replace(/_/g, ' ')}</option>
                     ))}
                   </select>
                 )}

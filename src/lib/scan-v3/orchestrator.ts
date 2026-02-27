@@ -1,3 +1,4 @@
+import pLimit from "p-limit"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { log } from "@/lib/logger"
 import { SaaSProfiler } from "./profiler/saas-profiler"
@@ -220,77 +221,77 @@ export class ScanOrchestrator {
 
     logger.info("Executing queries", { queryCount: queries.length, providers })
 
+    const limit = pLimit(this.limits.maxConcurrentLlmCalls)
+
     const tasks = queries.flatMap((query) =>
-      providers.map(async (provider): Promise<ResponseAnalysis | null> => {
-        try {
-          const response = await this.queryLlm(query.text, provider)
-          const brandResult = detection.detect(response, profile.brand_name)
+      providers.map((provider) =>
+        limit(async (): Promise<ResponseAnalysis | null> => {
+          try {
+            const response = await this.queryLlm(query.text, provider)
+            const brandResult = detection.detect(response, profile.brand_name)
 
-          let finalBrandResult = brandResult
-          if (brandResult.method === "fuzzy" && brandResult.detected) {
-            finalBrandResult = await detection.semanticConfirm(
-              response,
-              profile.brand_name,
-              brandResult
-            )
-          }
+            let finalBrandResult = brandResult
+            if (brandResult.method === "fuzzy" && brandResult.detected) {
+              finalBrandResult = await detection.semanticConfirm(
+                response,
+                profile.brand_name,
+                brandResult
+              )
+            }
 
-          if (logCount < 6) {
-            logCount++
-            logger.debug("Detection detail", {
-              provider,
-              query_preview: query.text.slice(0, 80),
-              response_preview: response.slice(0, 200).replace(/\n/g, " "),
-              brand: profile.brand_name,
-              detected: finalBrandResult.detected,
-              method: finalBrandResult.method,
-              confidence: finalBrandResult.confidence,
-            })
-            if (!finalBrandResult.detected) {
-              const lowerResp = response.toLowerCase()
-              const lowerBrand = profile.brand_name.toLowerCase()
-              const brandInResponse = lowerResp.includes(lowerBrand)
-              logger.debug("Detection: simple includes check", { lowerBrand, brandInResponse })
-              if (brandInResponse) {
-                const idx = lowerResp.indexOf(lowerBrand)
-                logger.debug("Detection: context around brand", { context: response.slice(Math.max(0, idx - 30), idx + lowerBrand.length + 30) })
+            if (logCount < 6) {
+              logCount++
+              logger.debug("Detection detail", {
+                provider,
+                query_preview: query.text.slice(0, 80),
+                response_preview: response.slice(0, 200).replace(/\n/g, " "),
+                brand: profile.brand_name,
+                detected: finalBrandResult.detected,
+                method: finalBrandResult.method,
+                confidence: finalBrandResult.confidence,
+              })
+              if (!finalBrandResult.detected) {
+                const lowerResp = response.toLowerCase()
+                const lowerBrand = profile.brand_name.toLowerCase()
+                const brandInResponse = lowerResp.includes(lowerBrand)
+                logger.debug("Detection: simple includes check", { lowerBrand, brandInResponse })
+                if (brandInResponse) {
+                  const idx = lowerResp.indexOf(lowerBrand)
+                  logger.debug("Detection: context around brand", { context: response.slice(Math.max(0, idx - 30), idx + lowerBrand.length + 30) })
+                }
               }
             }
+
+            const sentiment = finalBrandResult.detected
+              ? classifySentiment(response, profile.brand_name)
+              : null
+
+            const competitorResults = detection.detectAll(
+              response,
+              profile.competitors_mentioned
+            )
+
+            return {
+              query,
+              provider,
+              raw_response: response,
+              brand_detection: finalBrandResult,
+              brand_sentiment: sentiment,
+              competitor_detections: competitorResults,
+              response_timestamp: new Date().toISOString(),
+            }
+          } catch (err) {
+            logger.error("Query failed", { provider, query: query.text, error: String(err) })
+            return null
           }
-
-          const sentiment = finalBrandResult.detected
-            ? classifySentiment(response, profile.brand_name)
-            : null
-
-          const competitorResults = detection.detectAll(
-            response,
-            profile.competitors_mentioned
-          )
-
-          return {
-            query,
-            provider,
-            raw_response: response,
-            brand_detection: finalBrandResult,
-            brand_sentiment: sentiment,
-            competitor_detections: competitorResults,
-            response_timestamp: new Date().toISOString(),
-          }
-        } catch (err) {
-          logger.error("Query failed", { provider, query: query.text, error: String(err) })
-          return null
-        }
-      })
+        })
+      )
     )
 
-    const BATCH_SIZE = this.limits.maxConcurrentLlmCalls
-    for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
-      const batch = tasks.slice(i, i + BATCH_SIZE)
-      const results = await Promise.allSettled(batch)
-      for (const result of results) {
-        if (result.status === "fulfilled" && result.value) {
-          analyses.push(result.value)
-        }
+    const results = await Promise.allSettled(tasks)
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value) {
+        analyses.push(result.value)
       }
     }
 

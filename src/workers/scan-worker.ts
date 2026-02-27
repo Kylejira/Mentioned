@@ -19,22 +19,31 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
 
   const db = createAdminClient()
 
-  // Resolve effective plan for enforcement
-  let effectivePlan = "free"
-  try {
-    if (userId) {
+  const PRO_WHITELIST = (process.env.PRO_WHITELIST_EMAILS || "")
+    .split(",").map(e => e.trim().toLowerCase()).filter(Boolean)
+
+  let effectivePlan = job.data.effectivePlan || "free"
+
+  if (job.data.userEmail) {
+    const isWhitelisted = PRO_WHITELIST.includes(job.data.userEmail.toLowerCase())
+    if (isWhitelisted && effectivePlan === "free") {
+      effectivePlan = "pro_monthly"
+    }
+  }
+
+  if (effectivePlan === "free" && userId) {
+    try {
       const { data: sub } = await db
         .from("subscriptions")
         .select("plan")
         .eq("user_id", userId)
         .eq("status", "active")
         .single()
-      effectivePlan = sub?.plan || "free"
-    }
-  } catch {
-    effectivePlan = "free"
+      if (sub?.plan) effectivePlan = sub.plan
+    } catch { /* keep current effectivePlan */ }
   }
-  logger.info("Scan executing with plan:", { effectivePlan, planTier })
+
+  logger.info("Scan executing with plan:", { effectivePlan, planTier, source: job.data.effectivePlan ? "job_data" : "resolved" })
 
   // Mark scan as processing
   await db
@@ -129,7 +138,8 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
 
     await job.updateProgress(85)
 
-    // ENFORCEMENT 3: Strategic brain gated by plan
+    let strategyError: string | null = null
+
     if (canUseStrategicBrain(effectivePlan)) {
       await db
         .from("scans")
@@ -142,14 +152,8 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
           logger.warn("Strategic plan generated but not persisted", { scanId })
         }
       } catch (strategyErr) {
-        logger.error("Strategic plan generation failed (non-fatal)", {
-          scanId,
-          error: strategyErr instanceof Error ? strategyErr.message : String(strategyErr),
-        })
-        await db
-          .from("scans")
-          .update({ status: "strategy_failed" })
-          .eq("id", scanId)
+        strategyError = strategyErr instanceof Error ? strategyErr.message : String(strategyErr)
+        logger.error("Strategic plan generation failed (non-fatal)", { scanId, error: strategyError })
       }
     } else {
       logger.info("Strategic plan skipped (plan does not include strategic brain)", { scanId, effectivePlan })
@@ -157,13 +161,46 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
 
     await job.updateProgress(100)
 
-    await db
-      .from("scans")
-      .update({
-        status: result.score > 0 ? "recommended" : "not_mentioned",
-        stage: "complete",
+    const finalUpdate: Record<string, unknown> = {
+      status: result.score > 0 ? "recommended" : "not_mentioned",
+      stage: "complete",
+    }
+
+    if (strategyError) {
+      try {
+        const { data: current } = await db
+          .from("scans")
+          .select("summary")
+          .eq("id", scanId)
+          .single()
+
+        finalUpdate.summary = {
+          ...(current?.summary as Record<string, unknown> ?? {}),
+          strategy_error: strategyError,
+        }
+      } catch { /* summary update best-effort */ }
+    }
+
+    try {
+      await db
+        .from("scans")
+        .update(finalUpdate)
+        .eq("id", scanId)
+    } catch (dbError) {
+      logger.error(`Failed to persist final scan status for ${scanId}`, {
+        error: dbError instanceof Error ? dbError.message : String(dbError),
       })
-      .eq("id", scanId)
+      try {
+        await db
+          .from("scans")
+          .update({ status: "failed", summary: { error: String(dbError) } })
+          .eq("id", scanId)
+      } catch (fallbackError) {
+        logger.error(`Failed even minimal status update for ${scanId}`, {
+          error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        })
+      }
+    }
 
     // Update subscription usage
     if (userId) {
@@ -200,11 +237,16 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error"
 
-    // Mark scan as failed
-    await db
-      .from("scans")
-      .update({ status: "failed" })
-      .eq("id", scanId)
+    try {
+      await db
+        .from("scans")
+        .update({ status: "failed" })
+        .eq("id", scanId)
+    } catch (dbError) {
+      logger.error(`Failed to mark scan as failed for ${scanId}`, {
+        error: dbError instanceof Error ? dbError.message : String(dbError),
+      })
+    }
 
     logger.error("Job processing failed", {
       jobId: job.id,

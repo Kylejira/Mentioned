@@ -43,36 +43,30 @@ export async function GET() {
     let shareOfVoice = null
     let latestScanId: string | null = null
     try {
-      const productUrl = data.product_url
-      if (productUrl) {
+      // Get the user's brand to scope the scans query
+      const { data: brand } = await supabase
+        .from("brands")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (brand) {
         let summary: Record<string, unknown> | null = null
 
         const { data: scanRow } = await supabase
           .from("scans")
           .select("id, summary")
-          .eq("status", "not_mentioned")
+          .eq("brand_id", brand.id)
+          .in("status", ["not_mentioned", "low_visibility", "recommended"])
           .order("created_at", { ascending: false })
           .limit(1)
-          .single()
+          .maybeSingle()
 
         if (scanRow) {
           latestScanId = scanRow.id as string
           if (scanRow.summary) {
             summary = scanRow.summary as Record<string, unknown>
-          }
-        } else {
-          const { data: altRow } = await supabase
-            .from("scans")
-            .select("id, summary")
-            .in("status", ["low_visibility", "recommended"])
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single()
-          if (altRow) {
-            latestScanId = altRow.id as string
-            if (altRow.summary) {
-              summary = altRow.summary as Record<string, unknown>
-            }
           }
         }
 

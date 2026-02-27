@@ -7,9 +7,15 @@ CREATE TABLE IF NOT EXISTS action_plans (
   opportunities JSONB,
   roadmap_30_days JSONB,
   content_recommendations JSONB,
+  actions JSONB DEFAULT '[]'::jsonb,
+  reasoning TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration for existing tables
+ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS actions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS reasoning TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_action_plans_scan_id ON action_plans (scan_id);
 

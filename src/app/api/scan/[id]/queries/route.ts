@@ -37,16 +37,18 @@ export async function GET(
       return NextResponse.json({ error: "Scan not found" }, { status: 404 })
     }
 
-    if (scan.brand_id) {
-      const { data: brand } = await db
-        .from("brands")
-        .select("user_id")
-        .eq("id", scan.brand_id)
-        .single()
+    if (!scan.brand_id) {
+      return NextResponse.json({ error: "Scan has no associated brand" }, { status: 403 })
+    }
 
-      if (brand && brand.user_id !== user.id) {
-        return NextResponse.json({ error: "Not found" }, { status: 404 })
-      }
+    const { data: brand, error: brandError } = await db
+      .from("brands")
+      .select("user_id")
+      .eq("id", scan.brand_id)
+      .single()
+
+    if (brandError || !brand || brand.user_id !== user.id) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 })
     }
 
     const { data: results, error: resultsError } = await db
