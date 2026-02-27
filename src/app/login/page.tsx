@@ -19,15 +19,16 @@ function LoginContent() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [redirecting, setRedirecting] = useState(false)
 
   const redirectTo = searchParams.get("redirect") || "/dashboard"
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !redirecting) {
+      setRedirecting(true)
       window.location.replace(redirectTo)
     }
-  }, [user, authLoading, redirectTo])
+  }, [user, authLoading, redirectTo, redirecting])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,7 +42,7 @@ function LoginContent() {
         setError(getErrorMessage(error.message))
         setLoading(false)
       } else {
-        // Full page reload to ensure auth cookies are sent
+        setRedirecting(true)
         window.location.replace(redirectTo)
       }
     } catch {

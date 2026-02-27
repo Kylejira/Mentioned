@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
+import { log } from "@/lib/logger"
 
+const logger = log.create("scan-history-api")
 export const dynamic = "force-dynamic"
 
 /**
@@ -29,7 +31,7 @@ export async function GET() {
 
     if (error && error.code !== "PGRST116") {
       // PGRST116 = no rows found, which is fine
-      console.error("[LatestScan] Error fetching:", error)
+      logger.error("Error fetching", { error: String(error) })
     }
 
     if (!data || !data.full_result) {
@@ -48,7 +50,7 @@ export async function GET() {
       },
     })
   } catch (err) {
-    console.error("[LatestScan] Exception:", err)
+    logger.error("Exception", { error: String(err) })
     return NextResponse.json({ scan: null, error: "Failed to fetch" }, { status: 500 })
   }
 }

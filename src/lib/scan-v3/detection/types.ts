@@ -9,11 +9,16 @@ export interface DetectionResult {
   snippet: string
 }
 
+export type LlmProviderName = "openai" | "claude" | "gemini"
+
+export type BrandSentiment = "positive" | "neutral" | "negative"
+
 export interface ResponseAnalysis {
   query: ValidatedQuery
-  provider: "openai" | "claude"
+  provider: LlmProviderName
   raw_response: string
   brand_detection: DetectionResult
+  brand_sentiment: BrandSentiment | null
   competitor_detections: DetectionResult[]
   response_timestamp: string
 }

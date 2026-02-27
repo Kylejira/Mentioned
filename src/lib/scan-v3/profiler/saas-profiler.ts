@@ -1,5 +1,8 @@
+import { log } from "@/lib/logger"
 import type { SaaSProfile } from "./types"
 import type { ScanInput } from "../types/scan-input"
+
+const logger = log.create("profiler")
 
 const PROFILE_EXTRACTION_PROMPT = `You are a SaaS product analyst. Given the following website content, extract a structured profile.
 
@@ -186,10 +189,10 @@ Respond ONLY with a JSON array of product names:
       const raw = await this.llmCall(prompt)
       const cleaned = raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim()
       const competitors: string[] = JSON.parse(cleaned)
-      console.log(`[Profiler] Discovered ${competitors.length} competitors via LLM: ${competitors.join(", ")}`)
+      logger.info("Discovered competitors via LLM", { count: competitors.length, competitors: competitors.join(", ") })
       return competitors.filter(c => c.toLowerCase() !== profile.brand_name.toLowerCase()).slice(0, 8)
     } catch {
-      console.warn("[Profiler] LLM competitor discovery failed")
+      logger.warn("LLM competitor discovery failed")
       return []
     }
   }

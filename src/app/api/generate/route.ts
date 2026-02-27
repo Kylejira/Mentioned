@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { log } from "@/lib/logger"
+
+const logger = log.create("generate-api")
 
 // Lazy initialization to avoid errors when API key is not set
 let openai: OpenAI | null = null
@@ -128,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ content })
   } catch (error) {
-    console.error("Generate error:", error)
+    logger.error("Generate error", { error: String(error) })
     return NextResponse.json(
       { error: "Failed to generate content" },
       { status: 500 }

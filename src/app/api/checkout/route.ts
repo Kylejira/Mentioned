@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
 import Stripe from "stripe"
+import { log } from "@/lib/logger"
+
+const logger = log.create("checkout-api")
 
 // Initialize Stripe lazily to avoid build-time errors
 function getStripe() {
@@ -39,8 +42,8 @@ export async function POST(request: NextRequest) {
     const priceId = priceIds[plan as keyof typeof priceIds]
 
     if (!priceId) {
-      console.error(`No price ID found for plan: ${plan}`)
-      console.error("Available price IDs:", priceIds)
+      logger.error("No price ID found for plan", { plan })
+      logger.error("Available price IDs", { priceIds })
       return NextResponse.json({ error: `Invalid plan: ${plan}` }, { status: 400 })
     }
 
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url })
   } catch (error) {
-    console.error("Checkout error:", error)
+    logger.error("Checkout error", { error: String(error) })
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }

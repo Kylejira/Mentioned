@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
+import { log } from "@/lib/logger"
+
+const logger = log.create("stripe-webhook")
 
 // Initialize Stripe lazily
 function getStripe() {
@@ -52,11 +55,11 @@ export async function POST(request: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
   } catch (err) {
-    console.error("Webhook signature verification failed:", err)
+    logger.error("Webhook signature verification failed", { error: String(err) })
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
 
-  console.log(`Processing Stripe event: ${event.type}`)
+  logger.info("Processing Stripe event", { eventType: event.type })
 
   try {
     switch (event.type) {
@@ -92,12 +95,12 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        logger.info("Unhandled event type", { eventType: event.type })
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("Webhook processing error:", error)
+    logger.error("Webhook processing error", { error: String(error) })
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 })
   }
 }
@@ -109,7 +112,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscriptionId = session.subscription as string
 
   if (!userId || !plan) {
-    console.error("Missing user_id or plan in session metadata")
+    logger.error("Missing user_id or plan in session metadata")
     return
   }
 
@@ -146,7 +149,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   })
 
   if (error) {
-    console.error("Error upserting subscription:", error)
+    logger.error("Error upserting subscription", { error: String(error) })
     return
   }
 
@@ -161,7 +164,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     })
     .eq("user_id", userId)
 
-  console.log(`Subscription activated for user ${userId}: ${plan}`)
+  logger.info("Subscription activated for user", { userId, plan })
 }
 
 async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription) {
@@ -178,7 +181,7 @@ async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription
       .single()
 
     if (!existingSub) {
-      console.error("Could not find user for subscription:", subscription.id)
+      logger.error("Could not find user for subscription", { subscriptionId: subscription.id })
       return
     }
   }
@@ -200,7 +203,7 @@ async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription
     .eq("stripe_subscription_id", subscription.id)
 
   if (error) {
-    console.error("Error updating subscription:", error)
+    logger.error("Error updating subscription", { error: String(error) })
   }
 
   // Update brands table status
@@ -217,7 +220,7 @@ async function handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription
       .eq("stripe_subscription_id", subscription.id)
   }
 
-  console.log(`Subscription updated: ${subscription.id} - ${subscription.status}`)
+  logger.info("Subscription updated", { subscriptionId: subscription.id, status: subscription.status })
 }
 
 async function handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription) {
@@ -231,7 +234,7 @@ async function handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription
     .single()
 
   if (!sub) {
-    console.error("Could not find subscription:", subscription.id)
+    logger.error("Could not find subscription", { subscriptionId: subscription.id })
     return
   }
 
@@ -250,7 +253,7 @@ async function handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription
     })
     .eq("user_id", sub.user_id)
 
-  console.log(`Subscription cancelled for user ${sub.user_id}`)
+  logger.info("Subscription cancelled for user", { userId: sub.user_id })
 }
 
 async function handleInvoicePaid(stripeInvoice: Stripe.Invoice) {
@@ -275,9 +278,9 @@ async function handleInvoicePaid(stripeInvoice: Stripe.Invoice) {
       .eq("stripe_subscription_id", subscriptionId)
 
     if (error) {
-      console.error("Error resetting scan count:", error)
+      logger.error("Error resetting scan count", { error: String(error) })
     } else {
-      console.log(`Scan count reset for subscription: ${subscriptionId}`)
+      logger.info("Scan count reset for subscription", { subscriptionId })
     }
   }
 }
@@ -300,5 +303,5 @@ async function handlePaymentFailed(stripeInvoice: Stripe.Invoice) {
     .update({ subscription_status: "past_due" })
     .eq("stripe_subscription_id", subscriptionId)
 
-  console.log(`Payment failed for subscription: ${subscriptionId}`)
+  logger.info("Payment failed for subscription", { subscriptionId })
 }

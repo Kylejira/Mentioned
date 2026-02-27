@@ -1,3 +1,29 @@
+import type { LlmProviderName } from "../detection/types"
+
+export type ProviderWeights = Record<LlmProviderName, number>
+
+const DEFAULT_PROVIDER_WEIGHTS: ProviderWeights = {
+  openai: 1.0,
+  claude: 1.0,
+  gemini: 0.8,
+}
+
+function loadProviderWeights(): ProviderWeights {
+  const envWeights = process.env.PROVIDER_WEIGHTS
+  if (!envWeights) return { ...DEFAULT_PROVIDER_WEIGHTS }
+
+  try {
+    const parsed = JSON.parse(envWeights) as Partial<ProviderWeights>
+    return {
+      openai: parsed.openai ?? DEFAULT_PROVIDER_WEIGHTS.openai,
+      claude: parsed.claude ?? DEFAULT_PROVIDER_WEIGHTS.claude,
+      gemini: parsed.gemini ?? DEFAULT_PROVIDER_WEIGHTS.gemini,
+    }
+  } catch {
+    return { ...DEFAULT_PROVIDER_WEIGHTS }
+  }
+}
+
 export const SCORING_WEIGHTS = {
   position: {
     1: 1.0,
@@ -21,4 +47,6 @@ export const SCORING_WEIGHTS = {
     position: 0.35,
     intent: 0.30,
   },
-} as const
+
+  providers: loadProviderWeights(),
+}

@@ -1,5 +1,8 @@
+import { log } from "@/lib/logger"
 import type { SaaSProfile } from "../profiler/types"
 import type { AliasRegistry } from "./types"
+
+const logger = log.create("alias-builder")
 
 /**
  * Build alias registry for ALL brands (target + competitors).
@@ -88,7 +91,7 @@ Respond ONLY with JSON:
       existing.set(key, [...merged])
     }
   } catch {
-    console.warn("LLM alias enrichment failed, using deterministic aliases only")
+    logger.warn("LLM alias enrichment failed, using deterministic aliases only")
   }
 
   return existing

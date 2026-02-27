@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
 import Stripe from "stripe"
+import { log } from "@/lib/logger"
+
+const logger = log.create("subscription-api")
 
 // Initialize Stripe lazily
 function getStripe() {
@@ -108,7 +111,7 @@ export async function GET() {
       stripeCustomerId: subscription.stripe_customer_id,
     })
   } catch (error) {
-    console.error("Subscription API error:", error)
+    logger.error("Subscription API error", { error: String(error) })
     return NextResponse.json({ error: "Failed to fetch subscription" }, { status: 500 })
   }
 }
@@ -141,7 +144,7 @@ export async function POST() {
 
     return NextResponse.json({ url: session.url })
   } catch (error) {
-    console.error("Portal session error:", error)
+    logger.error("Portal session error", { error: String(error) })
     return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 })
   }
 }

@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -8,17 +9,30 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/dashboard"
 
   if (code) {
-    const supabase = createClient()
-    
-    // If Supabase isn't configured, redirect to dashboard
-    if (!supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.redirect(`${origin}${next}`)
     }
-    
+
+    const cookieStore = await cookies()
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        },
+      },
+    })
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (!error) {
-      // If it's a password recovery, redirect to reset password page
       if (type === "recovery") {
         return NextResponse.redirect(`${origin}/reset-password`)
       }
@@ -26,6 +40,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // Return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/login?error=auth`)
 }

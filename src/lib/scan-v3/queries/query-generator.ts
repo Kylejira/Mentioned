@@ -1,5 +1,8 @@
+import { log } from "@/lib/logger"
 import type { SaaSProfile } from "../profiler/types"
 import type { GeneratedQuery, IntentCluster } from "./types"
+
+const logger = log.create("query-generator")
 import type { ScanLimits } from "../config/scan-limits"
 
 interface IntentConfig {
@@ -133,7 +136,7 @@ export class QueryGenerator {
       if (result.status === "fulfilled") {
         allQueries.push(...result.value)
       } else {
-        console.error("Query cluster generation failed:", result.reason)
+        logger.error("Query cluster generation failed", { error: String(result.reason) })
       }
     }
 
@@ -217,7 +220,7 @@ Generate exactly ${config.count} queries. Return ONLY a JSON array of strings:
         generated_by: "llm" as const,
       }))
     } catch {
-      console.error(`Failed to parse ${intent} queries:`, cleaned.slice(0, 200))
+      logger.error("Failed to parse queries", { intent, raw_preview: cleaned.slice(0, 200) })
       return []
     }
   }

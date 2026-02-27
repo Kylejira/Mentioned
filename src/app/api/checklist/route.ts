@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
+import { log } from "@/lib/logger"
 
+const logger = log.create("checklist-api")
 export const dynamic = "force-dynamic"
 
 // GET /api/checklist - Get user's completed items
@@ -20,7 +22,7 @@ export async function GET() {
       .single()
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('Error fetching checklist:', error)
+      logger.error("Error fetching checklist", { error: String(error) })
       return NextResponse.json({ error: 'Failed to fetch checklist' }, { status: 500 })
     }
 
@@ -29,7 +31,7 @@ export async function GET() {
       updated_at: data?.updated_at || null
     })
   } catch (error) {
-    console.error('Checklist GET error:', error)
+    logger.error("Checklist GET error", { error: String(error) })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error saving checklist:', error)
+      logger.error("Error saving checklist", { error: String(error) })
       return NextResponse.json({ error: 'Failed to save checklist' }, { status: 500 })
     }
 
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
       updated_at: data?.updated_at || new Date().toISOString()
     })
   } catch (error) {
-    console.error('Checklist POST error:', error)
+    logger.error("Checklist POST error", { error: String(error) })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

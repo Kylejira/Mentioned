@@ -92,13 +92,8 @@ export function validateScanInput(input: ScanInput): ValidationError[] {
         })
         break
       }
-      if (brandLower && q.toLowerCase().includes(brandLower)) {
-        errors.push({
-          field: "buyer_questions",
-          message: `Questions should not contain your brand name. Remove "${name}" from: "${q.slice(0, 40)}..."`,
-        })
-        break
-      }
+      // Brand name in buyer questions is allowed — comparison queries
+      // like "Arc vs Chrome" or "Is Arc good for developers?" are valid.
     }
   }
 

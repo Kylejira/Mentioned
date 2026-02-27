@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
-import { generateContent, ActionItem } from "@/lib/scan-v2/generate-actions"
-import { ProductData } from "@/lib/scan-v2/extract-product"
+import { generateContent, type ActionItem, type ProductData } from "@/lib/content-generation"
+import { log } from "@/lib/logger"
+
+const logger = log.create("generate-content-api")
 
 export const maxDuration = 60 // 1 minute for content generation
 export const dynamic = "force-dynamic"
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[GenerateContent] Generating ${generateType} for ${productData.product_name}`)
+    logger.info("Generating content", { type: generateType, product: productData.product_name })
 
     const result = await generateContent(
       action,
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error("[GenerateContent] Error:", error)
+    logger.error("Content generation error", { error: String(error) })
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
       { error: errorMessage },

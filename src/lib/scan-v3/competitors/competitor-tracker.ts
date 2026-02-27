@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { log } from "@/lib/logger"
 import type { ResponseAnalysis } from "../detection/types"
+
+const logger = log.create("competitor-tracker")
 import type { CompetitorSnapshot, CompetitorRecord } from "./types"
 
 export class CompetitorTracker {
@@ -80,7 +83,7 @@ export class CompetitorTracker {
         .from("competitor_tracking")
         .insert(records)
 
-      if (error) console.error("Failed to persist competitors:", error.message)
+      if (error) logger.error("Failed to persist competitors", { error: error.message })
     }
 
     return records

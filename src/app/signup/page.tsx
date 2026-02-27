@@ -20,22 +20,22 @@ function SignupContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
   const redirectTo = searchParams.get("redirect") || "/dashboard"
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (!authLoading && user) {
-      window.location.href = redirectTo
+    if (!authLoading && user && !redirecting) {
+      setRedirecting(true)
+      window.location.replace(redirectTo)
     }
-  }, [user, authLoading, redirectTo])
+  }, [user, authLoading, redirectTo, redirecting])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    // Validate password
     if (password.length < 6) {
       setError("Password must be at least 6 characters")
       setLoading(false)
@@ -49,7 +49,8 @@ function SignupContent() {
         setError(getErrorMessage(error.message))
         setLoading(false)
       } else if (session) {
-        window.location.href = redirectTo
+        setRedirecting(true)
+        window.location.replace(redirectTo)
       } else {
         setSuccess(true)
         setLoading(false)
