@@ -38,6 +38,46 @@ export async function GET() {
       return NextResponse.json({ scan: null })
     }
 
+    // Try to fetch summary enrichments (deltas, share_of_voice) from the scans table
+    let deltas = null
+    let shareOfVoice = null
+    try {
+      const productUrl = data.product_url
+      if (productUrl) {
+        let summary: Record<string, unknown> | null = null
+
+        const { data: scanRow } = await supabase
+          .from("scans")
+          .select("summary")
+          .eq("status", "not_mentioned")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single()
+
+        if (scanRow?.summary) {
+          summary = scanRow.summary as Record<string, unknown>
+        } else {
+          const { data: altRow } = await supabase
+            .from("scans")
+            .select("summary")
+            .in("status", ["low_visibility", "recommended"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single()
+          if (altRow?.summary) {
+            summary = altRow.summary as Record<string, unknown>
+          }
+        }
+
+        if (summary) {
+          deltas = summary.deltas ?? null
+          shareOfVoice = summary.share_of_voice ?? null
+        }
+      }
+    } catch {
+      // Non-fatal: old scans may not have enrichments
+    }
+
     return NextResponse.json({
       scan: {
         id: data.id,
@@ -47,6 +87,8 @@ export async function GET() {
         score: data.score,
         scannedAt: data.scanned_at,
         fullResult: data.full_result,
+        deltas,
+        shareOfVoice,
       },
     })
   } catch (err) {

@@ -10,9 +10,10 @@ interface ByModelData {
 interface ProviderComparisonProps {
   data: ByModelData | null
   totalQueries?: number
+  deltas?: Record<string, any> | null
 }
 
-export function ProviderComparison({ data, totalQueries }: ProviderComparisonProps) {
+export function ProviderComparison({ data, totalQueries, deltas }: ProviderComparisonProps) {
   if (!data) {
     return null
   }
@@ -30,6 +31,8 @@ export function ProviderComparison({ data, totalQueries }: ProviderComparisonPro
           const queries = totalQueries ?? 0
           const mentionCount = queries > 0 ? Math.round((mentionRate / 100) * queries) : 0
 
+          const providerDelta = deltas?.providers?.[providerKey]?.delta ?? null
+
           return (
             <ProviderCard
               key={provider}
@@ -41,6 +44,7 @@ export function ProviderComparison({ data, totalQueries }: ProviderComparisonPro
               category_coverage={mentionRate / 100}
               mentions_count={mentionCount}
               total_queries={queries}
+              scoreDelta={providerDelta}
             />
           )
         })}

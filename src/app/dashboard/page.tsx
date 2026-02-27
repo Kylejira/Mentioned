@@ -39,6 +39,8 @@ import {
 import { cn } from "@/lib/utils"
 import { mockScanData, formatScanDate, type Action, type ScanData, type VisibilityStatus, type VisibilityScore, type DimensionScore, type VisibilityGap, type ActionItem } from "@/lib/mock-data"
 import { ProviderComparison } from "@/components/ProviderComparison"
+import { ScoreDelta } from "./components/score-delta"
+import { ShareOfVoice } from "./components/share-of-voice"
 import ReactMarkdown from "react-markdown"
 
 const SCAN_RESULT_KEY = "mentioned_scan_result" // Legacy key (shared across users)
@@ -387,7 +389,7 @@ const dimensionIcons: Record<string, string> = {
 }
 
 // Visibility Score Display Component
-function VisibilityScoreDisplay({ score }: { score: VisibilityScore }) {
+function VisibilityScoreDisplay({ score, deltas }: { score: VisibilityScore; deltas?: Record<string, any> | null }) {
   const [showDimensions, setShowDimensions] = useState(false)
   const overallScore = score.overall
   const label = getScoreLabel(overallScore)
@@ -412,6 +414,11 @@ function VisibilityScoreDisplay({ score }: { score: VisibilityScore }) {
         <span className={cn("text-sm font-medium mb-2 ml-2", textColor)}>
           {label}
         </span>
+        {deltas?.overall?.delta != null && (
+          <span className="mb-2">
+            <ScoreDelta delta={deltas.overall.delta} suffix=" pts" size="md" />
+          </span>
+        )}
       </div>
       
       {/* Progress Bar */}
@@ -426,9 +433,14 @@ function VisibilityScoreDisplay({ score }: { score: VisibilityScore }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Mention rate</p>
-          <p className="text-lg font-semibold text-foreground">
-            {score.breakdown.mentionRate}%
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-lg font-semibold text-foreground">
+              {score.breakdown.mentionRate}%
+            </p>
+            {deltas?.mention_rate?.delta != null && (
+              <ScoreDelta delta={deltas.mention_rate.delta * 100} suffix="%" />
+            )}
+          </div>
         </div>
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Top 3 rate</p>
@@ -446,9 +458,14 @@ function VisibilityScoreDisplay({ score }: { score: VisibilityScore }) {
         </div>
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Model agreement</p>
-          <p className="text-lg font-semibold text-foreground">
-            {score.breakdown.modelConsistency}%
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-lg font-semibold text-foreground">
+              {score.breakdown.modelConsistency}%
+            </p>
+            {deltas?.consistency?.delta != null && (
+              <ScoreDelta delta={deltas.consistency.delta} suffix="%" />
+            )}
+          </div>
         </div>
       </div>
       
@@ -911,6 +928,8 @@ export default function DashboardPage() {
   const [providerComparisonData, setProviderComparisonData] = useState<unknown>(null)
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringLoading, setRecurringLoading] = useState(false)
+  const [scanDeltas, setScanDeltas] = useState<Record<string, any> | null>(null)
+  const [shareOfVoice, setShareOfVoice] = useState<any>(null)
 
   // NEW: Content generation state for action items
   const [generatingActionId, setGeneratingActionId] = useState<string | null>(null)
@@ -956,6 +975,8 @@ export default function DashboardPage() {
 
           if (cancelled) return
           setRawScanData(parsed)
+          if (parsed._deltas) setScanDeltas(parsed._deltas)
+          if (parsed._share_of_voice) setShareOfVoice(parsed._share_of_voice)
           const transformed = transformScanResult(parsed)
           if (transformed) {
             setScanData(transformed)
@@ -987,6 +1008,8 @@ export default function DashboardPage() {
 
             if (cancelled) return
             setRawScanData(scan.fullResult)
+            if (scan.deltas) setScanDeltas(scan.deltas)
+            if (scan.shareOfVoice) setShareOfVoice(scan.shareOfVoice)
             const transformed = transformScanResult(scan.fullResult)
             if (transformed) {
               setScanData(transformed)
@@ -1450,7 +1473,7 @@ export default function DashboardPage() {
                 
                 {/* Right: Visibility Score */}
                 {data.visibilityScore && (
-                  <VisibilityScoreDisplay score={data.visibilityScore} />
+                  <VisibilityScoreDisplay score={data.visibilityScore} deltas={scanDeltas} />
                 )}
               </div>
 
@@ -1513,9 +1536,14 @@ export default function DashboardPage() {
         {/* Section: Provider Comparison (placeholder) */}
         {data.visibilityScore?.byModel && (
           <section>
-            <ProviderComparison data={data.visibilityScore.byModel} totalQueries={data.queries?.length} />
+            <ProviderComparison data={data.visibilityScore.byModel} totalQueries={data.queries?.length} deltas={scanDeltas} />
           </section>
         )}
+
+        {/* Section: Share of Voice */}
+        <section>
+          <ShareOfVoice data={shareOfVoice} />
+        </section>
 
         {/* Why Not Mentioned Section - Only show for non-recommended status */}
         {data.status !== "recommended" && data.whyNotMentioned && (

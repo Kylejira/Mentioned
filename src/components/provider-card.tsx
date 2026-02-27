@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getProviderMeta } from "@/lib/provider-colors"
+import { ScoreDelta } from "@/app/dashboard/components/score-delta"
 
 export interface ProviderCompetitor {
   name: string
@@ -22,6 +23,7 @@ export interface ProviderCardProps {
   mentions_count: number
   total_queries: number
   top_competitors?: ProviderCompetitor[]
+  scoreDelta?: number | null
 }
 
 function scoreColor(score: number): string {
@@ -85,6 +87,11 @@ export function ProviderCard(props: ProviderCardProps) {
           {props.composite_score}
         </span>
         <span className="text-lg text-muted-foreground mb-0.5">/100</span>
+        {props.scoreDelta != null && (
+          <span className="mb-0.5">
+            <ScoreDelta delta={props.scoreDelta} suffix=" pts" />
+          </span>
+        )}
       </div>
 
       {/* Progress bar */}

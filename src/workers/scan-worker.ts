@@ -3,6 +3,8 @@ import { getRedisConnection } from "@/lib/queue/connection"
 import { runScan } from "@/lib/scan-runner"
 import { generateStrategicPlan } from "@/lib/strategic/generate-plan"
 import { computeProviderComparison } from "@/lib/scan-v3/scoring/provider-comparison"
+import { computeScoreDeltas } from "@/lib/scan-v3/scoring/compute-deltas"
+import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { log } from "@/lib/logger"
 import type { ScanJobData, ScanJobResult } from "@/lib/queue/scan-queue"
@@ -54,12 +56,48 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
         .eq("id", scanId)
         .single()
 
+      let deltas = null
+      try {
+        const providerScores: Record<string, number> = {}
+        if (comparison?.providers) {
+          for (const p of comparison.providers) {
+            providerScores[p.provider] = p.composite_score
+          }
+        }
+
+        deltas = await computeScoreDeltas(scanId, brandId || scanId, {
+          overall: result.score,
+          mention_rate: comparison?.providers?.length
+            ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
+            : 0,
+          consistency: comparison?.cross_provider?.consistency_score ?? 0,
+          providerScores,
+        }, db)
+      } catch (deltaErr) {
+        logger.error("Delta computation failed (non-fatal)", {
+          scanId,
+          error: deltaErr instanceof Error ? deltaErr.message : String(deltaErr),
+        })
+      }
+
+      let shareOfVoice = null
+      try {
+        shareOfVoice = await computeShareOfVoice(scanId, brandName, db)
+      } catch (sovErr) {
+        logger.error("Share of voice computation failed (non-fatal)", {
+          scanId,
+          error: sovErr instanceof Error ? sovErr.message : String(sovErr),
+        })
+      }
+
       await db
         .from("scans")
         .update({
           summary: {
             ...(existing?.summary as Record<string, unknown> ?? {}),
             provider_comparison: comparison,
+            ...(deltas ? { deltas } : {}),
+            ...(shareOfVoice ? { share_of_voice: shareOfVoice } : {}),
           },
         })
         .eq("id", scanId)

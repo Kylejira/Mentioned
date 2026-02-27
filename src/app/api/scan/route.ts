@@ -6,6 +6,8 @@ import type { PlanTier } from "@/lib/scan-v3"
 import { runScan } from "@/lib/scan-runner"
 import { generateStrategicPlan } from "@/lib/strategic/generate-plan"
 import { computeProviderComparison } from "@/lib/scan-v3/scoring/provider-comparison"
+import { computeScoreDeltas } from "@/lib/scan-v3/scoring/compute-deltas"
+import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
 import { log } from "@/lib/logger"
 
 export const maxDuration = 240
@@ -217,7 +219,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Provider comparison (non-blocking)
+      // Provider comparison + deltas + share of voice (non-blocking)
+      let scanDeltas: Record<string, unknown> | null = null
+      let scanShareOfVoice: Record<string, unknown> | null = null
       try {
         const adminDb = createAdminClient()
         const comparison = await computeProviderComparison(scanId, adminDb)
@@ -227,12 +231,50 @@ export async function POST(request: NextRequest) {
           .eq("id", scanId)
           .single()
 
+        let deltas = null
+        try {
+          const providerScores: Record<string, number> = {}
+          if (comparison?.providers) {
+            for (const p of comparison.providers) {
+              providerScores[p.provider] = p.composite_score
+            }
+          }
+
+          deltas = await computeScoreDeltas(scanId, brandId || scanId, {
+            overall: result.score,
+            mention_rate: comparison?.providers?.length
+              ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
+              : 0,
+            consistency: comparison?.cross_provider?.consistency_score ?? 0,
+            providerScores,
+          }, adminDb)
+          scanDeltas = deltas as unknown as Record<string, unknown>
+        } catch (deltaErr) {
+          logger.warn("Delta computation failed (non-fatal)", {
+            scanId,
+            error: deltaErr instanceof Error ? deltaErr.message : String(deltaErr),
+          })
+        }
+
+        let shareOfVoice = null
+        try {
+          shareOfVoice = await computeShareOfVoice(scanId, brandName, adminDb)
+          scanShareOfVoice = shareOfVoice as unknown as Record<string, unknown>
+        } catch (sovErr) {
+          logger.warn("Share of voice computation failed (non-fatal)", {
+            scanId,
+            error: sovErr instanceof Error ? sovErr.message : String(sovErr),
+          })
+        }
+
         await adminDb
           .from("scans")
           .update({
             summary: {
               ...(existing?.summary as Record<string, unknown> ?? {}),
               provider_comparison: comparison,
+              ...(deltas ? { deltas } : {}),
+              ...(shareOfVoice ? { share_of_voice: shareOfVoice } : {}),
             },
           })
           .eq("id", scanId)
@@ -253,7 +295,11 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      return NextResponse.json(result.legacyResult)
+      return NextResponse.json({
+        ...result.legacyResult,
+        ...(scanDeltas ? { _deltas: scanDeltas } : {}),
+        ...(scanShareOfVoice ? { _share_of_voice: scanShareOfVoice } : {}),
+      })
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error"
       const stack = err instanceof Error ? err.stack?.split("\n").slice(0, 3).join(" | ") : ""
