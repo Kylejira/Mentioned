@@ -64,7 +64,7 @@ export function ProviderCard(props: ProviderCardProps) {
         <div className="flex items-center gap-2.5">
           <div className={cn("size-9 rounded-xl flex items-center justify-center", meta.lightBg)}>
             <span className={cn("text-base font-bold", meta.color)}>
-              {meta.label.charAt(0)}
+              {meta.icon}
             </span>
           </div>
           <div>
@@ -90,10 +90,10 @@ export function ProviderCard(props: ProviderCardProps) {
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all", scoreBg(props.composite_score))}
-          style={{ width: `${props.composite_score}%` }}
+          style={{ width: `${Math.max(props.composite_score, 0)}%` }}
         />
       </div>
 

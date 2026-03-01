@@ -6,11 +6,7 @@ interface ShareOfVoiceProps {
 
 export function ShareOfVoice({ data }: ShareOfVoiceProps) {
   if (!data || !data.brands || data.brands.length === 0) {
-    return (
-      <div className="bg-gray-50 rounded-xl p-6 text-center text-gray-400 text-sm">
-        Run a scan to see share of voice
-      </div>
-    )
+    return null
   }
 
   return (
