@@ -58,30 +58,29 @@ export function ProviderCard(props: ProviderCardProps) {
   const coveragePct = Math.round(props.category_coverage * 100)
 
   return (
-    <div className="bg-background border border-gray-200 rounded-xl p-5 flex flex-col gap-4">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className={cn("size-9 rounded-xl flex items-center justify-center", meta.lightBg)}>
-            <span className={cn("text-base font-bold", meta.color)}>
-              {meta.label.charAt(0)}
-            </span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: meta.hex }}>
+            {meta.icon}
           </div>
           <div>
-            <p className="font-medium text-gray-900 text-sm">{meta.label}</p>
+            <p className="font-semibold text-gray-900">{meta.label}</p>
+            <p className="text-xs text-gray-400 font-mono">{meta.model}</p>
           </div>
         </div>
-        <span className="text-[10px] px-2 py-0.5 bg-gray-100 rounded-full text-gray-600 font-medium">
+        <span className="text-[10px] px-2 py-0.5 bg-gray-100 rounded-full text-gray-500">
           {meta.model}
         </span>
       </div>
 
       {/* Score */}
-      <div className="flex items-end gap-2">
-        <span className={cn("text-2xl font-bold leading-none", scoreColor(props.composite_score))}>
+      <div className="flex items-end gap-2 mt-1">
+        <span className={cn("text-4xl font-extrabold leading-none", scoreColor(props.composite_score))}>
           {props.composite_score}
         </span>
-        <span className="text-base text-gray-400 mb-0.5">/100</span>
+        <span className="text-lg text-gray-300 font-medium mb-0.5">/100</span>
         {props.scoreDelta != null && (
           <span className="mb-0.5">
             <ScoreDelta delta={props.scoreDelta} suffix=" pts" />
@@ -90,43 +89,44 @@ export function ProviderCard(props: ProviderCardProps) {
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-gray-100 rounded-full">
         <div
-          className={cn("h-full rounded-full transition-all", scoreBg(props.composite_score))}
-          style={{ width: `${props.composite_score}%` }}
+          className={cn("h-2 rounded-full transition-all", scoreBg(props.composite_score))}
+          style={{ width: `${Math.max(props.composite_score, 1)}%` }}
         />
       </div>
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+      <div className="grid grid-cols-2 gap-4 mt-5">
         <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Mention rate</p>
-          <p className="text-sm font-bold text-gray-900">{mentionPct}%</p>
-          <p className="text-[10px] text-gray-500">
-            {props.mentions_count}/{props.total_queries} queries
-          </p>
+          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Mention Rate</div>
+          <div className="text-lg font-bold text-gray-900 mt-0.5">{mentionPct}%</div>
+          <div className="text-[10px] text-gray-400">{props.mentions_count}/{props.total_queries} queries</div>
         </div>
         <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Avg position</p>
-          <p className="text-sm font-bold text-gray-900">
+          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Avg Position</div>
+          <div className="text-lg font-bold text-gray-900 mt-0.5">
             {props.avg_position > 0 ? `#${props.avg_position}` : "N/A"}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Sentiment</p>
-          <p className={cn("text-sm font-medium", sentiment.color)}>{sentiment.text}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Category coverage</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className={cn("h-full rounded-full transition-all", meta.bgColor)}
-                style={{ width: `${coveragePct}%` }}
-              />
-            </div>
-            <span className="text-xs font-medium text-foreground">{coveragePct}%</span>
           </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Sentiment</div>
+          <div className={cn("text-sm mt-0.5", sentiment.color)}>{sentiment.text}</div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Category Coverage</div>
+          <div className="text-lg font-bold text-gray-900 mt-0.5">{coveragePct}%</div>
+        </div>
+      </div>
+
+      {/* Category coverage bar */}
+      <div className="mt-1">
+        <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+          <span>Category Coverage</span>
+          <span>{coveragePct}%</span>
+        </div>
+        <div className="w-full h-1.5 bg-gray-100 rounded-full">
+          <div className="h-1.5 bg-blue-500 rounded-full" style={{ width: `${coveragePct}%` }} />
         </div>
       </div>
 
