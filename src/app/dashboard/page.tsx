@@ -18,6 +18,7 @@ import { ScansRemaining } from "@/components/scans-remaining"
 import { ScanLimitModal } from "@/components/upgrade-modal"
 import { 
   ChevronDown, 
+  ChevronRight, 
   Check, 
   X, 
   AlertTriangle,
@@ -598,11 +599,6 @@ function ContentStatusItem({ label, hasIt }: { label: string; hasIt: boolean }) 
   )
 }
 
-function formatCompetitorName(name: string): string {
-  if (!name) return ''
-  return name.charAt(0).toUpperCase() + name.slice(1)
-}
-
 // Competitor Comparison Component
 function CompetitorComparison({ 
   competitors, 
@@ -710,7 +706,7 @@ function CompetitorComparison({
                       {userIsWinning 
                         ? "Leading in AI recommendations" 
                         : outrankedBy.length > 0 
-                          ? `Outranked by ${outrankedBy.map(c => formatCompetitorName(c.name)).join(", ")}`
+                          ? `Outranked by ${outrankedBy.map(c => c.name).join(", ")}`
                           : "Building visibility"
                       }
                     </p>
@@ -789,7 +785,7 @@ function CompetitorComparison({
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium text-foreground">
-                            {formatCompetitorName(competitor.name)}
+                            {competitor.name}
                           </h3>
                           {competitor.isDiscovered && (
                             <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
@@ -877,13 +873,13 @@ function CompetitorComparison({
                 <p className="text-sm text-green-800">
                   <span className="font-semibold">Great position!</span> Your product is recommended more often than 
                   {competitors.length === 1 
-                    ? ` ${formatCompetitorName(competitors[0].name)}` 
+                    ? ` ${competitors[0].name}` 
                     : ` your ${competitors.length} tracked competitors`
                   }. Keep building on this momentum.
                 </p>
               ) : outrankedBy.length > 0 ? (
                 <p className="text-sm text-amber-800">
-                  <span className="font-semibold">{outrankedBy.map(c => formatCompetitorName(c.name)).join(" and ")}</span> 
+                  <span className="font-semibold">{outrankedBy.map(c => c.name).join(" and ")}</span> 
                   {outrankedBy.length === 1 ? " is " : " are "} 
                   currently recommended more often than your product. 
                   Focus on the action plan below to improve your visibility.
@@ -920,6 +916,8 @@ export default function DashboardPage() {
   const { showToast } = useToast()
   const { user, loading: authLoading } = useAuth()
   const subscription = useSubscription()
+  const [queriesExpanded, setQueriesExpanded] = useState(false)
+  const [expandedQueryIndex, setExpandedQueryIndex] = useState<number | null>(null)
   const [selectedAction, setSelectedAction] = useState<Action | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedContent, setGeneratedContent] = useState<string | null>(null)
@@ -1846,6 +1844,135 @@ export default function DashboardPage() {
           )
         })()}
 
+        {/* Section 2: Queries Tested */}
+        <section>
+          <button
+            onClick={() => setQueriesExpanded(!queriesExpanded)}
+            className="w-full flex items-center justify-between py-3 text-left group"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">
+                Queries tested
+              </h2>
+              {data.queries && data.queries.length > 0 && (
+                <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                  {data.queries.length}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-primary font-medium group-hover:underline">
+                {queriesExpanded ? "Hide queries" : "See queries"}
+              </span>
+              <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center transition-colors group-hover:bg-primary/20">
+                {queriesExpanded ? (
+                  <ChevronDown className="size-3.5 text-primary" />
+                ) : (
+                  <ChevronRight className="size-3.5 text-primary" />
+                )}
+              </div>
+            </div>
+          </button>
+
+          {queriesExpanded && (
+            <Card className="animate-fade-in">
+              <CardContent className="py-4">
+                {/* Category context header */}
+                <p className="text-xs text-muted-foreground mb-4 pb-3 border-b border-border">
+                  Queries tested for &quot;{data.brand.category}&quot;:
+                </p>
+                {data.queries && data.queries.length > 0 ? (
+                  <ul className="divide-y divide-border">
+                    {data.queries.map((query, index) => {
+                      const rawResponse = data.rawResponses?.[index]
+                      const isExpanded = expandedQueryIndex === index
+                      
+                      return (
+                        <li key={index} className="py-3 first:pt-0 last:pb-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                        <span className="text-sm text-foreground">
+                          &quot;{query.query}&quot;
+                        </span>
+                              {query.isCustom && (
+                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                                  Custom
+                                </span>
+                              )}
+                            </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            {query.chatgpt ? (
+                              <Check className="size-3.5 text-status-success" />
+                            ) : (
+                              <X className="size-3.5 text-status-error" />
+                            )}
+                            ChatGPT
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            {query.claude ? (
+                              <Check className="size-3.5 text-status-success" />
+                            ) : (
+                              <X className="size-3.5 text-status-error" />
+                            )}
+                            Claude
+                          </span>
+                              {rawResponse && (rawResponse.chatgpt_response || rawResponse.claude_response) && (
+                                <button
+                                  onClick={() => setExpandedQueryIndex(isExpanded ? null : index)}
+                                  className="text-xs text-primary hover:underline ml-2"
+                                >
+                                  {isExpanded ? "Hide responses" : "View responses"}
+                                </button>
+                              )}
+                        </div>
+                          </div>
+                          
+                          {/* Raw AI Responses */}
+                          {isExpanded && rawResponse && (
+                            <div className="mt-4 space-y-4 animate-fade-in">
+                              {rawResponse.chatgpt_response && (
+                                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="size-5 rounded bg-[#10a37f]/10 flex items-center justify-center">
+                                      <span className="text-xs font-bold text-[#10a37f]">G</span>
+                                    </div>
+                                    <span className="text-xs font-medium text-foreground">ChatGPT Response</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                                    {rawResponse.chatgpt_response}
+                                  </p>
+                                </div>
+                              )}
+                              {rawResponse.claude_response && (
+                                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="size-5 rounded bg-[#cc785c]/10 flex items-center justify-center">
+                                      <span className="text-xs font-bold text-[#cc785c]">C</span>
+                                    </div>
+                                    <span className="text-xs font-medium text-foreground">Claude Response</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                                    {rawResponse.claude_response}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                      </li>
+                      )
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No query data available for this scan.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
         {/* Section 3: Competitor Comparison */}
         <section>
           <CompetitorComparison 
@@ -1980,36 +2107,14 @@ export default function DashboardPage() {
             ))}
           </div>
                 ) : (
-                  /* Empty state - message depends on score */
-                  score >= 75 ? (
-                    <div className="text-center py-8 border border-green-200 rounded-lg bg-green-50">
-                      <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-3" />
-                      <h4 className="text-lg font-semibold text-green-700">Looking good!</h4>
-                      <p className="text-gray-500 mt-1">
-                        We didn&apos;t find any major visibility issues. Keep up the great work.
-                      </p>
-                    </div>
-                  ) : score >= 40 ? (
-                    <div className="py-6 px-5 border border-amber-200 rounded-lg bg-amber-50 flex items-start gap-4">
-                      <AlertTriangle className="w-8 h-8 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-lg font-semibold text-amber-700">Room for improvement</h4>
-                        <p className="text-amber-700 text-sm mt-1">
-                          AI tools mention you sometimes, but you&apos;re not a top recommendation. Follow the action plan below to improve your ranking.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="py-6 px-5 border border-red-200 rounded-lg bg-red-50 flex items-start gap-4">
-                      <X className="w-8 h-8 text-red-500 shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-lg font-semibold text-red-700">Needs attention</h4>
-                        <p className="text-red-700 text-sm mt-1">
-                          AI tools rarely recommend you. Your competitors are getting the visibility you&apos;re missing. Start with the action plan below.
-                        </p>
-                      </div>
-                    </div>
-                  )
+                  /* Empty state - no gaps found */
+                  <div className="text-center py-8 border border-gray-200 rounded-lg">
+                    <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-3" />
+                    <h4 className="text-lg font-semibold text-green-700">Looking good!</h4>
+                    <p className="text-gray-500 mt-1">
+                      We didn&apos;t find any major visibility issues. Keep up the great work.
+                    </p>
+                  </div>
                 )}
               </>
             );

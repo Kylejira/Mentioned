@@ -1,6 +1,5 @@
 export interface ProviderMeta {
   label: string
-  icon: string
   model: string
   color: string
   bgColor: string
@@ -11,7 +10,6 @@ export interface ProviderMeta {
 const PROVIDERS: Record<string, ProviderMeta> = {
   openai: {
     label: "ChatGPT",
-    icon: "G",
     model: "GPT-4o",
     color: "text-[#10a37f]",
     bgColor: "bg-[#10a37f]",
@@ -20,7 +18,6 @@ const PROVIDERS: Record<string, ProviderMeta> = {
   },
   claude: {
     label: "Claude",
-    icon: "C",
     model: "Claude 3 Haiku",
     color: "text-[#cc785c]",
     bgColor: "bg-[#cc785c]",
@@ -29,7 +26,6 @@ const PROVIDERS: Record<string, ProviderMeta> = {
   },
   gemini: {
     label: "Gemini",
-    icon: "G",
     model: "Gemini 2.5 Flash",
     color: "text-[#4285F4]",
     bgColor: "bg-[#4285F4]",
@@ -40,7 +36,6 @@ const PROVIDERS: Record<string, ProviderMeta> = {
 
 const FALLBACK: ProviderMeta = {
   label: "Unknown",
-  icon: "?",
   model: "Unknown",
   color: "text-foreground",
   bgColor: "bg-muted-foreground",
@@ -49,7 +44,7 @@ const FALLBACK: ProviderMeta = {
 }
 
 export function getProviderMeta(provider: string): ProviderMeta {
-  return PROVIDERS[provider] ?? { ...FALLBACK, label: provider, icon: provider.charAt(0).toUpperCase(), model: provider }
+  return PROVIDERS[provider] ?? { ...FALLBACK, label: provider, model: provider }
 }
 
 export function getProviderLabel(provider: string): string {
