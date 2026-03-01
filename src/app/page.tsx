@@ -85,12 +85,12 @@ export default function LandingPage() {
               </p>
               
               {/* Tagline */}
-              <p className="text-gray-500 text-sm sm:text-base font-normal mb-8 sm:mb-10">
+              <p className="text-gray-500 text-sm sm:text-base font-medium mb-8 sm:mb-10">
                 The world&apos;s simplest AI visibility checker.
               </p>
               
               {/* CTA Button */}
-              <div>
+              <div className="mt-8">
                 <Link href="/check">
                   <Button 
                     size="lg"
@@ -112,7 +112,7 @@ export default function LandingPage() {
       </section>
       
       {/* Social Proof Stats Bar */}
-      <section className="py-4 sm:py-6 border-y border-gray-100 bg-white">
+      <section className="py-6 sm:py-8 border-y border-gray-100 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-center gap-4 sm:gap-8 md:gap-16">
             {STATS.map((stat, index) => (
@@ -162,7 +162,7 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* High visibility example */}
-            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 border-l-4 border-l-green-400 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
               <div className="flex justify-between items-start mb-3 sm:mb-4">
                 <span className="text-xs sm:text-sm font-medium text-green-600 bg-green-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   Excellent
@@ -185,14 +185,14 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="pt-2 sm:pt-3 border-t border-gray-100">
-                <p className="text-[10px] sm:text-xs text-gray-500">
+                <p className="text-xs text-gray-500 font-medium">
                   Outranking: Calendly, Acuity, SavvyCal
                 </p>
               </div>
             </div>
             
             {/* Low visibility example */}
-            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-red-100 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 border-l-4 border-l-red-400 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
               <div className="flex justify-between items-start mb-3 sm:mb-4">
                 <span className="text-xs sm:text-sm font-medium text-red-600 bg-red-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   Not Visible
@@ -215,7 +215,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="pt-2 sm:pt-3 border-t border-gray-100">
-                <p className="text-[10px] sm:text-xs text-gray-500">
+                <p className="text-xs text-gray-500 font-medium">
                   Competitors beating you: Calendly, SavvyCal, Acuity
                 </p>
               </div>
@@ -403,12 +403,12 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <div className="group bg-white border border-gray-100 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+    <div className="group bg-white border border-gray-200 border-t-2 border-t-blue-500 rounded-xl sm:rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
       <div className="size-10 sm:size-12 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-200">
         <div className="scale-90 sm:scale-100">{icon}</div>
       </div>
       <h3 className="text-gray-900 font-semibold text-base sm:text-lg mb-1.5 sm:mb-2">{title}</h3>
-      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">{description}</p>
+      <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
     </div>
   )
 }
@@ -427,7 +427,7 @@ function StepCard({
       <div className="size-12 sm:size-16 rounded-full bg-blue-600 text-white text-xl sm:text-2xl font-bold flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg shadow-blue-500/25 group-hover:scale-110 transition-transform duration-200">
         {number}
       </div>
-      <h3 className="text-gray-900 font-semibold text-sm sm:text-base mb-1.5 sm:mb-2">{title}</h3>
+      <h3 className="text-gray-900 font-semibold text-sm sm:text-base mb-2">{title}</h3>
       <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-[200px] sm:max-w-[220px] mx-auto">{description}</p>
     </div>
   )
