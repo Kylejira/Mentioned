@@ -96,7 +96,7 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
   
   if (!stats || history.length < 2) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="text-center py-8">
           <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-gray-900 font-semibold mb-1">Track your progress</h3>
@@ -175,9 +175,9 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
   const isPositive = stats.scoreChange >= 0;
   
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="p-4 sm:p-6 pb-0">
+      <div className="p-6 pb-0">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-gray-900 font-semibold text-lg">Visibility Progress</h3>
@@ -186,17 +186,17 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
           
           {/* Change indicator */}
           <div className={`
-            flex items-center gap-1.5 px-3 py-1.5 rounded-full
+            flex items-center gap-1.5 px-3 py-1.5 rounded-lg
             ${isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}
           `}>
             {stats.scoreChange === 0 ? (
-              <Minus className="w-4 h-4" />
+              <Minus className="w-5 h-5" />
             ) : isPositive ? (
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-5 h-5" />
             ) : (
-              <TrendingDown className="w-4 h-4" />
+              <TrendingDown className="w-5 h-5" />
             )}
-            <span className="text-sm font-semibold">
+            <span className="text-sm font-bold">
               {stats.scoreChange > 0 ? '+' : ''}{stats.scoreChange} pts
             </span>
           </div>
@@ -204,19 +204,19 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
         
         {/* Current score */}
         <div className="flex items-baseline gap-2 mb-1">
-          <span className={`text-4xl font-bold ${
+          <span className={`text-4xl font-extrabold ${
             stats.latest.score >= 70 ? 'text-emerald-500' : 
             stats.latest.score >= 40 ? 'text-amber-500' : 'text-red-500'
           }`}>
             {stats.latest.score}
           </span>
-          <span className="text-gray-400 text-lg">/100</span>
-          <span className="text-gray-400 text-sm ml-2">current score</span>
+          <span className="text-gray-400 text-xl">/100</span>
+          <span className="text-gray-500 text-sm ml-2">current score</span>
         </div>
       </div>
       
       {/* Graph */}
-      <div className="px-4 sm:px-6 py-4 relative">
+      <div className="px-6 py-4 relative">
         <svg
           viewBox="0 0 100 50"
           className="w-full h-32 sm:h-40"
@@ -224,8 +224,8 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
         >
           <defs>
             <linearGradient id="progressGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={isPositive ? '#10B981' : '#EF4444'} stopOpacity="0.3" />
-              <stop offset="100%" stopColor={isPositive ? '#10B981' : '#EF4444'} stopOpacity="0" />
+              <stop offset="0%" stopColor={isPositive ? '#10B981' : '#EF4444'} stopOpacity="0.2" />
+              <stop offset="100%" stopColor={isPositive ? '#10B981' : '#EF4444'} stopOpacity="0.02" />
             </linearGradient>
             <linearGradient id="progressLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={isPositive ? '#059669' : '#DC2626'} />
@@ -233,13 +233,13 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
             </linearGradient>
           </defs>
           
-          {/* Grid lines */}
-          {[12.5, 25, 37.5].map((y) => (
-            <line key={y} x1="5" y1={y} x2="95" y2={y} stroke="#E5E7EB" strokeWidth="0.3" strokeDasharray="2,2" />
+          {/* Horizontal gridlines at 25, 50, 75, 100 score marks */}
+          {[11.25, 22.5, 33.75, 45].map((y) => (
+            <line key={y} x1="5" y1={y} x2="95" y2={y} stroke="#F3F4F6" strokeWidth="0.4" />
           ))}
           
           <path d={areaPath} fill="url(#progressGradient)" />
-          <path d={linePath} fill="none" stroke="url(#progressLineGradient)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <path d={linePath} fill="none" stroke="url(#progressLineGradient)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           
           {/* Data points */}
           {points.map((point, i) => (
@@ -247,10 +247,10 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
               key={i}
               cx={point.x}
               cy={point.y}
-              r={hoveredPoint === i ? 4 : 2.5}
+              r={hoveredPoint === i ? 3.5 : 2}
               fill={isPositive ? '#10B981' : '#EF4444'}
               stroke="white"
-              strokeWidth="1.5"
+              strokeWidth="1.2"
               className="cursor-pointer transition-all duration-150"
               onMouseEnter={() => setHoveredPoint(i)}
               onMouseLeave={() => setHoveredPoint(null)}
@@ -275,25 +275,25 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
         )}
         
         {/* X-axis labels */}
-        <div className="flex justify-between text-[10px] sm:text-xs text-gray-400 mt-2">
+        <div className="flex justify-between text-xs text-gray-500 mt-2">
           <span>{formatDate(history[0].scannedAt)}</span>
           <span>{formatDate(history[history.length - 1].scannedAt)}</span>
         </div>
       </div>
       
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 p-4 sm:p-6 pt-2 border-t border-gray-100 bg-gray-50/50">
-        <div className="text-center">
-          <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wide mb-1">Scans</p>
-          <p className="text-gray-900 font-semibold text-lg">{stats.totalScans}</p>
+      <div className="flex divide-x divide-gray-200 p-6 pt-2 border-t border-gray-100 bg-gray-50/50">
+        <div className="flex-1 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Scans</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.totalScans}</p>
         </div>
-        <div className="text-center">
-          <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wide mb-1">Highest</p>
-          <p className="text-emerald-600 font-semibold text-lg">{stats.highestScore}</p>
+        <div className="flex-1 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Highest</p>
+          <p className="text-2xl font-bold text-green-600">{stats.highestScore}</p>
         </div>
-        <div className="text-center">
-          <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wide mb-1">Lowest</p>
-          <p className="text-gray-900 font-semibold text-lg">{stats.lowestScore}</p>
+        <div className="flex-1 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">Lowest</p>
+          <p className={`text-2xl font-bold ${stats.lowestScore === 0 ? 'text-red-500' : 'text-gray-900'}`}>{stats.lowestScore}</p>
         </div>
       </div>
       
@@ -301,15 +301,15 @@ export function VisibilityProgress({ history: initialHistory, productName, onDel
       <div className="border-t border-gray-100">
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="w-full px-4 sm:px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          className="w-full px-6 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 transition-colors"
         >
           <span>Scan history ({history.length})</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
         </button>
         
         {/* Expandable history list */}
         {showHistory && (
-          <div className="px-4 sm:px-6 pb-4 space-y-2 max-h-64 overflow-y-auto">
+          <div className="px-6 pb-4 space-y-2 max-h-64 overflow-y-auto">
             {[...history].reverse().map((entry) => (
               <div 
                 key={entry.id}

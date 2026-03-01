@@ -24,7 +24,7 @@ export function ProviderComparison({ data, totalQueries, deltas }: ProviderCompa
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">Score by AI Provider</h3>
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">Score by AI Provider</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {providers.map(([provider, mentionRate]) => {
           const providerKey = provider === "chatgpt" ? "openai" : provider

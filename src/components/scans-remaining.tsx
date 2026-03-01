@@ -24,9 +24,9 @@ export function ScansRemaining({
   if (plan === "pro") {
     return (
       <div className={cn("flex items-center gap-2 text-sm", className)}>
-        <div className="flex items-center gap-1.5 text-[#10B981]">
+        <div className="flex items-center gap-1.5 text-blue-600">
           <Infinity className="size-4" />
-          <span className="font-medium">Unlimited scans</span>
+          <span className="text-xs font-medium">Unlimited scans</span>
         </div>
       </div>
     )

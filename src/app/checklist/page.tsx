@@ -27,11 +27,11 @@ import { cn } from "@/lib/utils"
 // Priority types and colors
 type Priority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
 
-const PRIORITY_COLORS: Record<Priority, string> = {
-  CRITICAL: "#E74444",
-  HIGH: "#F7B500",
-  MEDIUM: "#10B981",
-  LOW: "#6B7280"
+const PRIORITY_STYLES: Record<Priority, string> = {
+  CRITICAL: "bg-red-100 text-red-700",
+  HIGH: "bg-orange-100 text-orange-700",
+  MEDIUM: "bg-yellow-100 text-yellow-700",
+  LOW: "bg-gray-100 text-gray-600",
 }
 
 // Checklist item definition
@@ -365,7 +365,16 @@ function ProgressRing({ percent, size = 100 }: { percent: number; size?: number 
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.2)"
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth={strokeWidth}
+        />
+        {/* Visible track ring */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(148,163,184,0.4)"
           strokeWidth={strokeWidth}
         />
         {/* Progress circle */}
@@ -393,8 +402,10 @@ function ProgressRing({ percent, size = 100 }: { percent: number; size?: number 
 function PriorityBadge({ priority }: { priority: Priority }) {
   return (
     <span 
-      className="text-xs font-semibold tracking-wide"
-      style={{ color: PRIORITY_COLORS[priority] }}
+      className={cn(
+        "text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full",
+        PRIORITY_STYLES[priority]
+      )}
     >
       {priority}
     </span>
@@ -417,12 +428,12 @@ function ChecklistItemCard({
     <div 
       className={cn(
         "bg-white rounded-xl border transition-all duration-200",
-        isExpanded ? "shadow-lg border-gray-200" : "border-gray-100 hover:shadow-md hover:-translate-y-0.5"
+        isExpanded ? "shadow-lg border-gray-200" : "border-gray-100 hover:shadow-md hover:border-l-2 hover:border-l-blue-500"
       )}
     >
       {/* Item Header */}
       <div 
-        className="flex items-center gap-4 p-4 cursor-pointer"
+        className="flex items-center gap-4 py-4 px-4 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Checkbox */}
@@ -432,28 +443,29 @@ function ChecklistItemCard({
             onToggle()
           }}
           className={cn(
-            "size-[22px] rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-200",
+            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-200",
             isCompleted
-              ? "bg-[#2563EB] border-[#2563EB] text-white"
-              : "border-gray-300 hover:border-[#2563EB]"
+              ? "bg-green-500 border-green-500 text-white"
+              : "border-gray-300 hover:border-blue-500"
           )}
         >
-          {isCompleted && <Check className="size-3.5" strokeWidth={3} />}
+          {isCompleted && <Check className="size-3" strokeWidth={3} />}
         </button>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h3 className={cn(
-              "text-[15px] font-medium",
-              isCompleted ? "text-gray-400 line-through" : "text-[#1E293B]"
+              "text-sm font-medium",
+              isCompleted ? "text-gray-400 line-through" : "text-gray-900"
             )}>
               {item.title}
             </h3>
           </div>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-2 mt-1.5">
             <PriorityBadge priority={item.priority} />
-            <div className="flex items-center gap-1 text-[#9CA3AF] text-xs">
+            <span className="text-gray-300">·</span>
+            <div className="flex items-center gap-1 text-gray-500 text-xs">
               <Clock className="size-3" />
               <span>{item.timeEstimate}</span>
             </div>
@@ -669,7 +681,7 @@ export default function ChecklistPage() {
         </div>
 
         {/* Checklist Sections */}
-        <div className="space-y-6">
+        <div className="space-y-10">
           {CHECKLIST_SECTIONS.map(section => {
             const isExpanded = expandedSections.includes(section.id)
             const { completed, total } = getSectionProgress(section)
@@ -682,21 +694,21 @@ export default function ChecklistPage() {
                   className="w-full flex items-center justify-between py-3 group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#64748B] group-hover:bg-gray-200 transition-colors">
+                    <div className="size-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-gray-200 transition-colors">
                       {section.icon}
                     </div>
                     <div className="text-left">
-                      <h2 className="font-semibold text-[#1E293B]">{section.title}</h2>
-                      <p className="text-sm text-[#64748B]">{section.description}</p>
+                      <h2 className="text-lg font-bold text-gray-900">{section.title}</h2>
+                      <p className="text-sm text-gray-500">{section.description}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-3">
                     <span className={cn(
-                      "text-sm font-medium px-2.5 py-1 rounded-full",
+                      "text-sm font-semibold px-2.5 py-1 rounded-full",
                       completed === total 
                         ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-[#64748B]"
+                        : "bg-gray-100 text-gray-500"
                     )}>
                       {completed}/{total}
                     </span>
@@ -730,17 +742,17 @@ export default function ChecklistPage() {
         </div>
 
         {/* Footer CTA */}
-        <div className="mt-12 bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
+        <div className="mt-12 bg-white rounded-2xl border border-gray-200 py-8 px-6 text-center shadow-sm">
           <div className="text-3xl mb-3">🎯</div>
-          <h3 className="text-lg font-semibold text-[#1E293B] mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Ready to track your progress?
           </h3>
-          <p className="text-[#64748B] text-sm mb-6 max-w-md mx-auto">
+          <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
             Run a new scan to see how your visibility has improved after completing checklist items.
           </p>
           <Link href="/check">
             <Button 
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold px-6 py-2.5"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-sm"
             >
               Run New Scan
             </Button>

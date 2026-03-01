@@ -5,7 +5,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/layout/app-shell"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton"
 import { VisibilityProgress, type ScanHistoryEntry } from "@/components/VisibilityProgress"
 import { useSubscription } from "@/lib/subscription"
@@ -127,13 +126,13 @@ export default function ProgressPage() {
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Visibility Progress
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-gray-500 mt-1">
                 Track how your AI visibility changes over time
               </p>
             </div>
           </div>
           <Link href="/check">
-            <Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm">
               <RefreshCw className="size-4 mr-2" />
               New Scan
             </Button>
@@ -150,15 +149,15 @@ export default function ProgressPage() {
             </div>
           </div>
         ) : history.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <div className="size-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-                <BarChart3 className="size-8 text-muted-foreground" />
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="py-16 text-center px-6">
+              <div className="size-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                <BarChart3 className="size-8 text-gray-400" />
               </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
                 No progress data yet
               </h2>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
                 Run your first visibility check to start tracking your progress over time. Each scan will be saved here.
               </p>
               <Link href="/check">
@@ -167,10 +166,10 @@ export default function ProgressPage() {
                   <TrendingUp className="ml-2 size-4" />
                 </Button>
               </Link>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
-          <>
+          <div className="space-y-6">
             {/* Main Progress Chart */}
             <VisibilityProgress 
               history={history} 
@@ -182,120 +181,108 @@ export default function ProgressPage() {
             {stats && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Total Scans */}
-                <Card>
-                  <CardContent className="py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <Calendar className="size-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-foreground">{stats.totalScans}</p>
-                        <p className="text-xs text-muted-foreground">Total Scans</p>
-                      </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Calendar className="size-5 text-blue-500" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{stats.totalScans}</p>
+                      <p className="text-xs text-gray-500 mt-1">Total Scans</p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Average Score */}
-                <Card>
-                  <CardContent className="py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <Target className="size-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-foreground">{stats.avgScore}</p>
-                        <p className="text-xs text-muted-foreground">Avg Score</p>
-                      </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                      <Target className="size-5 text-green-500" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{stats.avgScore}</p>
+                      <p className="text-xs text-gray-500 mt-1">Avg Score</p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Best Score */}
-                <Card>
-                  <CardContent className="py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                        <TrendingUp className="size-5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-foreground">{stats.bestScore}</p>
-                        <p className="text-xs text-muted-foreground">Best Score</p>
-                      </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <TrendingUp className="size-5 text-green-500" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{stats.bestScore}</p>
+                      <p className="text-xs text-gray-500 mt-1">Best Score</p>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Improvement */}
-                <Card>
-                  <CardContent className="py-5">
-                    <div className="flex items-center gap-3">
-                      <div className={`size-10 rounded-lg flex items-center justify-center ${
-                        stats.scoreChange >= 0 ? 'bg-emerald-100' : 'bg-red-100'
-                      }`}>
-                        <Zap className={`size-5 ${
-                          stats.scoreChange >= 0 ? 'text-emerald-600' : 'text-red-600'
-                        }`} />
-                      </div>
-                      <div>
-                        <p className={`text-2xl font-bold ${
-                          stats.scoreChange >= 0 ? 'text-emerald-600' : 'text-red-600'
-                        }`}>
-                          {stats.scoreChange > 0 ? '+' : ''}{stats.scoreChange}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Total Change</p>
-                      </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      stats.scoreChange >= 0 ? 'bg-emerald-100' : 'bg-red-100'
+                    }`}>
+                      <Zap className={`size-5 ${
+                        stats.scoreChange >= 0 ? 'text-green-500' : 'text-red-500'
+                      }`} />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className={`text-2xl font-bold ${
+                        stats.scoreChange >= 0 ? 'text-emerald-600' : 'text-red-500'
+                      }`}>
+                        {stats.scoreChange > 0 ? '+' : ''}{stats.scoreChange}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Total Change</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Tips Section */}
             {stats && stats.latest.score < 70 && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="py-5">
-                  <div className="flex items-start gap-4">
-                    <div className="size-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <TrendingUp className="size-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-blue-900 mb-1">Tips to improve your score</h3>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Create comparison pages vs. top competitors</li>
-                        <li>• Add an FAQ section answering common questions</li>
-                        <li>• Make sure your homepage clearly states your category</li>
-                        <li>• Add customer testimonials and case studies</li>
-                      </ul>
-                      <Link href="/dashboard" className="inline-block mt-3">
-                        <Button variant="outline" size="sm" className="bg-white">
-                          View action plan
-                        </Button>
-                      </Link>
-                    </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="size-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                    <TrendingUp className="size-5 text-blue-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <h3 className="font-semibold text-blue-900 mb-2">Tips to improve your score</h3>
+                    <ul className="text-sm text-gray-700 leading-relaxed space-y-2">
+                      <li>• Create comparison pages vs. top competitors</li>
+                      <li>• Add an FAQ section answering common questions</li>
+                      <li>• Make sure your homepage clearly states your category</li>
+                      <li>• Add customer testimonials and case studies</li>
+                    </ul>
+                    <Link href="/dashboard" className="inline-block mt-3">
+                      <Button variant="outline" size="sm" className="bg-white">
+                        View action plan
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Celebration for high scores */}
             {stats && stats.latest.score >= 80 && (
-              <Card className="bg-emerald-50 border-emerald-200">
-                <CardContent className="py-5">
-                  <div className="flex items-start gap-4">
-                    <div className="text-3xl">🎉</div>
-                    <div>
-                      <h3 className="font-semibold text-emerald-900 mb-1">Excellent visibility!</h3>
-                      <p className="text-sm text-emerald-800">
-                        Your product is being recommended by AI tools. Keep up the great work! 
-                        Continue monitoring your progress to maintain your position.
-                      </p>
-                    </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="text-3xl">🎉</div>
+                  <div>
+                    <h3 className="font-semibold text-emerald-900 mb-2">Excellent visibility!</h3>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Your product is being recommended by AI tools. Keep up the great work! 
+                      Continue monitoring your progress to maintain your position.
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
-          </>
+          </div>
         )}
       </div>
 

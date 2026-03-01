@@ -403,9 +403,9 @@ function VisibilityScoreDisplay({ score, deltas }: { score: VisibilityScore; del
     <div className="bg-background border border-border rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-muted-foreground">Visibility Score</h3>
-        <div className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+        <Link href="/progress" className="text-xs text-blue-600 font-medium underline hover:no-underline">
           Trackable
-        </div>
+        </Link>
       </div>
       
       {/* Main Score */}
@@ -433,11 +433,11 @@ function VisibilityScoreDisplay({ score, deltas }: { score: VisibilityScore; del
       </div>
       
       {/* Breakdown Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-6">
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Mention rate</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Mention rate</p>
           <div className="flex items-center gap-2">
-            <p className="text-lg font-semibold text-foreground">
+            <p className="text-lg font-bold text-gray-900">
               {score.breakdown.mentionRate}%
             </p>
             {deltas?.mention_rate?.delta != null && (
@@ -446,23 +446,23 @@ function VisibilityScoreDisplay({ score, deltas }: { score: VisibilityScore; del
           </div>
         </div>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Top 3 rate</p>
-          <p className="text-lg font-semibold text-foreground">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Top 3 rate</p>
+          <p className="text-lg font-bold text-gray-900">
             {score.breakdown.topThreeRate}%
           </p>
         </div>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Avg. position</p>
-          <p className="text-lg font-semibold text-foreground">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Avg. position</p>
+          <p className="text-lg font-bold text-gray-900">
             {score.breakdown.avgPosition !== null 
               ? `#${score.breakdown.avgPosition}` 
               : "N/A"}
           </p>
         </div>
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Model agreement</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Model agreement</p>
           <div className="flex items-center gap-2">
-            <p className="text-lg font-semibold text-foreground">
+            <p className="text-lg font-bold text-gray-900">
               {score.breakdown.modelConsistency}%
             </p>
             {deltas?.consistency?.delta != null && (
@@ -474,8 +474,8 @@ function VisibilityScoreDisplay({ score, deltas }: { score: VisibilityScore; del
       
       {/* Per-Model Scores */}
       <div className="mt-6 pt-4 border-t border-border">
-        <p className="text-xs text-muted-foreground mb-3">Score by AI model</p>
-        <div className="flex gap-4">
+        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-3">Score by AI model</p>
+        <div className="flex gap-6">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium text-foreground">ChatGPT</span>
@@ -660,17 +660,17 @@ function CompetitorComparison({
     <>
       <div className="mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-xl font-bold text-gray-900">
         {sectionTitle}
       </h2>
           <div className="group relative">
-            <Info className="size-4 text-muted-foreground cursor-help" />
-            <div className="absolute left-0 top-6 z-10 hidden group-hover:block w-64 p-3 bg-popover border border-border rounded-lg shadow-lg text-xs text-muted-foreground">
+            <Info className="size-4 text-gray-400 cursor-help" />
+            <div className="absolute left-0 top-6 z-10 hidden group-hover:block w-64 p-3 bg-popover border border-border rounded-lg shadow-lg text-xs text-gray-500">
               These results show how brands perform for queries in your category. The same brand may show different results in different categories.
             </div>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-gray-500 mt-1">
           Results based on {pluralize(totalQueries, "query", "queries")} in the &quot;{category}&quot; category
         </p>
       </div>
@@ -679,8 +679,8 @@ function CompetitorComparison({
         <div className="space-y-4">
           {/* User's visibility card - always show first */}
           <Card className={cn(
-            "border-2",
-            userIsWinning ? "border-status-success/30 bg-status-success-muted/30" : "border-primary/30"
+            "border-l-4 border-l-blue-500 bg-blue-50/50",
+            userIsWinning ? "border-status-success/30" : ""
           )}>
             <CardContent className="py-5">
               <div className="flex items-center justify-between mb-3">
@@ -715,15 +715,15 @@ function CompetitorComparison({
                 <div className="text-right">
                   <div className={cn(
                     "text-2xl font-bold",
-                    userScore >= 60 ? "text-status-success" :
-                    userScore >= 30 ? "text-status-warning" :
-                    "text-status-error"
+                    userScore >= 60 ? "text-green-600" :
+                    userScore >= 30 ? "text-amber-600" :
+                    "text-red-500"
                   )}>
                     {userScore >= 60 ? "High" :
                      userScore >= 30 ? "Moderate" : 
                      userScore > 0 ? "Low" : "None"}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-500">
                     Mentioned by {userMentionCount}/{totalSources} sources
                   </p>
                 </div>
@@ -742,13 +742,13 @@ function CompetitorComparison({
                     }
                   </span>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <div 
                     className={cn(
                       "h-full rounded-full transition-all",
-                      userScore >= 60 ? "bg-status-success" :
-                      userScore >= 30 ? "bg-status-warning" :
-                      "bg-status-error"
+                      userScore >= 60 ? "bg-green-500" :
+                      userScore >= 30 ? "bg-amber-500" :
+                      "bg-red-500"
                     )}
                     style={{ 
                       width: `${Math.max(userScore, 5)}%` 
@@ -793,13 +793,13 @@ function CompetitorComparison({
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs mt-0.5">
                           {comparisonToUser === "outranking" && (
-                            <span className="text-status-warning">More visible than you</span>
+                            <span className="text-amber-600 font-semibold">More visible than you</span>
                           )}
-                          {comparisonToUser === "equal" && "Similar visibility"}
+                          {comparisonToUser === "equal" && <span className="text-gray-500">Similar visibility</span>}
                           {comparisonToUser === "behind" && (
-                            <span className="text-status-success">Less visible than you</span>
+                            <span className="text-green-600 font-medium">Less visible than you</span>
                           )}
                         </p>
                       </div>
@@ -864,29 +864,29 @@ function CompetitorComparison({
           {/* Summary insight */}
           {competitorsWithScores.length > 0 && (
             <div className={cn(
-              "rounded-xl p-4 text-sm",
+              "rounded-xl p-4",
               userIsWinning 
-                ? "bg-status-success-muted border border-status-success/20" 
-                : "bg-status-warning-muted border border-status-warning/20"
+                ? "bg-green-50 border border-green-200" 
+                : "bg-amber-50 border border-amber-200"
             )}>
               {userIsWinning ? (
-                <p className="text-foreground">
-                  <span className="font-medium">Great position!</span> Your product is recommended more often than 
+                <p className="text-sm text-green-800">
+                  <span className="font-semibold">Great position!</span> Your product is recommended more often than 
                   {competitors.length === 1 
                     ? ` ${competitors[0].name}` 
                     : ` your ${competitors.length} tracked competitors`
                   }. Keep building on this momentum.
                 </p>
               ) : outrankedBy.length > 0 ? (
-                <p className="text-foreground">
-                  <span className="font-medium">{outrankedBy.map(c => c.name).join(" and ")}</span> 
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">{outrankedBy.map(c => c.name).join(" and ")}</span> 
                   {outrankedBy.length === 1 ? " is " : " are "} 
                   currently recommended more often than your product. 
                   Focus on the action plan below to improve your visibility.
                 </p>
               ) : (
-                <p className="text-foreground">
-                  <span className="font-medium">Room to grow.</span> Build more comparison content and improve your positioning to climb the AI recommendations.
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">Room to grow.</span> Build more comparison content and improve your positioning to climb the AI recommendations.
                 </p>
               )}
             </div>
@@ -1341,7 +1341,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {data.brand.name}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-gray-500 mt-1">
               AI visibility dashboard
             </p>
             
@@ -1464,18 +1464,18 @@ export default function DashboardPage() {
                   {/* Use score-derived status for consistency */}
                   <StatusBadge 
                     status={getStatusFromScore(data.visibilityScore?.overall || 0)} 
-                    className="text-base px-5 py-2" 
+                    className="text-sm font-bold px-3 py-1 rounded-full" 
                   />
-                <p className="mt-3 text-foreground font-medium">
+                <p className="mt-3 text-gray-900 font-semibold">
                   {statusMessage.title}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-gray-700 leading-relaxed">
                   {statusMessage.subtitle}
                 </p>
 
               {/* Context */}
-                  <p className="mt-6 text-sm text-muted-foreground">
-                    When users ask for <span className="font-medium text-foreground">{data.brand.category}</span>, here&apos;s how AI responds:
+                  <p className="mt-6 text-sm text-gray-500">
+                    When users ask for <span className="font-medium text-gray-900">{data.brand.category}</span>, here&apos;s how AI responds:
                   </p>
                 </div>
                 
@@ -1490,16 +1490,19 @@ export default function DashboardPage() {
                 {data.sources.map((source) => (
                   <div
                     key={source.source}
-                    className="rounded-xl border border-border bg-background p-5"
+                    className={cn(
+                      "rounded-xl border border-gray-200 bg-background p-5",
+                      source.mentioned ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-300"
+                    )}
                   >
                     {/* Source Header */}
                     <div className="flex items-center gap-3 mb-4">
                       {getSourceIcon(source.source)}
                       <div>
-                        <p className="font-medium text-foreground capitalize">
+                        <p className="font-medium text-sm text-gray-900">
                           {source.source === "chatgpt" ? "ChatGPT" : "Claude"}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-500">
                           {/* Status text MUST match the checkmark */}
                           {source.mentioned && source.position === "top-3" && "Top 3 recommendation"}
                           {source.mentioned && source.position === "mentioned" && "Mentioned"}
@@ -1523,7 +1526,7 @@ export default function DashboardPage() {
                     {/* Description */}
                     {source.description && (
                       <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground italic">
+                        <p className="text-sm text-gray-600 italic">
                           &quot;{source.description}&quot;
                         </p>
                         {!source.descriptionAccurate && (
@@ -2036,7 +2039,7 @@ export default function DashboardPage() {
             // For Moderate/Low scores (<60%) - show warnings
             return (
               <>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">
             What&apos;s affecting your visibility
           </h2>
 
@@ -2044,19 +2047,19 @@ export default function DashboardPage() {
                 {data.visibilityGaps && data.visibilityGaps.length > 0 ? (
                   <div className="space-y-3">
                     {data.visibilityGaps.slice(0, 5).map((gap, index) => (
-                      <div key={`gap-${index}`} className="border border-border rounded-lg p-4">
+                      <div key={`gap-${index}`} className="border border-gray-200 rounded-lg p-4 shadow-sm">
                         <div className="flex justify-between items-start">
                           <div className="flex items-start gap-3">
                             <AlertTriangle className="size-5 text-amber-500 mt-0.5 shrink-0" />
                             <div>
-                              <h4 className="font-semibold text-foreground">
+                              <h4 className="font-semibold text-gray-900">
                                 {gap.type.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                               </h4>
-                              <p className="text-muted-foreground text-sm mt-1">
+                              <p className="text-gray-600 text-sm mt-1">
                                 {gap.description}
                               </p>
                               {gap.competitor_reference && (
-                                <p className="text-muted-foreground/70 text-sm mt-2">
+                                <p className="text-gray-500 text-sm mt-2">
                                   {gap.competitor_reference}
                                 </p>
                               )}
@@ -2105,10 +2108,10 @@ export default function DashboardPage() {
           </div>
                 ) : (
                   /* Empty state - no gaps found */
-                  <div className="text-center py-8 border border-border rounded-lg">
-                    <CheckCircle2 className="size-12 text-status-success mx-auto mb-3" />
-                    <h4 className="font-semibold text-foreground">Looking good!</h4>
-                    <p className="text-muted-foreground mt-1">
+                  <div className="text-center py-8 border border-gray-200 rounded-lg">
+                    <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-3" />
+                    <h4 className="text-lg font-semibold text-green-700">Looking good!</h4>
+                    <p className="text-gray-500 mt-1">
                       We didn&apos;t find any major visibility issues. Keep up the great work.
                     </p>
                   </div>
@@ -2131,13 +2134,13 @@ export default function DashboardPage() {
             
             return (
               <>
-                <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="size-5 text-foreground" />
-            <h2 className="text-lg font-semibold text-foreground">
+                <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="size-5 text-gray-900" />
+            <h2 className="text-xl font-bold text-gray-900">
                     {isExcellent ? "Ways to stay ahead" : "Your action plan"}
             </h2>
           </div>
-                <p className="text-muted-foreground text-sm mb-4">
+                <p className="text-gray-500 text-sm mb-6">
                   {isExcellent 
                     ? "You're already doing great. Here are some ideas to maintain your lead:"
                     : "Follow these steps to improve your AI visibility:"}
@@ -2170,17 +2173,17 @@ export default function DashboardPage() {
                       {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
                   ))}
-                  <span className="text-xs text-gray-400 ml-2">
+                  <span className="text-xs text-gray-500 ml-2">
                     {filteredActions.length} action{filteredActions.length !== 1 ? "s" : ""}
                   </span>
                 </div>
               )}
               {filteredActions.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">
+                <p className="text-sm text-gray-500 py-4 text-center">
                   No {activeActionCategory} actions in this plan
                 </p>
               ) : filteredActions.map((actionItem, index) => (
-                <div key={actionItem.id || `action-${index}`} className="border border-border rounded-lg p-5">
+                <div key={actionItem.id || `action-${index}`} className="border border-gray-200 rounded-lg p-5 shadow-sm">
                   <div className="flex items-start gap-4">
                     {/* Number Badge - use index for sequential numbering */}
                     <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
@@ -2218,7 +2221,7 @@ export default function DashboardPage() {
                       {actionItem.what_we_found && (
                         <div className="mb-3 p-3 bg-muted/30 rounded-lg border-l-2 border-status-warning">
                           <p className="text-sm font-medium text-foreground mb-1">What we found:</p>
-                          <p className="text-sm text-muted-foreground">{actionItem.what_we_found}</p>
+                          <p className="text-sm text-gray-600">{actionItem.what_we_found}</p>
                         </div>
                       )}
 
@@ -2226,20 +2229,20 @@ export default function DashboardPage() {
                       {actionItem.competitor_comparison && (
                         <div className="mb-3 p-3 bg-muted/30 rounded-lg border-l-2 border-primary">
                           <p className="text-sm font-medium text-foreground mb-1">Competitor comparison:</p>
-                          <p className="text-sm text-muted-foreground">{actionItem.competitor_comparison}</p>
+                          <p className="text-sm text-gray-600">{actionItem.competitor_comparison}</p>
                         </div>
                       )}
 
                       {/* Why it matters */}
                       {actionItem.why_it_matters && (
-                        <p className="text-muted-foreground text-sm mb-3">
-                          <span className="font-medium text-foreground">Why it matters:</span> {actionItem.why_it_matters}
+                        <p className="text-gray-600 text-sm mb-3">
+                          <span className="font-medium text-gray-900">Why it matters:</span> {actionItem.why_it_matters}
                         </p>
                       )}
 
                       {/* Competitor example (legacy support) */}
                       {actionItem.competitor_example && !actionItem.competitor_comparison && (
-                        <p className="text-muted-foreground/70 text-sm mt-2 italic">
+                        <p className="text-gray-500 text-sm mt-2 italic">
                           {actionItem.competitor_example}
                         </p>
                       )}
@@ -2354,12 +2357,12 @@ export default function DashboardPage() {
                       </h3>
 
                       {/* Why */}
-                      <p className="text-sm text-muted-foreground mb-3">
+                      <p className="text-sm text-gray-600 mb-3">
                         {action.why}
                       </p>
 
                       {/* What */}
-                      <p className="text-sm text-foreground/80 mb-4">
+                      <p className="text-sm text-gray-700 mb-4">
                         {action.what}
                       </p>
 
@@ -2393,7 +2396,7 @@ export default function DashboardPage() {
 
         {/* Section 6: Scan Footer */}
         <section className="pt-6 border-t border-border">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
             <div className="flex items-center gap-4">
               <span>Last scan: {formatScanDate(data.scanDate)}</span>
               <span className="hidden sm:inline">•</span>
@@ -2421,11 +2424,14 @@ export default function DashboardPage() {
                   Run weekly
                 </span>
               </button>
-              <Button variant="secondary" size="sm" onClick={handleRunNewScan}>
-                <RefreshCw className="size-3.5 mr-1.5" />
+              <button
+                onClick={handleRunNewScan}
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1.5"
+              >
+                <RefreshCw className="size-3.5" />
                 Run new scan
-                {!subscription.canScan && <Lock className="size-3 ml-1.5" />}
-              </Button>
+                {!subscription.canScan && <Lock className="size-3 ml-1" />}
+              </button>
             </div>
           </div>
         </section>

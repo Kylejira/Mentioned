@@ -43,9 +43,9 @@ function scoreBg(score: number): string {
 }
 
 function sentimentLabel(avg: number): { text: string; color: string } {
-  if (avg > 0) return { text: "Positive", color: "text-status-success" }
-  if (avg < 0) return { text: "Negative", color: "text-status-error" }
-  return { text: "Neutral", color: "text-muted-foreground" }
+  if (avg > 0) return { text: "Positive", color: "text-green-600 font-medium" }
+  if (avg < 0) return { text: "Negative", color: "text-red-600 font-medium" }
+  return { text: "Neutral", color: "text-gray-500" }
 }
 
 export function ProviderCard(props: ProviderCardProps) {
@@ -58,7 +58,7 @@ export function ProviderCard(props: ProviderCardProps) {
   const coveragePct = Math.round(props.category_coverage * 100)
 
   return (
-    <div className="bg-background border border-border rounded-2xl p-5 flex flex-col gap-4">
+    <div className="bg-background border border-gray-200 rounded-xl p-5 flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -68,25 +68,20 @@ export function ProviderCard(props: ProviderCardProps) {
             </span>
           </div>
           <div>
-            <p className="font-medium text-foreground text-sm">{meta.label}</p>
-            <p className="text-[10px] text-muted-foreground">{meta.model}</p>
+            <p className="font-medium text-gray-900 text-sm">{meta.label}</p>
           </div>
         </div>
-        <span className={cn(
-          "text-xs font-medium px-2 py-0.5 rounded-full",
-          meta.lightBg,
-          meta.color,
-        )}>
+        <span className="text-[10px] px-2 py-0.5 bg-gray-100 rounded-full text-gray-600 font-medium">
           {meta.model}
         </span>
       </div>
 
       {/* Score */}
       <div className="flex items-end gap-2">
-        <span className={cn("text-4xl font-bold leading-none", scoreColor(props.composite_score))}>
+        <span className={cn("text-2xl font-bold leading-none", scoreColor(props.composite_score))}>
           {props.composite_score}
         </span>
-        <span className="text-lg text-muted-foreground mb-0.5">/100</span>
+        <span className="text-base text-gray-400 mb-0.5">/100</span>
         {props.scoreDelta != null && (
           <span className="mb-0.5">
             <ScoreDelta delta={props.scoreDelta} suffix=" pts" />
@@ -103,26 +98,26 @@ export function ProviderCard(props: ProviderCardProps) {
       </div>
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Mention rate</p>
-          <p className="text-sm font-semibold text-foreground">{mentionPct}%</p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Mention rate</p>
+          <p className="text-sm font-bold text-gray-900">{mentionPct}%</p>
+          <p className="text-[10px] text-gray-500">
             {props.mentions_count}/{props.total_queries} queries
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Avg position</p>
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Avg position</p>
+          <p className="text-sm font-bold text-gray-900">
             {props.avg_position > 0 ? `#${props.avg_position}` : "N/A"}
           </p>
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Sentiment</p>
-          <p className={cn("text-sm font-semibold", sentiment.color)}>{sentiment.text}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Sentiment</p>
+          <p className={cn("text-sm font-medium", sentiment.color)}>{sentiment.text}</p>
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Category coverage</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Category coverage</p>
           <div className="flex items-center gap-2 mt-0.5">
             <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
               <div

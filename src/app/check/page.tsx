@@ -755,9 +755,9 @@ export default function CheckPage() {
   // ── Main Form ──────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-white">
         <div className="mx-auto max-w-2xl px-6">
           <div className="flex h-14 items-center justify-between">
             <Link
@@ -795,7 +795,7 @@ export default function CheckPage() {
         </div>
 
         {/* Form */}
-        <div className="space-y-10">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 sm:p-10 space-y-10">
 
           {/* ── STEP 1: Your Product ── */}
           <section className="space-y-6">
@@ -827,11 +827,13 @@ export default function CheckPage() {
                     : undefined
                 }
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500 mt-1.5">
                 We&apos;ll scan your site to build your AI visibility profile.
               </p>
             </div>
           </section>
+
+          <div className="border-t border-gray-100" />
 
           {/* ── STEP 2: Your Market ── */}
           <section className="space-y-6">
@@ -839,7 +841,7 @@ export default function CheckPage() {
 
             {/* Core Problem */}
             <div className="space-y-2">
-              <Label htmlFor="coreProblem" className="text-sm font-medium text-foreground">
+              <Label htmlFor="coreProblem" className="text-sm font-semibold text-gray-800">
                 What problem does your product solve? *
               </Label>
               <textarea
@@ -852,15 +854,15 @@ export default function CheckPage() {
                 }
                 rows={2}
                 className={cn(
-                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "flex w-full rounded-lg border border-gray-300 bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
                   "placeholder:text-muted-foreground/60",
-                  "hover:border-border/80",
-                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "hover:border-gray-400",
+                  "focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500",
                   "resize-none"
                 )}
               />
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
+              <div className="flex items-center justify-between mt-1.5">
+                <p className="text-xs text-gray-500">
                   Describe the #1 pain point your customers had before finding you. This directly shapes the AI queries we test.
                 </p>
                 <CharCount current={formData.coreProblem.length} min={15} max={300} />
@@ -869,7 +871,7 @@ export default function CheckPage() {
 
             {/* Target Buyer */}
             <div className="space-y-2">
-              <Label htmlFor="targetBuyer" className="text-sm font-medium text-foreground">
+              <Label htmlFor="targetBuyer" className="text-sm font-semibold text-gray-800">
                 Who is your ideal customer? *
               </Label>
               <input
@@ -882,13 +884,13 @@ export default function CheckPage() {
                   setFormData((prev) => ({ ...prev, targetBuyer: e.target.value }))
                 }
                 className={cn(
-                  "flex h-11 w-full rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
+                  "flex h-11 w-full rounded-lg border border-gray-300 bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
                   "placeholder:text-muted-foreground/60",
-                  "hover:border-border/80",
-                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
+                  "hover:border-gray-400",
+                  "focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 )}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500 mt-1.5">
                 Who searches for tools like yours? Be specific about role, company size, or industry.
               </p>
             </div>
@@ -896,10 +898,10 @@ export default function CheckPage() {
             {/* Differentiators */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label htmlFor="differentiators" className="text-sm font-medium text-foreground">
+                <Label htmlFor="differentiators" className="text-sm font-semibold text-gray-800">
                   What makes you different?
                 </Label>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-full text-xs text-primary font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-full text-[11px] text-blue-600 font-semibold">
                   <Sparkles className="size-3" />
                   Recommended
                 </span>
@@ -914,18 +916,20 @@ export default function CheckPage() {
                 }
                 rows={2}
                 className={cn(
-                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "flex w-full rounded-lg border border-gray-300 bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
                   "placeholder:text-muted-foreground/60",
-                  "hover:border-border/80",
-                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "hover:border-gray-400",
+                  "focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500",
                   "resize-none"
                 )}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500 mt-1.5">
                 Your unique advantages over competitors. These shape the feature-specific queries we test.
               </p>
             </div>
           </section>
+
+          <div className="border-t border-gray-100" />
 
           {/* ── STEP 3: Competitive Context ── */}
           <section className="space-y-6">
@@ -933,7 +937,7 @@ export default function CheckPage() {
 
             {/* Competitors */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-foreground">
+              <Label className="text-sm font-semibold text-gray-800">
                 Top competitors
               </Label>
               
@@ -971,10 +975,10 @@ export default function CheckPage() {
                       }
                     }}
                     className={cn(
-                      "flex h-11 flex-1 rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
+                      "flex h-11 flex-1 rounded-lg border border-gray-300 bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
                       "placeholder:text-muted-foreground/60",
-                      "hover:border-border/80",
-                      "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
+                      "hover:border-gray-400",
+                      "focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     )}
                   />
                   <Button
@@ -988,7 +992,7 @@ export default function CheckPage() {
                 </div>
               )}
               
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500 mt-1.5">
                 We&apos;ll auto-detect competitors too, but naming yours improves accuracy.
                 {formData.competitors.length > 0 && ` (${formData.competitors.length}/5)`}
               </p>
@@ -996,7 +1000,7 @@ export default function CheckPage() {
 
             {/* Real Buyer Questions */}
             <div className="space-y-2">
-              <Label htmlFor="buyerQuestions" className="text-sm font-medium text-foreground">
+              <Label htmlFor="buyerQuestions" className="text-sm font-semibold text-gray-800">
                 Real buyer questions
               </Label>
               <textarea
@@ -1009,14 +1013,14 @@ export default function CheckPage() {
                 }
                 rows={4}
                 className={cn(
-                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "flex w-full rounded-lg border border-gray-300 bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
                   "placeholder:text-muted-foreground/60",
-                  "hover:border-border/80",
-                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "hover:border-gray-400",
+                  "focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500",
                   "resize-none"
                 )}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500 mt-1.5">
                 Got real questions from prospects or forums? One question per line. Max 10.
               </p>
             </div>
@@ -1032,7 +1036,7 @@ export default function CheckPage() {
           <div className="pt-4">
             <Button
               size="xl"
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm"
               disabled={!isFormValid}
               onClick={handleSubmit}
             >
@@ -1040,7 +1044,7 @@ export default function CheckPage() {
               <ArrowRight className="ml-1" />
             </Button>
             {!isFormValid && (
-              <p className="text-sm text-muted-foreground text-center mt-3">
+              <p className="text-sm text-gray-500 text-center mt-3">
                 {!formData.brandName.trim()
                   ? "Enter your brand name to continue"
                   : !isValidUrl(formData.websiteUrl)
@@ -1058,7 +1062,7 @@ export default function CheckPage() {
                 <div className="flex items-center gap-3">
                   <Lock className="size-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Free scan used</p>
+                    <p className="text-sm font-semibold text-gray-800">Free scan used</p>
                     <p className="text-sm text-muted-foreground">
                       Upgrade to Pro for unlimited scans.{" "}
                       <Link href="/pricing" className="text-primary underline hover:no-underline">
@@ -1095,12 +1099,12 @@ function StepIndicator({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="size-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+      <span className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-base font-bold text-blue-600">
         {number}
       </span>
-      <span className="text-sm font-medium text-foreground">{title}</span>
+      <span className="text-base font-semibold text-gray-900">{title}</span>
       {optional && (
-        <span className="text-xs text-muted-foreground">(optional)</span>
+        <span className="text-xs text-gray-500">(optional)</span>
       )}
     </div>
   )

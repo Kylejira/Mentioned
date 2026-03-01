@@ -27,7 +27,7 @@ function FormInput({
     <div className={cn("space-y-2", className)}>
       <Label
         htmlFor={inputId}
-        className="text-sm font-medium text-foreground"
+        className="text-sm font-semibold text-gray-800"
       >
         {label}
       </Label>
