@@ -81,7 +81,7 @@ export default function LandingPage() {
                     size="lg"
                     className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 sm:px-10 h-14 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                   >
-                    Scan My AI Visibility
+                    Check If AI Recommends My Product
                     <ArrowRight className="ml-2 size-5 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>
@@ -298,7 +298,7 @@ export default function LandingPage() {
               size="lg"
               className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 sm:px-14 h-16 text-lg sm:text-xl rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              Run Your Free AI Visibility Scan
+              Run My Free AI Visibility Scan
               <ArrowRight className="ml-2.5 size-5 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
