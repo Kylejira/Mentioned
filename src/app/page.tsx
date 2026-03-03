@@ -366,25 +366,29 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-14 sm:py-20 lg:py-24 bg-gradient-to-b from-slate-50 via-blue-50/30 to-white">
+      <section className="py-[100px] bg-white">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-gray-900 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3 sm:mb-4">
-            Ready to see where you stand?
+          <h2 className="text-gray-900 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4 sm:mb-5">
+            Don&apos;t Let AI Decide Your Future Without You.
           </h2>
-          
-          <p className="text-gray-600 text-sm sm:text-base md:text-lg mb-6 sm:mb-8">
-            Find out if AI is helping or hurting your business.
+
+          <p className="text-gray-600 text-base sm:text-lg leading-relaxed mb-8 sm:mb-10">
+            If customers are asking AI what to use in your category — you need to know what it&apos;s saying.
           </p>
-          
+
           <Link href="/check">
-            <Button 
+            <Button
               size="lg"
-              className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 sm:px-10 py-5 sm:py-6 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 sm:px-12 h-14 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
             >
-              Check your AI visibility
-              <ArrowRight className="ml-2 size-4 sm:size-5 group-hover:translate-x-0.5 transition-transform" />
+              Run Your Free AI Visibility Scan
+              <ArrowRight className="ml-2 size-5 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
+
+          <p className="text-sm text-gray-400 mt-4">
+            Takes 2 minutes · No credit card required
+          </p>
         </div>
       </section>
 
