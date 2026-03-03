@@ -171,6 +171,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How Mentioned Works */}
+      <section className="py-16 sm:py-20 lg:py-24 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <h2 className="text-gray-900 text-2xl sm:text-3xl font-bold tracking-tight text-center mb-12 sm:mb-16">
+            How Mentioned Works
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10">
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-4">
+                1
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1.5">Enter Your Product</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Add your website and category.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-4">
+                2
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1.5">We Query AI Models</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                We simulate real buyer queries across ChatGPT &amp; Claude.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-4">
+                3
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1.5">Get Your Visibility Score</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                See mention rate, ranking position, competitors, and action plan.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Results Preview Section */}
       <section className="py-12 sm:py-16 lg:py-20 bg-slate-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
