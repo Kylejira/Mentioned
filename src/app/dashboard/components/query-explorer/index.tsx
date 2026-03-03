@@ -30,7 +30,12 @@ export function QueryExplorer({ scanId, brandName }: Props) {
       setLoading(true)
       fetch(`/api/scan/${scanId}/queries`)
         .then(res => {
-          if (!res.ok) throw new Error(`${res.status}`)
+          if (!res.ok) {
+            if (res.status === 403 || res.status === 404) {
+              return { total: 0, results: [], filters: { providers: [], categories: [] } }
+            }
+            throw new Error(`${res.status}`)
+          }
           return res.json()
         })
         .then(d => { setData(d); setLoading(false) })
