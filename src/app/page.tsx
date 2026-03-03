@@ -1,17 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Check, X, TrendingUp, Target, Users } from "lucide-react"
 import { RotatingDashboardPreview } from "@/components/RotatingDashboardPreview"
-
-// Dynamic import for 3D floating bubbles (client-side only)
-const FloatingBubbles = dynamic(() => import("@/components/FloatingBubbles"), {
-  ssr: false,
-})
 
 const CREDIBILITY_STATS = [
   { value: "500+", label: "products analyzed" },
@@ -94,10 +87,6 @@ export default function LandingPage() {
                   Free scan · No credit card required · Results in 2 minutes
                 </p>
               </div>
-
-              <p className="text-gray-600 text-sm sm:text-base font-medium mt-8 sm:mt-10 italic">
-                If AI can&apos;t find you, customers won&apos;t either.
-              </p>
             </div>
 
             {/* Right side - Dashboard Preview */}
@@ -109,7 +98,7 @@ export default function LandingPage() {
       </section>
       
       {/* Social Proof & Credibility Strip */}
-      <section className="py-12 sm:py-14 border-y border-gray-200/60">
+      <section className="py-12 sm:py-14">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <p className="text-center text-sm text-gray-500 font-medium tracking-wide uppercase mb-8">
             Trusted by founders optimizing their AI visibility
@@ -172,7 +161,7 @@ export default function LandingPage() {
       </section>
 
       {/* How Mentioned Works */}
-      <section className="py-20 sm:py-24 lg:py-28 border-t border-gray-100">
+      <section className="py-20 sm:py-24 lg:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-14 sm:mb-16">
             How Mentioned Works
@@ -213,14 +202,11 @@ export default function LandingPage() {
       </section>
 
       {/* Results Preview Section */}
-      <section className="py-20 sm:py-24 lg:py-28 border-t border-gray-100">
+      <section className="py-20 sm:py-24 lg:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 sm:mb-4">
-            See what you&apos;ll discover
+          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-10 sm:mb-14">
+            Two types of products. Which are you?
           </h2>
-          <p className="text-gray-600 text-base sm:text-lg text-center mb-10 sm:mb-14">
-            Which one are you?
-          </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 max-w-4xl mx-auto">
             {/* High visibility example */}
@@ -229,28 +215,26 @@ export default function LandingPage() {
                 <span className="text-xs sm:text-sm font-medium text-green-600 bg-green-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   Excellent
                 </span>
-                <span className="text-2xl sm:text-3xl font-bold text-green-600">87<span className="text-sm sm:text-lg text-gray-400">/100</span></span>
+                <span className="text-2xl sm:text-3xl font-bold text-green-600">87<span className="text-sm sm:text-lg text-gray-500">/100</span></span>
               </div>
-              <p className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">You&apos;re dominating AI recommendations</p>
+              <p className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Dominating AI recommendations</p>
               <div className="space-y-2 mb-3 sm:mb-4">
                 <div className="flex items-center gap-2">
                   <div className="size-4 sm:size-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <Check className="size-2.5 sm:size-3 text-green-600" />
                   </div>
-                  <span className="text-gray-700 text-xs sm:text-sm">ChatGPT: Mentioned in top 3</span>
+                  <span className="text-gray-800 text-xs sm:text-sm">ChatGPT: Mentioned in top 3</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="size-4 sm:size-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <Check className="size-2.5 sm:size-3 text-green-600" />
                   </div>
-                  <span className="text-gray-700 text-xs sm:text-sm">Claude: Mentioned in top 3</span>
+                  <span className="text-gray-800 text-xs sm:text-sm">Claude: Mentioned in top 3</span>
                 </div>
               </div>
-              <div className="pt-2 sm:pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500 font-medium">
-                  Outranking: Calendly, Acuity, SavvyCal
-                </p>
-              </div>
+              <p className="text-xs text-gray-600 font-medium mt-3">
+                Outranking: Calendly, Acuity, SavvyCal
+              </p>
             </div>
             
             {/* Low visibility example */}
@@ -259,28 +243,26 @@ export default function LandingPage() {
                 <span className="text-xs sm:text-sm font-medium text-red-600 bg-red-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   Not Visible
                 </span>
-                <span className="text-2xl sm:text-3xl font-bold text-red-600">0<span className="text-sm sm:text-lg text-gray-400">/100</span></span>
+                <span className="text-2xl sm:text-3xl font-bold text-red-600">0<span className="text-sm sm:text-lg text-gray-500">/100</span></span>
               </div>
-              <p className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">AI doesn&apos;t know you exist</p>
+              <p className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Invisible to AI</p>
               <div className="space-y-2 mb-3 sm:mb-4">
                 <div className="flex items-center gap-2">
                   <div className="size-4 sm:size-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                     <X className="size-2.5 sm:size-3 text-red-600" />
                   </div>
-                  <span className="text-gray-700 text-xs sm:text-sm">ChatGPT: Not mentioned</span>
+                  <span className="text-gray-800 text-xs sm:text-sm">ChatGPT: Not mentioned</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="size-4 sm:size-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                     <X className="size-2.5 sm:size-3 text-red-600" />
                   </div>
-                  <span className="text-gray-700 text-xs sm:text-sm">Claude: Not mentioned</span>
+                  <span className="text-gray-800 text-xs sm:text-sm">Claude: Not mentioned</span>
                 </div>
               </div>
-              <div className="pt-2 sm:pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-500 font-medium">
-                  Competitors beating you: Calendly, SavvyCal, Acuity
-                </p>
-              </div>
+              <p className="text-xs text-gray-600 font-medium mt-3">
+                Competitors beating you: Calendly, SavvyCal, Acuity
+              </p>
             </div>
           </div>
           
@@ -298,35 +280,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* What You'll Find Out Section */}
-      <section className="py-20 sm:py-24 lg:py-28 border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-10 sm:mb-14">
-            What you&apos;ll discover
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-8">
-            <FeatureCard
-              icon={<Target className="size-6" />}
-              title="Your visibility score"
-              description="Find out if ChatGPT and Claude mention you — or ignore you completely."
-            />
-            <FeatureCard
-              icon={<Users className="size-6" />}
-              title="Who's beating you"
-              description="See exactly which competitors AI recommends instead of you."
-            />
-            <FeatureCard
-              icon={<TrendingUp className="size-6" />}
-              title="How to fix it"
-              description="Get specific actions to start getting mentioned by AI."
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA Section */}
-      <section className="py-24 sm:py-28 lg:py-32 border-t border-gray-100">
+      <section className="py-24 sm:py-28 lg:py-32">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
             Don&apos;t Let AI Decide Your Future Without You.
@@ -353,7 +308,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-6 sm:py-8 border-t border-gray-200/60 bg-white">
+      <footer className="py-6 sm:py-8 border-t border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
@@ -387,7 +342,7 @@ export default function LandingPage() {
               Terms
             </Link>
             <span className="text-gray-200">·</span>
-            <span className="text-xs sm:text-sm text-gray-400">Built by Kyle Jira</span>
+            <span className="text-xs sm:text-sm text-gray-500">Built by Kyle Jira</span>
             <div className="flex items-center gap-3">
               <a 
                 href="https://x.com/kylej08" 
@@ -418,25 +373,3 @@ export default function LandingPage() {
     </div>
   )
 }
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode
-  title: string
-  description: string
-}) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-7 sm:p-8">
-      <div className="size-11 sm:size-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4">
-        {icon}
-      </div>
-      <h3 className="text-gray-900 font-semibold text-base sm:text-lg mb-2">{title}</h3>
-      <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
-    </div>
-  )
-}
-
-
