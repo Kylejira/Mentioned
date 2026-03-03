@@ -72,7 +72,7 @@ export default function LandingPage() {
               <p className="text-gray-600 text-lg sm:text-xl font-normal leading-relaxed mb-8 sm:mb-10 max-w-2xl mx-auto lg:mx-0">
                 When customers ask AI what to use in your category, it gives one answer — not ten blue links. If your product isn&apos;t mentioned in that answer, you&apos;re invisible.
                 <br className="hidden sm:block" />
-                <span className="mt-2 inline-block">See exactly how ChatGPT and Claude rank you — and what to fix to increase recommendations.</span>
+                <span className="mt-2 inline-block">See exactly how AI ranks you — and what to fix to increase recommendations.</span>
               </p>
 
               <div>
@@ -186,7 +186,7 @@ export default function LandingPage() {
               </div>
               <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">We Query AI Models</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                We simulate real buyer queries across ChatGPT &amp; Claude.
+                We simulate real buyer queries across leading AI models.
               </p>
             </div>
 
