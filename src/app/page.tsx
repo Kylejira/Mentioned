@@ -68,41 +68,39 @@ export default function LandingPage() {
         <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-gradient-radial from-slate-100 via-slate-50/30 to-transparent rounded-full blur-3xl pointer-events-none opacity-60" />
         <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/[0.02] rounded-full blur-3xl pointer-events-none" />
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-[120px] relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 lg:gap-24 items-center">
-            {/* Left side - Text content - shows FIRST on mobile */}
+            {/* Left side - Text content */}
             <div className="text-center lg:text-left lg:pr-8">
-              {/* Headline */}
-              <h1 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-4 sm:mb-6">
-            Do AI tools recommend
-            <br />
-                <span className="text-blue-600">your product</span>?
-          </h1>
-              
-              {/* Subheadline */}
-              <p className="text-gray-700 text-lg sm:text-xl md:text-2xl font-normal mb-4 sm:mb-6 max-w-md mx-auto lg:mx-0">
-                Find out in 2 minutes. See if ChatGPT and Claude recommend you — or ignore you completely.
+              <h1 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.08] mb-6 sm:mb-8">
+                Is AI Recommending Your Product — Or{" "}
+                <span className="text-blue-600">Your Competitors</span>?
+              </h1>
+
+              <p className="text-gray-600 text-lg sm:text-xl font-normal leading-relaxed mb-8 sm:mb-10 max-w-2xl mx-auto lg:mx-0">
+                Scan how ChatGPT and Claude describe your product, measure your AI visibility score, and see exactly what to fix to increase recommendations.
               </p>
-              
-              {/* Tagline */}
-              <p className="text-gray-500 text-sm sm:text-base font-medium mb-8 sm:mb-10">
-                The world&apos;s simplest AI visibility checker.
-              </p>
-              
-              {/* CTA Button */}
-              <div className="mt-8">
+
+              <div>
                 <Link href="/check">
-                  <Button 
+                  <Button
                     size="lg"
-                    className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 sm:px-10 h-14 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                   >
-                    Check your AI visibility
-                    <ArrowRight className="ml-2 size-4 sm:size-5 group-hover:translate-x-0.5 transition-transform" />
+                    Scan My AI Visibility
+                    <ArrowRight className="ml-2 size-5 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>
+                <p className="text-gray-400 text-sm mt-4 font-medium">
+                  Free scan · No credit card required · Results in 2 minutes
+                </p>
               </div>
+
+              <p className="text-gray-500 text-sm sm:text-base font-medium mt-8 sm:mt-10 italic">
+                If AI can&apos;t find you, customers won&apos;t either.
+              </p>
             </div>
-            
+
             {/* Right side - Dashboard Preview */}
             <div className="relative">
               <RotatingDashboardPreview />
