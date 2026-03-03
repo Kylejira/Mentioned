@@ -7,9 +7,9 @@ import { ArrowRight, Check, X, TrendingUp, Target, Users } from "lucide-react"
 import { RotatingDashboardPreview } from "@/components/RotatingDashboardPreview"
 
 const CREDIBILITY_STATS = [
-  { value: "500+", label: "products analyzed" },
-  { value: "2,000+", label: "AI queries processed" },
-  { value: "37%", label: "avg. visibility increase" },
+  { value: "500+", label: "SaaS & ecommerce products analyzed" },
+  { value: "2,000+", label: "real buyer-style AI queries processed" },
+  { value: "37%", label: "average visibility lift after optimization" },
 ]
 
 export default function LandingPage() {
