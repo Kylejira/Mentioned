@@ -203,6 +203,59 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* AI Visibility vs SEO Section */}
+      <section className="py-[100px] sm:py-28 lg:py-32">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-14">
+            <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
+              AI Visibility Is Not SEO
+            </h2>
+            <p className="text-gray-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+              AI recommendations operate differently than search engines. If you&apos;re optimizing only for Google, you&apos;re missing where buying decisions now happen.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-2">
+              <div className="px-5 sm:px-6 py-4 bg-gray-50 border-b border-r border-gray-200">
+                <span className="text-sm font-semibold text-gray-500">Traditional SEO Tools</span>
+              </div>
+              <div className="px-5 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <span className="text-sm font-semibold text-blue-600">Mentioned</span>
+              </div>
+
+              <div className="px-5 sm:px-6 py-4 border-b border-r border-gray-200">
+                <span className="text-sm text-gray-600">Optimize for search engine rankings</span>
+              </div>
+              <div className="px-5 sm:px-6 py-4 border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Optimize for AI recommendations</span>
+              </div>
+
+              <div className="px-5 sm:px-6 py-4 border-b border-r border-gray-200">
+                <span className="text-sm text-gray-600">Track keywords and traffic</span>
+              </div>
+              <div className="px-5 sm:px-6 py-4 border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Simulate real buyer AI queries</span>
+              </div>
+
+              <div className="px-5 sm:px-6 py-4 border-b border-r border-gray-200">
+                <span className="text-sm text-gray-600">Focus on blue link visibility</span>
+              </div>
+              <div className="px-5 sm:px-6 py-4 border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Focus on direct answer inclusion</span>
+              </div>
+
+              <div className="px-5 sm:px-6 py-4 border-r border-gray-200">
+                <span className="text-sm text-gray-600">Improve click-through rate</span>
+              </div>
+              <div className="px-5 sm:px-6 py-4">
+                <span className="text-sm text-gray-900 font-medium">Improve AI mention rate</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Results Preview Section */}
       <section className="py-20 sm:py-24 lg:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
