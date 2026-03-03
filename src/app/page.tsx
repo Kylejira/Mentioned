@@ -125,27 +125,48 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Why This Matters Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-white">
-        <div className="max-w-[600px] mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-gray-900 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-4 sm:mb-6">
-            The way people find products has changed
-          </h2>
-          
-          <div className="space-y-3 sm:space-y-4 text-gray-600 text-sm sm:text-base md:text-lg leading-relaxed">
-            <p>
-              Your customers don&apos;t scroll through Google anymore.
-              <br className="hidden sm:block" />
-              They ask ChatGPT. They ask Claude. And they trust the answer.
+      {/* The Problem Section */}
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-gray-900 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4 sm:mb-5">
+              AI Is The New Search Engine
+            </h2>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+              When users ask AI for recommendations, it doesn&apos;t show search results — it gives answers. If your product isn&apos;t mentioned in those answers, you don&apos;t exist.
             </p>
-            
-            <p className="text-blue-600 font-semibold text-base sm:text-lg md:text-xl">
-              If you&apos;re not mentioned — you&apos;re invisible.
-            </p>
-            
-            <p className="text-gray-500 text-sm sm:text-base">
-              And invisible means losing customers every single day without knowing it.
-            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="border border-gray-200 rounded-2xl p-6 sm:p-8 text-center">
+              <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <Users className="size-6 text-red-500" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">AI recommends competitors</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                When customers ask &quot;what&apos;s the best tool for X?&quot;, AI names your competitors — not you.
+              </p>
+            </div>
+
+            <div className="border border-gray-200 rounded-2xl p-6 sm:p-8 text-center">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+                <Target className="size-6 text-amber-500" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Your category association is weak</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                AI doesn&apos;t connect your product to the problems it solves, so you never appear in relevant answers.
+              </p>
+            </div>
+
+            <div className="border border-gray-200 rounded-2xl p-6 sm:p-8 text-center">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="size-6 text-blue-500" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">You don&apos;t know how AI describes you</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                AI may be misrepresenting your product or ignoring it entirely — and you have no way to tell.
+              </p>
+            </div>
           </div>
         </div>
       </section>
