@@ -250,7 +250,7 @@ export function HeroScanAnimation() {
         {/* Score section */}
         <div
           style={{
-            maxHeight: scoreVisible ? 160 : 0,
+            maxHeight: scoreVisible ? 200 : 0,
             overflow: "hidden",
             transition: "max-height 500ms ease-out",
           }}
@@ -263,7 +263,7 @@ export function HeroScanAnimation() {
               transitionDelay: scoreVisible ? "200ms" : "0ms",
             }}
           >
-            <div className="border-t border-gray-700/30 mt-4 pt-4 pb-2">
+            <div className="border-t border-gray-700/30 mt-4 pt-4 pb-6">
               <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">
                 Visibility Score
               </div>

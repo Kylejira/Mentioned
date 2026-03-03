@@ -73,7 +73,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right side - Scan Animation */}
-            <div className="hidden md:flex items-center justify-center">
+            <div className="hidden md:flex items-center justify-center min-h-[380px]">
               <HeroScanAnimation />
             </div>
           </div>
