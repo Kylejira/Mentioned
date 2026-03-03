@@ -3,28 +3,28 @@
 import { useState, useEffect, useRef } from "react"
 
 const QUERIES = [
-  "Best payment platform for creators?",
-  "What project management tool for startups?",
   "Top scheduling software for teams?",
   "Best CRM for small businesses?",
+  "Best payment platform for creators?",
 ]
 
 const PROVIDERS = [
-  { name: "ChatGPT", color: "#10A37F", delay: 0, duration: 1200, mentioned: true, position: 2 },
-  { name: "Claude", color: "#D4A574", delay: 400, duration: 1100, mentioned: false, position: null },
-  { name: "Gemini", color: "#4285F4", delay: 800, duration: 1200, mentioned: true, position: 4 },
-  { name: "Perplexity", color: "#20B8CD", delay: 1000, duration: 1000, mentioned: false, position: null },
+  { name: "ChatGPT", color: "#10A37F", delay: 0, duration: 2000, mentioned: true, position: 2 },
+  { name: "Claude", color: "#D97757", delay: 300, duration: 2100, mentioned: false, position: null },
+  { name: "Gemini", color: "#4285F4", delay: 600, duration: 2200, mentioned: true, position: 4 },
 ]
 
 const TARGET_SCORE = 34
 
-type Phase = "typing" | "scanning" | "results" | "score" | "hold" | "fade"
+type Phase = "typing" | "scanning" | "score" | "hold" | "fade"
 
 export function HeroScanAnimation() {
   const [phase, setPhase] = useState<Phase>("typing")
   const [typedText, setTypedText] = useState("")
   const [visibleRows, setVisibleRows] = useState<Set<number>>(new Set())
   const [doneRows, setDoneRows] = useState<Set<number>>(new Set())
+  const [revealed, setRevealed] = useState<Set<number>>(new Set())
+  const [showScore, setShowScore] = useState(false)
   const [score, setScore] = useState(0)
   const [barFilled, setBarFilled] = useState(false)
 
@@ -51,10 +51,11 @@ export function HeroScanAnimation() {
       setTypedText("")
       setVisibleRows(new Set())
       setDoneRows(new Set())
+      setRevealed(new Set())
+      setShowScore(false)
       setScore(0)
       setBarFilled(false)
 
-      // Beat 1: Typewriter (0→2s)
       const query = QUERIES[qIdx.current]
       let ci = 0
       typer.current = setInterval(() => {
@@ -67,17 +68,20 @@ export function HeroScanAnimation() {
         }
       }, 40)
 
-      // Beat 2: Scanning (2→5s)
-      at(() => setPhase("scanning"), 2000)
+      // Providers appear staggered (2.2s+)
+      at(() => setPhase("scanning"), 2200)
       PROVIDERS.forEach((p, i) => {
-        at(() => setVisibleRows(s => new Set([...s, i])), 2000 + p.delay)
-        at(() => setDoneRows(s => new Set([...s, i])), 2000 + p.delay + p.duration)
+        at(() => setVisibleRows(s => new Set([...s, i])), 2200 + p.delay)
+        at(() => setDoneRows(s => new Set([...s, i])), 2200 + p.delay + p.duration)
       })
 
-      // Beat 3: Detection (5→6.5s)
-      at(() => setPhase("results"), 5000)
+      // Staggered result reveals
+      at(() => setRevealed(s => new Set([...s, 0])), 5000)
+      at(() => setRevealed(s => new Set([...s, 1])), 5400)
+      at(() => setRevealed(s => new Set([...s, 2])), 5800)
 
-      // Beat 4: Score (6.5→8.5s)
+      // Score section
+      at(() => setShowScore(true), 6200)
       at(() => {
         setPhase("score")
         setBarFilled(true)
@@ -92,21 +96,20 @@ export function HeroScanAnimation() {
         raf.current = requestAnimationFrame(tick)
       }, 6500)
 
-      // Beat 5: Hold + Fade + Loop
-      at(() => setPhase("hold"), 8500)
+      at(() => setPhase("hold"), 8000)
       at(() => setPhase("fade"), 9500)
       at(() => {
         qIdx.current = (qIdx.current + 1) % QUERIES.length
         runCycle()
-      }, 10000)
+      }, 10300)
     }
 
     runCycle()
     return cleanup
   }, [])
 
-  const showResults = phase === "results" || phase === "score" || phase === "hold" || phase === "fade"
-  const showScore = phase === "score" || phase === "hold" || phase === "fade"
+  const hasProviders = visibleRows.size > 0
+  const scoreVisible = showScore && phase !== "typing"
 
   return (
     <div className="w-full max-w-[440px] rounded-2xl bg-gray-950/90 backdrop-blur-xl border border-gray-800/60 shadow-2xl overflow-hidden relative">
@@ -145,25 +148,33 @@ export function HeroScanAnimation() {
           </div>
         </div>
 
-        {/* Provider rows */}
-        <div className="mt-4 space-y-0.5">
+        {/* Provider rows — each row grows independently */}
+        <div style={{ marginTop: hasProviders ? 12 : 0, transition: "margin-top 400ms ease-out" }}>
           {PROVIDERS.map((provider, i) => {
             const isVisible = visibleRows.has(i)
             const isDone = doneRows.has(i)
+            const isRevealed = revealed.has(i)
             return (
               <div
                 key={provider.name}
                 style={{
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? "translateY(0)" : "translateY(8px)",
-                  transition: "all 400ms ease-out",
-                  willChange: "transform, opacity",
+                  maxHeight: isVisible ? 48 : 0,
+                  overflow: "hidden",
+                  transition: "max-height 400ms ease-out",
                 }}
               >
-                <div className="flex items-center justify-between py-2">
+                <div
+                  className="flex items-center justify-between py-2 border-l-2 pl-2"
+                  style={{
+                    borderColor: isRevealed && provider.mentioned ? "#4ade80" : "transparent",
+                    opacity: isVisible ? 1 : 0,
+                    transform: isVisible ? "translateY(0)" : "translateY(12px)",
+                    transition: "opacity 400ms ease-out, transform 400ms ease-out, border-color 300ms ease-out",
+                  }}
+                >
                   <div className="flex items-center gap-2.5 shrink-0">
                     <div
-                      className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white"
+                      className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold text-white"
                       style={{ backgroundColor: provider.color }}
                     >
                       {provider.name[0]}
@@ -173,11 +184,14 @@ export function HeroScanAnimation() {
                     </span>
                   </div>
 
-                  <div className="grid ml-3">
+                  <div className="relative h-5 w-36">
                     {/* Scanning state */}
                     <div
-                      className="col-start-1 row-start-1 flex items-center justify-end gap-2"
-                      style={{ opacity: showResults ? 0 : 1, transition: "opacity 300ms" }}
+                      className="absolute inset-0 flex items-center justify-end gap-2"
+                      style={{
+                        opacity: isRevealed ? 0 : 1,
+                        transition: "opacity 200ms ease-out",
+                      }}
                     >
                       <div className="w-20 h-1 bg-gray-800 rounded-full overflow-hidden">
                         <div
@@ -198,27 +212,31 @@ export function HeroScanAnimation() {
 
                     {/* Result state */}
                     <div
-                      className="col-start-1 row-start-1 flex items-center justify-end gap-1.5"
-                      style={{ opacity: showResults ? 1 : 0, transition: "opacity 300ms" }}
+                      className="absolute inset-0 flex items-center justify-end gap-1.5"
+                      style={{
+                        opacity: isRevealed ? 1 : 0,
+                        transition: "opacity 300ms ease-out",
+                        transitionDelay: isRevealed ? "100ms" : "0ms",
+                      }}
                     >
                       {provider.mentioned ? (
                         <>
                           <div
-                            className="w-1.5 h-1.5 rounded-full bg-green-400"
-                            style={{ boxShadow: "0 0 6px rgba(16,185,129,0.5)" }}
+                            className="w-2 h-2 rounded-full bg-green-400"
+                            style={{ boxShadow: "0 0 6px rgba(74,222,128,0.4)" }}
                           />
-                          <span className="text-[10px] text-green-400 font-medium">
+                          <span className="text-xs text-green-400 font-medium">
                             Mentioned
                           </span>
-                          <span className="text-[10px] text-gray-500 font-mono">
+                          <span className="text-xs text-green-400/70 font-mono">
                             #{provider.position}
                           </span>
                         </>
                       ) : (
                         <>
-                          <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                          <span className="text-[10px] text-gray-500">Not mentioned</span>
-                          <span className="text-[10px] text-gray-600">—</span>
+                          <div className="w-2 h-2 rounded-full bg-gray-600" />
+                          <span className="text-xs text-gray-500">Not mentioned</span>
+                          <span className="text-xs text-gray-600">—</span>
                         </>
                       )}
                     </div>
@@ -232,42 +250,50 @@ export function HeroScanAnimation() {
         {/* Score section */}
         <div
           style={{
-            opacity: showScore ? 1 : 0,
-            transform: showScore ? "translateY(0)" : "translateY(8px)",
-            transition: "all 500ms ease-out",
-            willChange: "transform, opacity",
+            maxHeight: scoreVisible ? 160 : 0,
+            overflow: "hidden",
+            transition: "max-height 500ms ease-out",
           }}
         >
-          <div className="mt-4 pt-4 border-t border-gray-800/50">
-            <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">
-              Visibility Score
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-extrabold text-orange-400">
-                {score}
-              </span>
-              <span className="text-sm text-gray-600">/100</span>
-            </div>
-            <div className="mt-1.5">
-              <span
-                className="text-[10px] px-2 py-0.5 rounded-full font-semibold border"
-                style={{
-                  backgroundColor: "rgba(249,115,22,0.15)",
-                  color: "#fb923c",
-                  borderColor: "rgba(249,115,22,0.2)",
-                }}
-              >
-                Low
-              </span>
-            </div>
-            <div className="mt-3 w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-orange-400 rounded-full"
-                style={{
-                  width: barFilled ? "34%" : "0%",
-                  transition: "width 1000ms ease-out",
-                }}
-              />
+          <div
+            style={{
+              opacity: scoreVisible ? 1 : 0,
+              transform: scoreVisible ? "translateY(0)" : "translateY(8px)",
+              transition: "all 500ms ease-out",
+              transitionDelay: scoreVisible ? "200ms" : "0ms",
+            }}
+          >
+            <div className="border-t border-gray-700/30 mt-4 pt-4 pb-2">
+              <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">
+                Visibility Score
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold text-orange-400">
+                  {score}
+                </span>
+                <span className="text-sm text-gray-600">/100</span>
+              </div>
+              <div className="mt-1.5">
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold border"
+                  style={{
+                    backgroundColor: "rgba(249,115,22,0.15)",
+                    color: "#fb923c",
+                    borderColor: "rgba(249,115,22,0.2)",
+                  }}
+                >
+                  Low
+                </span>
+              </div>
+              <div className="mt-3 w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-400 rounded-full"
+                  style={{
+                    width: barFilled ? "34%" : "0%",
+                    transition: "width 1000ms ease-out",
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
