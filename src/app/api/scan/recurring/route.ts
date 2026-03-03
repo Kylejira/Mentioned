@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If no scan found by brandId, try matching by URL as fallback
-    let target = scans?.[0] || null
+    let target: { id: string; brand_id: string | null; saas_profile: unknown } | null = scans?.[0] || null
 
     if (!target && brandUrl) {
       const { data: fallbackScans } = await db
