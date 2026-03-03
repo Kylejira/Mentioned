@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Check, X, TrendingUp, Target, Users } from "lucide-react"
-import { AIGridAnimation } from "@/components/landing/ai-grid-animation"
+import { HeroScanAnimation } from "@/components/landing/hero-scan-animation"
 
 const CREDIBILITY_STATS = [
   { value: "500+", label: "SaaS & ecommerce products analyzed" },
@@ -42,15 +42,15 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24 lg:py-[120px] relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 lg:gap-20 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-12 lg:gap-20 items-center">
             {/* Left side - Text content */}
-            <div className="text-center lg:text-left lg:pr-4">
+            <div className="text-center md:text-left md:pr-4">
               <h1 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold tracking-tight leading-[1.08] mb-6 sm:mb-8">
                 Is AI Recommending Your Product — Or{" "}
                 <span className="text-blue-600">Your Competitors</span>?
               </h1>
 
-              <p className="text-gray-600 text-lg sm:text-xl font-normal leading-relaxed mb-8 sm:mb-10 max-w-2xl mx-auto lg:mx-0">
+              <p className="text-gray-600 text-lg sm:text-xl font-normal leading-relaxed mb-8 sm:mb-10 max-w-2xl mx-auto md:mx-0">
                 When customers ask AI what to use in your category, it gives one answer — not ten blue links. If your product isn&apos;t mentioned in that answer, you&apos;re invisible.
                 <br className="hidden sm:block" />
                 <span className="mt-2 inline-block">See exactly how AI ranks you — and what to fix to increase recommendations.</span>
@@ -72,9 +72,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right side - AI Grid Animation */}
-            <div className="hidden lg:flex items-center justify-center">
-              <AIGridAnimation />
+            {/* Right side - Scan Animation */}
+            <div className="hidden md:flex items-center justify-center">
+              <HeroScanAnimation />
             </div>
           </div>
         </div>
