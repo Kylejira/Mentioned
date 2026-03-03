@@ -21,7 +21,7 @@ const CREDIBILITY_STATS = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-white to-slate-50">
+    <div className="min-h-screen bg-white">
       {/* Sticky Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
@@ -90,12 +90,12 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 size-5 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>
-                <p className="text-gray-400 text-sm mt-4 font-medium">
+                <p className="text-gray-500 text-sm mt-4 font-medium">
                   Free scan · No credit card required · Results in 2 minutes
                 </p>
               </div>
 
-              <p className="text-gray-500 text-sm sm:text-base font-medium mt-8 sm:mt-10 italic">
+              <p className="text-gray-600 text-sm sm:text-base font-medium mt-8 sm:mt-10 italic">
                 If AI can&apos;t find you, customers won&apos;t either.
               </p>
             </div>
@@ -109,16 +109,16 @@ export default function LandingPage() {
       </section>
       
       {/* Social Proof & Credibility Strip */}
-      <section className="py-10 sm:py-14 bg-[#FAFBFC] border-y border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <p className="text-center text-sm text-gray-400 font-medium tracking-wide uppercase mb-8">
+      <section className="py-12 sm:py-14 border-y border-gray-200/60">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <p className="text-center text-sm text-gray-500 font-medium tracking-wide uppercase mb-8">
             Trusted by founders optimizing their AI visibility
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             {CREDIBILITY_STATS.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl sm:text-4xl font-extrabold text-gray-900">{stat.value}</div>
-                <div className="text-sm text-gray-500 mt-1 font-medium">{stat.label}</div>
+                <div className="text-sm text-gray-600 mt-1 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -126,24 +126,24 @@ export default function LandingPage() {
       </section>
 
       {/* The Problem Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-gray-900 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4 sm:mb-5">
+      <section className="py-20 sm:py-24 lg:py-28">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-14 sm:mb-16">
+            <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
               AI Is The New Search Engine
             </h2>
-            <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p className="text-gray-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
               When users ask AI for recommendations, it doesn&apos;t show search results — it gives answers. If your product isn&apos;t mentioned in those answers, you don&apos;t exist.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             <div className="border border-gray-200 rounded-2xl p-6 sm:p-8 text-center">
               <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-4">
                 <Users className="size-6 text-red-500" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">AI recommends competitors</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">AI recommends competitors</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 When customers ask &quot;what&apos;s the best tool for X?&quot;, AI names your competitors — not you.
               </p>
             </div>
@@ -152,8 +152,8 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
                 <Target className="size-6 text-amber-500" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Your category association is weak</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">Your category association is weak</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 AI doesn&apos;t connect your product to the problems it solves, so you never appear in relevant answers.
               </p>
             </div>
@@ -162,8 +162,8 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
                 <TrendingUp className="size-6 text-blue-500" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">You don&apos;t know how AI describes you</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">You don&apos;t know how AI describes you</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 AI may be misrepresenting your product or ignoring it entirely — and you have no way to tell.
               </p>
             </div>
@@ -172,39 +172,39 @@ export default function LandingPage() {
       </section>
 
       {/* How Mentioned Works */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <h2 className="text-gray-900 text-2xl sm:text-3xl font-bold tracking-tight text-center mb-12 sm:mb-16">
+      <section className="py-20 sm:py-24 lg:py-28 border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-14 sm:mb-16">
             How Mentioned Works
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-12">
             <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-4">
+              <div className="w-11 h-11 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-5">
                 1
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1.5">Enter Your Product</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">Enter Your Product</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 Add your website and category.
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-4">
+              <div className="w-11 h-11 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-5">
                 2
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1.5">We Query AI Models</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">We Query AI Models</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 We simulate real buyer queries across ChatGPT &amp; Claude.
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-4">
+              <div className="w-11 h-11 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center mx-auto mb-5">
                 3
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1.5">Get Your Visibility Score</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">Get Your Visibility Score</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 See mention rate, ranking position, competitors, and action plan.
               </p>
             </div>
@@ -213,18 +213,18 @@ export default function LandingPage() {
       </section>
 
       {/* Results Preview Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <h2 className="text-gray-900 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-center mb-2 sm:mb-4">
+      <section className="py-20 sm:py-24 lg:py-28 border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-3 sm:mb-4">
             See what you&apos;ll discover
           </h2>
-          <p className="text-gray-600 text-sm sm:text-base text-center mb-8 sm:mb-12">
+          <p className="text-gray-600 text-base sm:text-lg text-center mb-10 sm:mb-14">
             Which one are you?
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 max-w-4xl mx-auto">
             {/* High visibility example */}
-            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 border-l-4 border-l-green-400 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-7 border border-gray-200 border-l-4 border-l-green-400 shadow-sm">
               <div className="flex justify-between items-start mb-3 sm:mb-4">
                 <span className="text-xs sm:text-sm font-medium text-green-600 bg-green-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   Excellent
@@ -254,7 +254,7 @@ export default function LandingPage() {
             </div>
             
             {/* Low visibility example */}
-            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-200 border-l-4 border-l-red-400 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-7 border border-gray-200 border-l-4 border-l-red-400 shadow-sm">
               <div className="flex justify-between items-start mb-3 sm:mb-4">
                 <span className="text-xs sm:text-sm font-medium text-red-600 bg-red-50 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   Not Visible
@@ -284,14 +284,14 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="text-center mt-8 sm:mt-10">
+          <div className="text-center mt-10 sm:mt-14">
             <Link href="/check">
               <Button 
                 size="lg"
-                className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 sm:px-8 py-4 sm:py-5 text-sm sm:text-base rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:scale-[1.02]"
+                className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 sm:px-12 h-14 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5"
               >
                 Find out in 2 minutes
-                <ArrowRight className="ml-2 size-4 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="ml-2 size-5 group-hover:translate-x-0.5 transition-transform" />
               </Button>
             </Link>
           </div>
@@ -299,28 +299,23 @@ export default function LandingPage() {
       </section>
 
       {/* What You'll Find Out Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <h2 className="text-gray-900 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-center mb-8 sm:mb-12">
+      <section className="py-20 sm:py-24 lg:py-28 border-t border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-center mb-10 sm:mb-14">
             What you&apos;ll discover
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {/* Card 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-8">
             <FeatureCard
               icon={<Target className="size-6" />}
               title="Your visibility score"
               description="Find out if ChatGPT and Claude mention you — or ignore you completely."
             />
-            
-            {/* Card 2 */}
             <FeatureCard
               icon={<Users className="size-6" />}
               title="Who's beating you"
               description="See exactly which competitors AI recommends instead of you."
             />
-            
-            {/* Card 3 */}
             <FeatureCard
               icon={<TrendingUp className="size-6" />}
               title="How to fix it"
@@ -330,71 +325,36 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-slate-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <h2 className="text-gray-900 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-center mb-8 sm:mb-12">
-            How it works
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 md:gap-4 relative">
-            {/* Connecting line (desktop only) */}
-            <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-slate-200 via-blue-200 to-slate-200" />
-            
-            {/* Step 1 */}
-            <StepCard
-              number="1"
-              title="Enter your product"
-              description="Drop in your URL. We'll figure out the rest."
-            />
-            
-            {/* Step 2 */}
-            <StepCard
-              number="2"
-              title="We ask AI the questions your customers ask"
-              description="Real queries to ChatGPT and Claude — not generic tests."
-            />
-            
-            {/* Step 3 */}
-            <StepCard
-              number="3"
-              title="See your results in under 2 minutes"
-              description="Know if you're mentioned, who's beating you, and how to fix it."
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA Section */}
-      <section className="py-[100px] bg-white">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-gray-900 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-4 sm:mb-5">
+      <section className="py-24 sm:py-28 lg:py-32 border-t border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
             Don&apos;t Let AI Decide Your Future Without You.
           </h2>
 
-          <p className="text-gray-600 text-base sm:text-lg leading-relaxed mb-8 sm:mb-10">
+          <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-10 sm:mb-12">
             If customers are asking AI what to use in your category — you need to know what it&apos;s saying.
           </p>
 
           <Link href="/check">
             <Button
               size="lg"
-              className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 sm:px-12 h-14 text-base sm:text-lg rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
+              className="group w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 sm:px-14 h-16 text-lg sm:text-xl rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
             >
               Run Your Free AI Visibility Scan
-              <ArrowRight className="ml-2 size-5 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="ml-2.5 size-5 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </Link>
 
-          <p className="text-sm text-gray-400 mt-4">
+          <p className="text-sm text-gray-500 mt-5">
             Takes 2 minutes · No credit card required
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-6 sm:py-8 border-t border-gray-100 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="py-6 sm:py-8 border-t border-gray-200/60 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <Image
@@ -469,33 +429,14 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <div className="group bg-white border border-gray-200 border-t-2 border-t-blue-500 rounded-xl sm:rounded-2xl p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-      <div className="size-10 sm:size-12 rounded-lg sm:rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-200">
-        <div className="scale-90 sm:scale-100">{icon}</div>
+    <div className="bg-white border border-gray-200 rounded-2xl p-7 sm:p-8">
+      <div className="size-11 sm:size-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4">
+        {icon}
       </div>
-      <h3 className="text-gray-900 font-semibold text-base sm:text-lg mb-1.5 sm:mb-2">{title}</h3>
+      <h3 className="text-gray-900 font-semibold text-base sm:text-lg mb-2">{title}</h3>
       <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
     </div>
   )
 }
 
-function StepCard({
-  number,
-  title,
-  description,
-}: {
-  number: string
-  title: string
-  description: string
-}) {
-  return (
-    <div className="text-center relative z-10 group">
-      <div className="size-12 sm:size-16 rounded-full bg-blue-600 text-white text-xl sm:text-2xl font-bold flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg shadow-blue-500/25 group-hover:scale-110 transition-transform duration-200">
-        {number}
-      </div>
-      <h3 className="text-gray-900 font-semibold text-sm sm:text-base mb-2">{title}</h3>
-      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed max-w-[200px] sm:max-w-[220px] mx-auto">{description}</p>
-    </div>
-  )
-}
 
