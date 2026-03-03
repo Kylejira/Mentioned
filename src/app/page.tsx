@@ -13,11 +13,10 @@ const FloatingBubbles = dynamic(() => import("@/components/FloatingBubbles"), {
   ssr: false,
 })
 
-// Stats for social proof
-const STATS = [
-  { value: "500+", label: "products scanned" },
-  { value: "2 min", label: "average scan time" },
-  { value: "20+", label: "AI queries tested" },
+const CREDIBILITY_STATS = [
+  { value: "500+", label: "products analyzed" },
+  { value: "2,000+", label: "AI queries processed" },
+  { value: "37%", label: "avg. visibility increase" },
 ]
 
 export default function LandingPage() {
@@ -109,14 +108,17 @@ export default function LandingPage() {
         </div>
       </section>
       
-      {/* Social Proof Stats Bar */}
-      <section className="py-6 sm:py-8 border-y border-gray-100 bg-white">
+      {/* Social Proof & Credibility Strip */}
+      <section className="py-10 sm:py-14 bg-[#FAFBFC] border-y border-gray-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-center gap-4 sm:gap-8 md:gap-16">
-            {STATS.map((stat, index) => (
-              <div key={index} className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 text-center">
-                <span className="text-lg sm:text-2xl font-bold text-gray-900">{stat.value}</span>
-                <span className="text-xs sm:text-sm text-gray-500">{stat.label}</span>
+          <p className="text-center text-sm text-gray-400 font-medium tracking-wide uppercase mb-8">
+            Trusted by founders optimizing their AI visibility
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            {CREDIBILITY_STATS.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl sm:text-4xl font-extrabold text-gray-900">{stat.value}</div>
+                <div className="text-sm text-gray-500 mt-1 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
