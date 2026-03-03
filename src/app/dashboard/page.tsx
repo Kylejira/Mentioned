@@ -1494,7 +1494,31 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {data.actionItems && data.actionItems.length > 0 ? (() => {
+            {(!data.actionItems || data.actionItems.length === 0) && (!data.actions || data.actions.length === 0) ? (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+                <div className="text-3xl mb-3">&#128161;</div>
+                <h3 className="font-semibold text-gray-900 mb-1">No action plan yet</h3>
+                <p className="text-sm text-gray-500 mb-5 max-w-md mx-auto">
+                  Run a new scan to generate a personalized action plan based on your AI visibility gaps.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={handleRunNewScan}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-sm inline-flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="size-4" />
+                    Run new scan
+                    {!subscription.canScan && <Lock className="size-3.5 ml-1" />}
+                  </button>
+                  <Link href="/checklist">
+                    <button className="bg-white border border-gray-200 text-gray-700 font-medium px-5 py-2.5 rounded-xl hover:bg-gray-50 transition text-sm inline-flex items-center gap-1.5">
+                      <CheckCircle2 className="size-4 text-blue-500" />
+                      View Checklist
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            ) : data.actionItems && data.actionItems.length > 0 ? (() => {
               const hasCategories = data.actionItems.some((a: any) => a.category)
               const filteredActions = activeActionCategory === "all"
                 ? data.actionItems
