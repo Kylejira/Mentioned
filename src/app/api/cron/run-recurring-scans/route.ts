@@ -61,9 +61,24 @@ export async function GET(request: NextRequest) {
   for (const scan of dueScans) {
     try {
       const profile = scan.saas_profile as Record<string, unknown> | null
-      const brandName = (profile?.brand_name as string) || "Unknown"
-      const brandUrl = (profile?.website_url as string) || ""
+      let brandName = (profile?.brand_name as string) || ""
+      let brandUrl = (profile?.website_url as string) || ""
       const category = (profile?.category as string) || undefined
+
+      // Fallback: read brand info from brands table if saas_profile is incomplete
+      if ((!brandName || !brandUrl) && scan.brand_id) {
+        const { data: brand } = await db
+          .from("brands")
+          .select("name, website_url")
+          .eq("id", scan.brand_id)
+          .single()
+        if (brand) {
+          brandName = brandName || brand.name || "Unknown"
+          brandUrl = brandUrl || brand.website_url || ""
+        }
+      }
+
+      brandName = brandName || "Unknown"
 
       if (!brandUrl) {
         logger.warn("Skipping scan with no brand URL", { scanId: scan.id })

@@ -854,6 +854,15 @@ export default function DashboardPage() {
     return () => { cancelled = true }
   }, [user?.id, authLoading])
 
+  // Load recurring scan state
+  useEffect(() => {
+    if (!user?.id || authLoading) return
+    fetch("/api/scan/recurring")
+      .then(res => res.ok ? res.json() : null)
+      .then(d => { if (d) setIsRecurring(d.is_recurring || false) })
+      .catch(() => {})
+  }, [user?.id, authLoading])
+
   // Use the loaded data or show loading state
   const data = scanData || mockScanData
 
@@ -1022,13 +1031,18 @@ export default function DashboardPage() {
       const res = await fetch("/api/scan/recurring", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandUrl: data.brand.website, enabled: newValue }),
+        body: JSON.stringify({
+          enabled: newValue,
+          brandId: rawScanData?.brandId || rawScanData?.brand_id || undefined,
+          brandUrl: data.brand.website || rawScanData?.brandUrl || undefined,
+        }),
       })
       if (res.ok) {
         setIsRecurring(newValue)
-        showToast(newValue ? "Weekly scans enabled" : "Weekly scans disabled")
+        showToast(newValue ? "Weekly scans enabled — runs every 7 days" : "Weekly scans disabled")
       } else {
-        showToast("Failed to update recurring setting", "error")
+        const err = await res.json().catch(() => ({}))
+        showToast(err.error || "Failed to update recurring setting", "error")
       }
     } catch {
       showToast("Failed to update recurring setting", "error")
