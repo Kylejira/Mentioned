@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function QueryExplorer({ scanId, brandName }: Props) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(true)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<any>(null)
   const [error, setError] = useState(false)
