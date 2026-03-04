@@ -29,7 +29,7 @@ export async function GET(
 
     const { data: scan, error: scanError } = await db
       .from("scans")
-      .select("id, brand_id")
+      .select("id, brand_id, saas_profile, summary")
       .eq("id", scanId)
       .single()
 
@@ -51,17 +51,28 @@ export async function GET(
       return NextResponse.json({ error: "Not authorized" }, { status: 403 })
     }
 
-    const { data: results, error: resultsError } = await db
-      .from("scan_results")
-      .select("id, query_text, query_category, provider, model, brand_mentioned, brand_position, brand_sentiment, competitors_detected, response_text, latency_ms, created_at")
-      .eq("scan_id", scanId)
-      .order("created_at", { ascending: true })
+    // Try to get full result from scan_history (has queries_tested + raw_responses)
+    const profileUrl = (scan.saas_profile as Record<string, unknown>)?.website_url as string | undefined
+    let fullResult: Record<string, unknown> | null = null
 
-    if (resultsError || !results) {
-      logger.warn("Could not fetch scan results", {
-        scanId,
-        error: resultsError?.message,
-      })
+    if (profileUrl) {
+      const { data: history } = await db
+        .from("scan_history")
+        .select("full_result")
+        .eq("product_url", profileUrl)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+
+      fullResult = (history?.full_result as Record<string, unknown>) || null
+    }
+
+    // Fallback: check scan summary
+    if (!fullResult) {
+      fullResult = (scan.summary as Record<string, unknown>) || null
+    }
+
+    if (!fullResult) {
       return NextResponse.json({
         total: 0,
         results: [],
@@ -69,8 +80,61 @@ export async function GET(
       })
     }
 
-    const providers = [...new Set(results.map((r: any) => r.provider).filter(Boolean))]
-    const categories = [...new Set(results.map((r: any) => r.query_category).filter(Boolean))]
+    const queriesTested = (fullResult.queries_tested || fullResult.queries || []) as Array<Record<string, unknown>>
+    const rawResponses = (fullResult.raw_responses || []) as Array<Record<string, unknown>>
+
+    if (!Array.isArray(queriesTested) || queriesTested.length === 0) {
+      return NextResponse.json({
+        total: 0,
+        results: [],
+        filters: { providers: [], categories: [] },
+      })
+    }
+
+    // Build a lookup of raw responses by query text
+    const responseLookup = new Map<string, Record<string, unknown>>()
+    for (const r of rawResponses) {
+      if (r.query) responseLookup.set(r.query as string, r)
+    }
+
+    // Transform into per-provider results
+    const results: Array<Record<string, unknown>> = []
+    const providerSet = new Set<string>()
+
+    for (const q of queriesTested) {
+      const queryText = (q.query || "") as string
+      const raw = responseLookup.get(queryText)
+
+      const providers = [
+        { key: "chatgpt", provider: "openai", model: "GPT-4o", label: "ChatGPT" },
+        { key: "claude", provider: "anthropic", model: "Claude", label: "Claude" },
+        { key: "gemini", provider: "gemini", model: "Gemini", label: "Gemini" },
+      ]
+
+      for (const p of providers) {
+        const mentioned = q[p.key]
+        if (mentioned === undefined && !raw?.[`${p.key}_response`]) continue
+
+        providerSet.add(p.provider)
+        results.push({
+          id: `${queryText}-${p.provider}`,
+          query_text: queryText,
+          query_category: (q.category || null) as string | null,
+          provider: p.provider,
+          model: p.model,
+          brand_mentioned: !!mentioned,
+          brand_position: null,
+          brand_sentiment: null,
+          competitors_detected: null,
+          response_text: (raw?.[`${p.key}_response`] || null) as string | null,
+          latency_ms: null,
+          created_at: null,
+        })
+      }
+    }
+
+    const providers = [...providerSet]
+    const categories = [...new Set(results.map(r => r.query_category).filter(Boolean))] as string[]
 
     return NextResponse.json({
       total: results.length,
