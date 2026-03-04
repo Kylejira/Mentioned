@@ -476,6 +476,23 @@ CRITICAL RULES:
 5. Reference specific details from the PRODUCT CONTEXT above — do NOT write generic queries
 6. Be SPECIFIC to the product's niche. If the product is a "merchant of record for digital products", ask about THAT — not about generic "payment processing" or "ecommerce" which is too broad.
 7. Use the SPECIFIC NICHE and USE CASES to ground queries in the exact problem space this product serves.
+8. Queries must sound like a BUYER asking for product recommendations, NOT a developer asking how to build something.
+
+   BAD:  "I need a simple interface for AI-powered video generation"
+   GOOD: "What is the best AI video generation tool with a simple interface?"
+
+   BAD:  "Looking for a platform for text-to-video generation"
+   GOOD: "What are the top-rated AI text-to-video tools right now?"
+
+   Every query should be phrased so an AI assistant responds with a LIST OF PRODUCT RECOMMENDATIONS, not a tutorial or how-to guide.
+
+   Use patterns like:
+   - "What is the best..."
+   - "What are the top..."
+   - "Which tool should I use for..."
+   - "Can you recommend a..."
+   - "What do you recommend for..."
+   - "What are alternatives to [Competitor] for..."
 
 Generate exactly ${config.count} queries. Return ONLY a JSON array of strings:
 ["query 1", "query 2", ...]`
