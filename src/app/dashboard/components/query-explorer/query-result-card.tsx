@@ -12,7 +12,7 @@ interface QueryResult {
   brand_position: number | null
   brand_sentiment: string | null
   competitors_detected: any[]
-  response_text: string
+  response_text: string | null
   latency_ms: number | null
 }
 

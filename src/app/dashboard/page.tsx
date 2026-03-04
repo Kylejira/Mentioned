@@ -1685,11 +1685,13 @@ export default function DashboardPage() {
         {/* ================================================================ */}
         {/* SECTION 6: QUERY DETAILS (Collapsible)                           */}
         {/* ================================================================ */}
-        {currentScanId && (
-          <section>
-            <QueryExplorer scanId={currentScanId} brandName={data.brand.name} />
-          </section>
-        )}
+        <section>
+          <QueryExplorer
+            brandName={data.brand.name}
+            queries={data.queries}
+            rawResponses={data.rawResponses || []}
+          />
+        </section>
 
         {/* ================================================================ */}
         {/* BOTTOM BAR                                                       */}
