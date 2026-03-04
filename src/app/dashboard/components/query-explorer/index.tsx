@@ -22,15 +22,34 @@ interface Props {
   brandName: string
   queries: QueryData[]
   rawResponses: RawResponse[]
+  rawQueriesTested?: any[]
+  rawRawResponses?: any[]
 }
 
-export function QueryExplorer({ brandName, queries, rawResponses }: Props) {
+export function QueryExplorer({ brandName, queries, rawResponses, rawQueriesTested, rawRawResponses }: Props) {
   const [isOpen, setIsOpen] = useState(true)
   const [providerFilter, setProviderFilter] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all')
   const [mentionedOnly, setMentionedOnly] = useState(false)
 
-  if (!queries || queries.length === 0) {
+  // Use transformed queries first, fall back to raw data from scan result
+  let effectiveQueries = queries
+  let effectiveResponses = rawResponses
+
+  if ((!effectiveQueries || effectiveQueries.length === 0) && rawQueriesTested && Array.isArray(rawQueriesTested) && rawQueriesTested.length > 0) {
+    effectiveQueries = rawQueriesTested.map((q: any) => ({
+      query: q.query || q,
+      chatgpt: q.chatgpt ?? q.chatGPT ?? false,
+      claude: q.claude ?? q.Claude ?? false,
+      gemini: q.gemini ?? false,
+      isCustom: q.isCustom || false,
+    }))
+  }
+
+  if ((!effectiveResponses || effectiveResponses.length === 0) && rawRawResponses && Array.isArray(rawRawResponses)) {
+    effectiveResponses = rawRawResponses
+  }
+
+  if (!effectiveQueries || effectiveQueries.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <button
@@ -64,7 +83,7 @@ export function QueryExplorer({ brandName, queries, rawResponses }: Props) {
 
   // Build response lookup by query text
   const responseLookup = new Map<string, RawResponse>()
-  for (const r of rawResponses) {
+  for (const r of (effectiveResponses || [])) {
     if (r.query) responseLookup.set(r.query, r)
   }
 
@@ -91,7 +110,7 @@ export function QueryExplorer({ brandName, queries, rawResponses }: Props) {
 
   const activeProviders = new Set<string>()
 
-  for (const q of queries) {
+  for (const q of effectiveQueries) {
     const raw = responseLookup.get(q.query)
 
     for (const p of providers) {

@@ -1690,6 +1690,8 @@ export default function DashboardPage() {
             brandName={data.brand.name}
             queries={data.queries}
             rawResponses={data.rawResponses || []}
+            rawQueriesTested={rawScanData?.queries_tested}
+            rawRawResponses={rawScanData?.raw_responses}
           />
         </section>
 
