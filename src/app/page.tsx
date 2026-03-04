@@ -9,7 +9,7 @@ import { HeroScanAnimation } from "@/components/landing/hero-scan-animation"
 const CREDIBILITY_STATS = [
   { value: "500+", label: "SaaS & ecommerce products analyzed" },
   { value: "2,000+", label: "real buyer-style AI queries processed" },
-  { value: "37%", label: "average visibility lift after optimization" },
+  { value: "37%", label: "average AI visibility lift after optimization" },
 ]
 
 export default function LandingPage() {
@@ -94,19 +94,19 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <p className="text-xs text-gray-400 mt-5 text-center">
+            Data based on internal beta scans and optimization tests.
+          </p>
         </div>
       </section>
 
-      {/* The Problem Section */}
+      {/* What You'll See Section */}
       <section className="py-20 sm:py-24 lg:py-28">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14 sm:mb-16">
             <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
-              AI Is The New Search Engine
+              What You&apos;ll See — And What Our AI Analyzes
             </h2>
-            <p className="text-gray-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-              When users ask AI for recommendations, it doesn&apos;t show search results — it gives answers. If your product isn&apos;t mentioned in those answers, you don&apos;t exist.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
@@ -114,9 +114,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-4">
                 <Users className="size-6 text-red-500" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">AI recommends competitors</h3>
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">AI Visibility Score</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                When customers ask &quot;what&apos;s the best tool for X?&quot;, AI names your competitors — not you.
+                A clear score showing how often your product appears in AI-generated recommendations when buyers ask for solutions in your category.
               </p>
             </div>
 
@@ -124,9 +124,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
                 <Target className="size-6 text-amber-500" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">Your category association is weak</h3>
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">Competitive AI Analysis</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                AI doesn&apos;t connect your product to the problems it solves, so you never appear in relevant answers.
+                We simulate real buyer-style prompts across major AI models, analyze which competitors are mentioned, and identify patterns in how they are positioned in AI responses.
               </p>
             </div>
 
@@ -134,9 +134,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
                 <TrendingUp className="size-6 text-blue-500" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">You don&apos;t know how AI describes you</h3>
+              <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-2">Why They&apos;re Winning — And How You Can</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                AI may be misrepresenting your product or ignoring it entirely — and you have no way to tell.
+                See what signals, messaging, and positioning AI models favor — and get specific recommendations to improve your inclusion in AI-generated answers.
               </p>
             </div>
           </div>
@@ -185,52 +185,59 @@ export default function LandingPage() {
       </section>
 
       {/* AI Visibility vs SEO Section */}
-      <section className="py-[100px] sm:py-28 lg:py-32">
+      <section className="py-[120px]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12 sm:mb-14">
             <h2 className="text-gray-900 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-5 sm:mb-6">
               AI Visibility Is Not SEO
             </h2>
             <p className="text-gray-700 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-              AI recommendations operate differently than search engines. If you&apos;re optimizing only for Google, you&apos;re missing where buying decisions now happen.
+              AI models don&apos;t rank websites. They generate answers. If your product isn&apos;t included in those answers, traditional SEO won&apos;t save you.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto border border-gray-200 rounded-2xl overflow-hidden">
             <div className="grid grid-cols-2">
               <div className="px-5 sm:px-6 py-4 bg-gray-50 border-b border-r border-gray-200">
-                <span className="text-sm font-semibold text-gray-500">Traditional SEO Tools</span>
+                <span className="text-sm font-bold text-gray-500">Traditional SEO Tools</span>
               </div>
               <div className="px-5 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
-                <span className="text-sm font-semibold text-blue-600">Mentioned</span>
+                <span className="text-sm font-bold text-blue-600">Mentioned</span>
               </div>
 
-              <div className="px-5 sm:px-6 py-4 border-b border-r border-gray-200">
+              <div className="px-5 sm:px-6 py-[14px] border-b border-r border-gray-200">
                 <span className="text-sm text-gray-600">Optimize for search engine rankings</span>
               </div>
-              <div className="px-5 sm:px-6 py-4 border-b border-gray-200">
-                <span className="text-sm text-gray-900 font-medium">Optimize for AI recommendations</span>
+              <div className="px-5 sm:px-6 py-[14px] border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Optimize for AI-generated recommendations</span>
               </div>
 
-              <div className="px-5 sm:px-6 py-4 border-b border-r border-gray-200">
+              <div className="px-5 sm:px-6 py-[14px] border-b border-r border-gray-200">
                 <span className="text-sm text-gray-600">Track keywords and traffic</span>
               </div>
-              <div className="px-5 sm:px-6 py-4 border-b border-gray-200">
-                <span className="text-sm text-gray-900 font-medium">Simulate real buyer AI queries</span>
+              <div className="px-5 sm:px-6 py-[14px] border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Simulate real buyer AI prompts</span>
               </div>
 
-              <div className="px-5 sm:px-6 py-4 border-b border-r border-gray-200">
-                <span className="text-sm text-gray-600">Focus on blue link visibility</span>
-              </div>
-              <div className="px-5 sm:px-6 py-4 border-b border-gray-200">
-                <span className="text-sm text-gray-900 font-medium">Focus on direct answer inclusion</span>
-              </div>
-
-              <div className="px-5 sm:px-6 py-4 border-r border-gray-200">
+              <div className="px-5 sm:px-6 py-[14px] border-b border-r border-gray-200">
                 <span className="text-sm text-gray-600">Improve click-through rate</span>
               </div>
-              <div className="px-5 sm:px-6 py-4">
-                <span className="text-sm text-gray-900 font-medium">Improve AI mention rate</span>
+              <div className="px-5 sm:px-6 py-[14px] border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Improve inclusion in AI answers</span>
+              </div>
+
+              <div className="px-5 sm:px-6 py-[14px] border-b border-r border-gray-200">
+                <span className="text-sm text-gray-600">Measure website visits</span>
+              </div>
+              <div className="px-5 sm:px-6 py-[14px] border-b border-gray-200">
+                <span className="text-sm text-gray-900 font-medium">Measure AI mention frequency</span>
+              </div>
+
+              <div className="px-5 sm:px-6 py-[14px] border-r border-gray-200">
+                <span className="text-sm text-gray-600">Focus on Google algorithms</span>
+              </div>
+              <div className="px-5 sm:px-6 py-[14px]">
+                <span className="text-sm text-gray-900 font-medium">Analyze ChatGPT, Claude, Gemini, Perplexity</span>
               </div>
             </div>
           </div>
