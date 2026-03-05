@@ -195,6 +195,19 @@ export async function POST(request: NextRequest) {
     // ── Sync fallback: run inline when Redis is not available ──
     logger.info("Starting scan (sync)", { brand: brandName, url: brandUrl, plan: planTier })
 
+    const adminDb = createAdminClient()
+
+    await adminDb.from("scans").upsert({
+      id: scanId,
+      brand_id: brandId || null,
+      status: "processing",
+      scan_version: "v3",
+      core_problem: coreProblem || null,
+      target_buyer: targetBuyer || null,
+      differentiators: differentiators || null,
+      buyer_questions: buyerQuestions || customQueries || [],
+    }, { onConflict: "id" })
+
     try {
       const result = await runScan({
         scanId,
@@ -237,7 +250,6 @@ export async function POST(request: NextRequest) {
       let scanDeltas: Record<string, unknown> | null = null
       let scanShareOfVoice: Record<string, unknown> | null = null
       try {
-        const adminDb = createAdminClient()
         const comparison = await computeProviderComparison(scanId, adminDb)
         const { data: existing } = await adminDb
           .from("scans")
