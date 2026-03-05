@@ -249,6 +249,8 @@ export async function POST(request: NextRequest) {
       // Provider comparison + deltas + share of voice (non-blocking)
       let scanDeltas: Record<string, unknown> | null = null
       let scanShareOfVoice: Record<string, unknown> | null = null
+      let scanOpportunity: unknown = null
+      let scanContentOpportunities: unknown = null
       try {
         const comparison = await computeProviderComparison(scanId, adminDb)
         const { data: existing } = await adminDb
@@ -296,6 +298,7 @@ export async function POST(request: NextRequest) {
         let opportunity = null
         try {
           opportunity = await computeOpportunityMetrics(scanId, adminDb)
+          scanOpportunity = opportunity
         } catch (oppErr) {
           logger.warn("Opportunity metrics computation failed (non-fatal)", {
             scanId,
@@ -324,6 +327,7 @@ export async function POST(request: NextRequest) {
             result.v3Result.analyses,
             competitorReasons
           )
+          scanContentOpportunities = contentOpportunities
         } catch (coErr) {
           logger.warn("Content opportunity identification failed (non-fatal)", {
             scanId,
@@ -331,9 +335,12 @@ export async function POST(request: NextRequest) {
           })
         }
 
+        const finalStatus = result.score >= 50 ? "recommended" : result.score > 0 ? "low_visibility" : "not_mentioned"
+
         await adminDb
           .from("scans")
           .update({
+            status: finalStatus,
             summary: {
               ...(existing?.summary as Record<string, unknown> ?? {}),
               provider_comparison: comparison,
@@ -371,6 +378,8 @@ export async function POST(request: NextRequest) {
         _scanId: scanId,
         ...(scanDeltas ? { _deltas: scanDeltas } : {}),
         ...(scanShareOfVoice ? { _share_of_voice: scanShareOfVoice } : {}),
+        ...(scanOpportunity ? { _opportunity: scanOpportunity } : {}),
+        ...(scanContentOpportunities ? { _content_opportunities: scanContentOpportunities } : {}),
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error"
