@@ -85,6 +85,29 @@ interface OpportunitySectionProps {
 export function OpportunitySection({ data, brandName = "Your brand" }: OpportunitySectionProps) {
   if (!data) return null
 
+  const hasAnyData = data.total_query_provider_pairs > 0 &&
+    (data.brand_mention_count > 0 || data.competitor_mention_count > 0 || data.queries_with_no_mention > 0)
+
+  if (!hasAnyData) {
+    return (
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">AI Traffic Opportunity</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              How much AI recommendation demand are you capturing?
+            </p>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
+          <p className="text-gray-500 text-sm">
+            Not enough scan data yet to analyze AI traffic opportunity. Run a full scan to see how much recommendation demand you&#39;re capturing versus competitors.
+          </p>
+        </div>
+      </section>
+    )
+  }
+
   const gap = data.opportunity_gap
   const badge = GAP_BADGE[gap] || GAP_BADGE.Critical
   const message = GAP_MESSAGE[gap] || GAP_MESSAGE.Critical
