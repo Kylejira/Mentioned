@@ -34,6 +34,7 @@ import { mockScanData, formatScanDate, type Action, type ScanData, type Visibili
 import { ProviderComparison } from "@/components/ProviderComparison"
 import { OpportunitySection } from "./components/opportunity-section"
 import { CompetitorReasonsSection } from "./components/competitor-reasons-section"
+import { ContentOpportunitiesSection } from "./components/content-opportunities-section"
 import { ScoreDelta } from "./components/score-delta"
 import { ShareOfVoice } from "./components/share-of-voice"
 import { QueryExplorer } from "./components/query-explorer"
@@ -750,6 +751,7 @@ export default function DashboardPage() {
   const [shareOfVoice, setShareOfVoice] = useState<any>(null)
   const [opportunityData, setOpportunityData] = useState<any>(null)
   const [competitorReasonsData, setCompetitorReasonsData] = useState<any>(null)
+  const [contentOpportunitiesData, setContentOpportunitiesData] = useState<any>(null)
   const [currentScanId, setCurrentScanId] = useState<string | null>(null)
 
   const [activeActionCategory, setActiveActionCategory] = useState<string>("all")
@@ -802,6 +804,7 @@ export default function DashboardPage() {
           if (parsed._share_of_voice) setShareOfVoice(parsed._share_of_voice)
           if (parsed._opportunity) setOpportunityData(parsed._opportunity)
           if (parsed._competitor_reasons) setCompetitorReasonsData(parsed._competitor_reasons)
+          if (parsed._content_opportunities) setContentOpportunitiesData(parsed._content_opportunities)
           if (parsed._scanId) setCurrentScanId(parsed._scanId)
           const transformed = transformScanResult(parsed)
           if (transformed) {
@@ -838,6 +841,7 @@ export default function DashboardPage() {
             if (scan.shareOfVoice) setShareOfVoice(scan.shareOfVoice)
             if (scan.opportunity) setOpportunityData(scan.opportunity)
             if (scan.competitorReasons) setCompetitorReasonsData(scan.competitorReasons)
+            if (scan.contentOpportunities) setContentOpportunitiesData(scan.contentOpportunities)
             if (scan.latestScanId) setCurrentScanId(scan.latestScanId)
             const transformed = transformScanResult(scan.fullResult)
             if (transformed) {
@@ -1392,6 +1396,18 @@ export default function DashboardPage() {
         {/* SECTION 3.5: WHY AI RECOMMENDS YOUR COMPETITORS                  */}
         {/* ================================================================ */}
         <CompetitorReasonsSection data={competitorReasonsData} />
+
+        {/* ================================================================ */}
+        {/* SECTION 3.6: FIX YOUR AI VISIBILITY                              */}
+        {/* ================================================================ */}
+        <ContentOpportunitiesSection
+          data={contentOpportunitiesData}
+          scanId={currentScanId}
+          isPaid={subscription.isSubscribed}
+          score={score}
+          onUpgrade={() => setShowUpgradeModal("generate")}
+          onError={(msg) => showToast(msg, "error")}
+        />
 
         {/* ================================================================ */}
         {/* SECTION 4: WHAT'S AFFECTING YOUR VISIBILITY                      */}
