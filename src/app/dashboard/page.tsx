@@ -346,8 +346,9 @@ function getScoreBgColor(score: number): string {
 // Get status badge info
 function getStatusBadgeInfo(score: number): { label: string; classes: string } {
   if (score >= 75) return { label: "Excellent", classes: "bg-green-100 text-green-700 border border-green-200" }
-  if (score >= 50) return { label: "Moderate", classes: "bg-amber-100 text-amber-700 border border-amber-200" }
-  if (score >= 25) return { label: "Low", classes: "bg-orange-100 text-orange-700 border border-orange-200" }
+  if (score >= 60) return { label: "Good", classes: "bg-emerald-100 text-emerald-700 border border-emerald-200" }
+  if (score >= 40) return { label: "Moderate", classes: "bg-amber-100 text-amber-700 border border-amber-200" }
+  if (score >= 20) return { label: "Low", classes: "bg-orange-100 text-orange-700 border border-orange-200" }
   if (score === 0) return { label: "Not Visible", classes: "bg-red-100 text-red-700 border border-red-200" }
   return { label: "Very Low", classes: "bg-red-100 text-red-700 border border-red-200" }
 }
