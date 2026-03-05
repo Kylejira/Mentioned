@@ -1403,11 +1403,7 @@ export default function DashboardPage() {
         {/* ================================================================ */}
         <ContentOpportunitiesSection
           data={contentOpportunitiesData}
-          scanId={currentScanId}
-          isPaid={subscription.isSubscribed}
           score={score}
-          onUpgrade={() => setShowUpgradeModal("generate")}
-          onError={(msg) => showToast(msg, "error")}
         />
 
         {/* ================================================================ */}
