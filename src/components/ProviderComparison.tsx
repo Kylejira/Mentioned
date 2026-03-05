@@ -39,7 +39,7 @@ export function ProviderComparison({ data, totalQueries, deltas }: ProviderCompa
               composite_score={mentionRate}
               mention_rate={mentionRate / 100}
               avg_position={mentionRate > 0 ? 2 : 0}
-              sentiment_avg={mentionRate >= 50 ? 1 : mentionRate > 0 ? 0 : -1}
+              sentiment_avg={mentionRate > 0 ? (mentionRate >= 50 ? 1 : 0) : null}
               category_coverage={mentionRate / 100}
               mentions_count={mentionCount}
               total_queries={queries}

@@ -12,7 +12,7 @@ export interface ProviderScore {
   total_queries: number
   weighted_position_score: number
   intent_weighted_score: number
-  sentiment: "positive" | "neutral" | "negative"
+  sentiment: "positive" | "neutral" | "negative" | null
   visibility_score: number
 }
 

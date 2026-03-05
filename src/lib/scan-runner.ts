@@ -155,8 +155,9 @@ export async function runScan(config: ScanConfig): Promise<ScanRunResult> {
   )
 
   const v3Result = await orchestrator.runScan(scanId, brandUrl, input, onProgress)
+  const totalMentionsGlobal = (v3Result.analyses || []).filter(a => a.brand_detection.detected).length
 
-  logger.info("Scan complete", { scanId, brand: brandName, score: v3Result.score.final_score })
+  logger.info("Scan complete", { scanId, brand: brandName, score: v3Result.score.final_score, totalMentions: totalMentionsGlobal })
 
   const legacyResult = convertV3ToLegacy(v3Result, brandName, category)
 
@@ -167,7 +168,7 @@ export async function runScan(config: ScanConfig): Promise<ScanRunResult> {
         productName: brandName,
         category: category || v3Result.profile.category,
         score: v3Result.score.final_score,
-        mentionRate: v3Result.score.mention_rate * 100,
+        mentionRate: totalMentionsGlobal === 0 ? 0 : v3Result.score.mention_rate * 100,
         top3Rate: 0,
         avgPosition: null,
         chatgptScore: null,
@@ -199,9 +200,10 @@ export async function runScan(config: ScanConfig): Promise<ScanRunResult> {
  * Map V3 ScanResult to the legacy frontend format.
  */
 export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?: string) {
-  const mentionRate = Math.round(v3.score.mention_rate * 100)
   const score = v3.score.final_score
   const analyses = v3.analyses || []
+  const totalMentions = analyses.filter(a => a.brand_detection.detected).length
+  const mentionRate = totalMentions === 0 ? 0 : Math.round(v3.score.mention_rate * 100)
 
   interface QueryMapEntry {
     chatgpt: boolean; claude: boolean; gemini: boolean
@@ -264,7 +266,7 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
         mentionRate,
         topThreeRate: 0,
         avgPosition: null,
-        modelConsistency: chatgptMentioned === claudeMentioned ? 100 : 50,
+        modelConsistency: totalMentions === 0 ? null : (chatgptMentioned === claudeMentioned ? 100 : 50),
       },
       byModel: {
         chatgpt: chatgptMentionRate,

@@ -10,7 +10,7 @@ export interface ProviderComparisonEntry {
   provider: LlmProviderName
   mention_rate: number
   avg_position: number
-  sentiment_avg: number
+  sentiment_avg: number | null
   total_queries: number
   mentions_count: number
   category_coverage: number
@@ -81,7 +81,7 @@ export async function computeProviderComparison(
   const intentCategories = Object.keys(SCORING_WEIGHTS.intent)
 
   const providers: ProviderComparisonEntry[] = scores.map((ps) => {
-    const sentimentAvg = SENTIMENT_MAP[ps.sentiment] ?? 0
+    const sentimentAvg = ps.sentiment === null ? null : (SENTIMENT_MAP[ps.sentiment] ?? 0)
 
     const avgPosition = positionScoreToAvgRank(
       ps.weighted_position_score,
@@ -158,8 +158,8 @@ function computeCrossProviderMetrics(
     insights.push("Mention rates are consistent across all providers")
   }
 
-  const positiveSentiment = providers.filter((p) => p.sentiment_avg > 0)
-  const negativeSentiment = providers.filter((p) => p.sentiment_avg < 0)
+  const positiveSentiment = providers.filter((p) => p.sentiment_avg != null && p.sentiment_avg > 0)
+  const negativeSentiment = providers.filter((p) => p.sentiment_avg != null && p.sentiment_avg < 0)
   if (positiveSentiment.length > 0 && negativeSentiment.length > 0) {
     insights.push(
       `Mixed sentiment: ${positiveSentiment.map((p) => p.provider).join(", ")} positive vs ${negativeSentiment.map((p) => p.provider).join(", ")} negative`

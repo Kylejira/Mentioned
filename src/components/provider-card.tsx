@@ -18,7 +18,7 @@ export interface ProviderCardProps {
   composite_score: number
   mention_rate: number
   avg_position: number
-  sentiment_avg: number
+  sentiment_avg: number | null
   category_coverage: number
   mentions_count: number
   total_queries: number
@@ -42,7 +42,8 @@ function scoreBg(score: number): string {
   return "bg-status-error"
 }
 
-function sentimentLabel(avg: number): { text: string; color: string } {
+function sentimentLabel(avg: number | null): { text: string; color: string } {
+  if (avg === null) return { text: "N/A", color: "text-gray-400" }
   if (avg > 0) return { text: "Positive", color: "text-green-600 font-medium" }
   if (avg < 0) return { text: "Negative", color: "text-red-600 font-medium" }
   return { text: "Neutral", color: "text-gray-500" }
@@ -92,7 +93,7 @@ export function ProviderCard(props: ProviderCardProps) {
       <div className="w-full h-2 bg-gray-100 rounded-full">
         <div
           className={cn("h-2 rounded-full transition-all", scoreBg(props.composite_score))}
-          style={{ width: `${Math.max(props.composite_score, 1)}%` }}
+          style={{ width: `${props.composite_score}%` }}
         />
       </div>
 

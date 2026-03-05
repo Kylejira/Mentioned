@@ -12,6 +12,14 @@ export class ScoringEngine {
 
     if (total_queries === 0) return this.emptyScore()
 
+    const totalMentions = analyses.filter(a => a.brand_detection.detected).length
+    if (totalMentions === 0) {
+      return {
+        ...this.emptyScore(),
+        provider_scores: this.computeProviderScores(analyses),
+      }
+    }
+
     // 1. Mention rate (provider-weighted)
     let weightedMentions = 0
     let weightedTotal = 0
@@ -143,7 +151,8 @@ export class ScoringEngine {
     })
   }
 
-  private deriveSentiment(mentionRate: number, positionScore: number): "positive" | "neutral" | "negative" {
+  private deriveSentiment(mentionRate: number, positionScore: number): "positive" | "neutral" | "negative" | null {
+    if (mentionRate === 0) return null
     if (mentionRate >= 0.5 && positionScore >= 0.4) return "positive"
     if (mentionRate >= 0.2) return "neutral"
     return "negative"

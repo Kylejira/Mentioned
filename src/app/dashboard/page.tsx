@@ -164,7 +164,7 @@ ${action.why}
         mentionRate: rawScore.breakdown?.mentionRate ?? rawScore.overall?.percentage ?? 0,
         avgPosition: rawScore.breakdown?.avgPosition ?? rawScore.averagePosition ?? null,
         topThreeRate: rawScore.breakdown?.topThreeRate ?? 0,
-        modelConsistency: rawScore.breakdown?.modelConsistency ?? 0,
+        modelConsistency: rawScore.breakdown?.modelConsistency ?? null,
       },
       byModel: {
         chatgpt: rawScore.byModel?.chatgpt ?? rawScore.chatgpt?.percentage ?? 0,
@@ -345,6 +345,7 @@ function getStatusBadgeInfo(score: number): { label: string; classes: string } {
   if (score >= 75) return { label: "Excellent", classes: "bg-green-100 text-green-700 border border-green-200" }
   if (score >= 50) return { label: "Moderate", classes: "bg-amber-100 text-amber-700 border border-amber-200" }
   if (score >= 25) return { label: "Low", classes: "bg-orange-100 text-orange-700 border border-orange-200" }
+  if (score === 0) return { label: "Not Visible", classes: "bg-red-100 text-red-700 border border-red-200" }
   return { label: "Very Low", classes: "bg-red-100 text-red-700 border border-red-200" }
 }
 
@@ -439,8 +440,10 @@ function VisibilityScoreDisplay({ score, deltas }: { score: VisibilityScore; del
       <div>
         <div className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Model Agreement</div>
         <div className="flex items-center gap-2 mt-1">
-          <div className="text-2xl font-bold text-gray-900">{score.breakdown.modelConsistency}%</div>
-          {deltas?.consistency?.delta != null && (
+          <div className="text-2xl font-bold text-gray-900">
+            {score.breakdown.modelConsistency != null ? `${score.breakdown.modelConsistency}%` : "N/A"}
+          </div>
+          {score.breakdown.modelConsistency != null && deltas?.consistency?.delta != null && (
             <ScoreDelta delta={deltas.consistency.delta} suffix="%" />
           )}
         </div>
@@ -1162,7 +1165,7 @@ export default function DashboardPage() {
   const mentionRate = data.visibilityScore?.breakdown?.mentionRate || 0
   const top3Rate = data.visibilityScore?.breakdown?.topThreeRate || 0
   const avgPosition = data.visibilityScore?.breakdown?.avgPosition
-  const modelAgreement = data.visibilityScore?.breakdown?.modelConsistency || 0
+  const modelAgreement = data.visibilityScore?.breakdown?.modelConsistency ?? null
 
   return (
     <AppShell>
@@ -1291,7 +1294,7 @@ export default function DashboardPage() {
             <div className="w-full h-3 bg-gray-100 rounded-full mt-6">
               <div
                 className="h-3 rounded-full transition-all duration-500"
-                style={{ width: `${Math.max(score, 1)}%`, backgroundColor: scoreHex }}
+                style={{ width: `${score}%`, backgroundColor: scoreHex }}
               />
             </div>
 
@@ -1407,7 +1410,7 @@ export default function DashboardPage() {
                     <div className="flex items-start gap-3"><div className="text-lg mt-0.5">&#127942;</div><div><div className="font-semibold text-gray-900 text-sm">No top 3 placements</div><div className="text-xs text-gray-500 mt-1">You&apos;re never ranked in the top 3 recommendations.</div></div></div>
                   </div>
                 )}
-                {modelAgreement < 50 && (
+                {modelAgreement != null && modelAgreement < 50 && (
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
                     <div className="flex items-start gap-3"><div className="text-lg mt-0.5">&#129302;</div><div><div className="font-semibold text-gray-900 text-sm">Low model agreement</div><div className="text-xs text-gray-500 mt-1">AI providers disagree about your product. Only some mention you.</div></div></div>
                   </div>
@@ -1440,7 +1443,7 @@ export default function DashboardPage() {
                     <div className="flex items-start gap-3"><div className="text-lg mt-0.5">&#127942;</div><div><div className="font-semibold text-gray-900 text-sm">No top 3 placements</div><div className="text-xs text-gray-500 mt-1">You&apos;re never ranked in the top 3 recommendations.</div></div></div>
                   </div>
                 )}
-                {modelAgreement < 50 && (
+                {modelAgreement != null && modelAgreement < 50 && (
                   <div className="bg-white rounded-xl border border-gray-200 p-4">
                     <div className="flex items-start gap-3"><div className="text-lg mt-0.5">&#129302;</div><div><div className="font-semibold text-gray-900 text-sm">Low model agreement</div><div className="text-xs text-gray-500 mt-1">AI providers disagree about your product. Only some mention you.</div></div></div>
                   </div>

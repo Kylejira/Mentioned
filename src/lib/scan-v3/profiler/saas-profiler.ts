@@ -100,9 +100,7 @@ export class SaaSProfiler {
 
       competitors_mentioned: [...allCompetitors].filter(Boolean),
 
-      buyer_questions: (input.buyer_questions || [])
-        .map((q) => q.trim())
-        .filter((q) => q.length >= 10),
+      buyer_questions: this.splitBuyerQuestions(input.buyer_questions || []),
 
       brand_aliases: this.ensureAliases(scraped, input.brand_name, domain),
     }
@@ -195,6 +193,19 @@ Respond ONLY with a JSON array of product names:
       logger.warn("LLM competitor discovery failed")
       return []
     }
+  }
+
+  private splitBuyerQuestions(raw: string[]): string[] {
+    const results: string[] = []
+    for (const entry of raw) {
+      const parts = entry
+        .split(/\?/)
+        .map(q => q.trim())
+        .filter(q => q.length > 5)
+        .map(q => q.endsWith("?") ? q : q + "?")
+      results.push(...parts)
+    }
+    return results
   }
 
   private ensureAliases(profile: SaaSProfile, brandName: string, domain: string): string[] {
