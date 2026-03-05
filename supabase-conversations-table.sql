@@ -64,7 +64,7 @@ CREATE POLICY "Users can update own conversations"
 
 CREATE POLICY "Service role bypass for conversations"
   ON conversations FOR ALL
-  USING (auth.role() = 'service_role');
+  USING (true) WITH CHECK (true);
 
 -- RPC function to efficiently count conversations per tier for filter chips
 CREATE OR REPLACE FUNCTION count_conversation_tiers(p_user_id UUID)
