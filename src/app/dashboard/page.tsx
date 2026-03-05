@@ -35,6 +35,7 @@ import { ProviderComparison } from "@/components/ProviderComparison"
 import { OpportunitySection } from "./components/opportunity-section"
 import { CompetitorReasonsSection } from "./components/competitor-reasons-section"
 import { ContentOpportunitiesSection } from "./components/content-opportunities-section"
+import { AutoDiscoverModal } from "./components/auto-discover/auto-discover-modal"
 import { ScoreDelta } from "./components/score-delta"
 import { ShareOfVoice } from "./components/share-of-voice"
 import { QueryExplorer } from "./components/query-explorer"
@@ -745,6 +746,7 @@ export default function DashboardPage() {
   const [hasRealData, setHasRealData] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState<"scan" | "generate" | "checklist" | "history" | null>(null)
   const [showScanLimitModal, setShowScanLimitModal] = useState(false)
+  const [showAutoDiscover, setShowAutoDiscover] = useState(false)
   const [providerComparisonData, setProviderComparisonData] = useState<unknown>(null)
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringLoading, setRecurringLoading] = useState(false)
@@ -1262,6 +1264,13 @@ export default function DashboardPage() {
                   </button>
                 </Link>
                 <button
+                  onClick={() => setShowAutoDiscover(true)}
+                  className="bg-white border border-gray-200 text-gray-700 font-medium px-4 py-2 rounded-xl hover:bg-gray-50 transition text-sm inline-flex items-center gap-1.5"
+                >
+                  <Sparkles className="size-4 text-blue-500" />
+                  Auto Discover
+                </button>
+                <button
                   onClick={handleRunNewScan}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition text-sm inline-flex items-center gap-1.5"
                 >
@@ -1759,6 +1768,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Modals */}
+      <AutoDiscoverModal
+        open={showAutoDiscover}
+        onClose={() => setShowAutoDiscover(false)}
+        onScanCreated={(scanId) => {
+          setShowAutoDiscover(false)
+          router.push("/check?scanId=" + scanId)
+        }}
+      />
       {showUpgradeModal && (
         <UpgradePrompt feature={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />
       )}
