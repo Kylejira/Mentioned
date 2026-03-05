@@ -41,6 +41,9 @@ export async function GET() {
     // Try to fetch summary enrichments (deltas, share_of_voice) from the scans table
     let deltas = null
     let shareOfVoice = null
+    let opportunity = null
+    let competitorReasons = null
+    let contentOpportunities = null
     let latestScanId: string | null = null
     try {
       // Get the user's brand to scope the scans query
@@ -73,6 +76,9 @@ export async function GET() {
         if (summary) {
           deltas = summary.deltas ?? null
           shareOfVoice = summary.share_of_voice ?? null
+          opportunity = summary.opportunity ?? null
+          competitorReasons = summary.competitor_reasons ?? null
+          contentOpportunities = summary.content_opportunities ?? null
         }
       }
     } catch {
@@ -90,6 +96,9 @@ export async function GET() {
         fullResult: data.full_result,
         deltas,
         shareOfVoice,
+        opportunity,
+        competitorReasons,
+        contentOpportunities,
         latestScanId,
       },
     })

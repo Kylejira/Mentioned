@@ -5,6 +5,10 @@ import { generateStrategicPlan } from "@/lib/strategic/generate-plan"
 import { computeProviderComparison } from "@/lib/scan-v3/scoring/provider-comparison"
 import { computeScoreDeltas } from "@/lib/scan-v3/scoring/compute-deltas"
 import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
+import { computeOpportunityMetrics } from "@/lib/scan-v3/scoring/opportunity-analyzer"
+import { analyzeCompetitorReasons } from "@/lib/scan-v3/analysis/competitor-reason-analyzer"
+import { identifyContentOpportunities } from "@/lib/scan-v3/analysis/content-opportunity-analyzer"
+import { OpenAIProvider } from "@/lib/providers"
 import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { log } from "@/lib/logger"
@@ -118,6 +122,44 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
         })
       }
 
+      let opportunity = null
+      try {
+        opportunity = await computeOpportunityMetrics(scanId, db)
+      } catch (oppErr) {
+        logger.error("Opportunity metrics computation failed (non-fatal)", {
+          scanId,
+          error: oppErr instanceof Error ? oppErr.message : String(oppErr),
+        })
+      }
+
+      let competitorReasons = null
+      try {
+        const reasonLlm = new OpenAIProvider({ model: "gpt-4o-mini", maxTokens: 2000, temperature: 0 })
+        competitorReasons = await analyzeCompetitorReasons(
+          scanId,
+          db,
+          (prompt: string) => reasonLlm.generateResponse(prompt)
+        )
+      } catch (crErr) {
+        logger.error("Competitor reason analysis failed (non-fatal)", {
+          scanId,
+          error: crErr instanceof Error ? crErr.message : String(crErr),
+        })
+      }
+
+      let contentOpportunities = null
+      try {
+        contentOpportunities = identifyContentOpportunities(
+          result.v3Result.analyses,
+          competitorReasons
+        )
+      } catch (coErr) {
+        logger.error("Content opportunity identification failed (non-fatal)", {
+          scanId,
+          error: coErr instanceof Error ? coErr.message : String(coErr),
+        })
+      }
+
       await db
         .from("scans")
         .update({
@@ -126,6 +168,9 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
             provider_comparison: comparison,
             ...(deltas ? { deltas } : {}),
             ...(shareOfVoice ? { share_of_voice: shareOfVoice } : {}),
+            ...(opportunity ? { opportunity } : {}),
+            ...(competitorReasons ? { competitor_reasons: competitorReasons } : {}),
+            ...(contentOpportunities ? { content_opportunities: contentOpportunities } : {}),
           },
         })
         .eq("id", scanId)
