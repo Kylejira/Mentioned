@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/run-recurring-scans",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/rescore-conversations",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
