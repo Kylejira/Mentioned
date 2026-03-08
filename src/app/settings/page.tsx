@@ -30,6 +30,27 @@ interface Competitor {
   name: string
 }
 
+interface ProductProfileData {
+  id: string
+  product_name: string
+  one_liner: string
+  description: string | null
+  key_features: string[]
+  target_audience: string | null
+  use_cases: string[]
+  competitors: string[]
+  website_url: string | null
+  preferred_tone: string
+  custom_instructions: string | null
+}
+
+const TONE_OPTIONS = [
+  { value: "casual", label: "Casual", desc: "Informal, uses 'tbh', 'imo', short sentences" },
+  { value: "professional", label: "Professional", desc: "Clear, structured, proper grammar" },
+  { value: "helpful", label: "Helpful", desc: "Warm, experience-based, genuinely useful" },
+  { value: "expert", label: "Expert", desc: "Deep knowledge, references trade-offs" },
+]
+
 export default function SettingsPage() {
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
@@ -50,6 +71,25 @@ export default function SettingsPage() {
   const [competitors, setCompetitors] = useState<Competitor[]>([])
   const [newCompetitor, setNewCompetitor] = useState("")
   const [isSavingCompetitor, setIsSavingCompetitor] = useState(false)
+
+  // Product profile state
+  const [profileExists, setProfileExists] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    product_name: "",
+    one_liner: "",
+    description: "",
+    key_features: [] as string[],
+    target_audience: "",
+    use_cases: [] as string[],
+    competitors: [] as string[],
+    website_url: "",
+    preferred_tone: "helpful",
+    custom_instructions: "",
+  })
+  const [newFeature, setNewFeature] = useState("")
+  const [newUseCase, setNewUseCase] = useState("")
+  const [newProfileCompetitor, setNewProfileCompetitor] = useState("")
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   // UI state
   const [isLoading, setIsLoading] = useState(true)
@@ -93,6 +133,37 @@ export default function SettingsPage() {
             .eq("brand_id", brandData.id)
 
           setCompetitors(competitorData || [])
+        }
+
+        // Load product profile
+        const { data: profileData } = await supabase
+          .from("product_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        if (profileData) {
+          setProfileExists(true)
+          setProfileForm({
+            product_name: profileData.product_name || "",
+            one_liner: profileData.one_liner || "",
+            description: profileData.description || "",
+            key_features: profileData.key_features || [],
+            target_audience: profileData.target_audience || "",
+            use_cases: profileData.use_cases || [],
+            competitors: profileData.competitors || [],
+            website_url: profileData.website_url || "",
+            preferred_tone: profileData.preferred_tone || "helpful",
+            custom_instructions: profileData.custom_instructions || "",
+          })
+        } else if (brands && brands.length > 0) {
+          const b = brands[0]
+          setProfileForm((prev) => ({
+            ...prev,
+            product_name: b.name || "",
+            website_url: b.url || "",
+            description: b.description || "",
+          }))
         }
       } catch (e) {
         console.error("Error loading settings:", e)
@@ -190,6 +261,50 @@ export default function SettingsPage() {
     } catch (e) {
       console.error("Error removing competitor:", e)
       showToast("Failed to remove competitor", "error")
+    }
+  }
+
+  // Save product profile
+  const handleSaveProfile = async () => {
+    if (!user) return
+    if (!profileForm.product_name.trim() || !profileForm.one_liner.trim()) {
+      showToast("Product name and one-liner are required", "error")
+      return
+    }
+
+    setIsSavingProfile(true)
+    try {
+      const supabase = createClient()
+      if (!supabase) throw new Error("Database not configured")
+
+      const payload = {
+        user_id: user.id,
+        product_name: profileForm.product_name.trim(),
+        one_liner: profileForm.one_liner.trim(),
+        description: profileForm.description.trim() || null,
+        key_features: profileForm.key_features,
+        target_audience: profileForm.target_audience.trim() || null,
+        use_cases: profileForm.use_cases,
+        competitors: profileForm.competitors,
+        website_url: profileForm.website_url.trim() || null,
+        preferred_tone: profileForm.preferred_tone,
+        custom_instructions: profileForm.custom_instructions.trim() || null,
+        updated_at: new Date().toISOString(),
+      }
+
+      const { error } = await supabase
+        .from("product_profiles")
+        .upsert(payload, { onConflict: "user_id" })
+
+      if (error) throw error
+
+      setProfileExists(true)
+      showToast("Product profile saved")
+    } catch (e) {
+      console.error("Error saving product profile:", e)
+      showToast("Failed to save product profile", "error")
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
@@ -417,6 +532,328 @@ export default function SettingsPage() {
                 Set up your brand first to add competitors.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Product Profile (for AI Reply Generator) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Profile</CardTitle>
+            <CardDescription>
+              Used by the AI Reply Generator to craft natural replies that mention your product. {!profileExists && "Fill this out to unlock reply generation."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Product Name */}
+            <FormInput
+              label="Product name *"
+              value={profileForm.product_name}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, product_name: e.target.value }))}
+              placeholder="e.g., Pika"
+            />
+
+            {/* One-Liner */}
+            <FormInput
+              label="One-liner *"
+              value={profileForm.one_liner}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, one_liner: e.target.value }))}
+              placeholder='e.g., "Pika helps creators make AI-generated videos from text prompts"'
+            />
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <textarea
+                value={profileForm.description}
+                onChange={(e) => setProfileForm((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="2-3 sentences about what your product does and why it's different"
+                rows={3}
+                className={cn(
+                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "placeholder:text-muted-foreground/60",
+                  "hover:border-border/80",
+                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "resize-none"
+                )}
+              />
+            </div>
+
+            {/* Key Features */}
+            <div className="space-y-2">
+              <Label>Key features</Label>
+              {profileForm.key_features.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {profileForm.key_features.map((f, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm text-foreground"
+                    >
+                      {f}
+                      <button
+                        onClick={() =>
+                          setProfileForm((prev) => ({
+                            ...prev,
+                            key_features: prev.key_features.filter((_, idx) => idx !== i),
+                          }))
+                        }
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {profileForm.key_features.length < 8 && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                    placeholder="e.g., text-to-video generation"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newFeature.trim()) {
+                        e.preventDefault()
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          key_features: [...prev.key_features, newFeature.trim()],
+                        }))
+                        setNewFeature("")
+                      }
+                    }}
+                    className={cn(
+                      "flex h-11 flex-1 rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
+                      "placeholder:text-muted-foreground/60",
+                      "hover:border-border/80",
+                      "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
+                    )}
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (newFeature.trim()) {
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          key_features: [...prev.key_features, newFeature.trim()],
+                        }))
+                        setNewFeature("")
+                      }
+                    }}
+                    disabled={!newFeature.trim()}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Target Audience */}
+            <FormInput
+              label="Target audience"
+              value={profileForm.target_audience}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, target_audience: e.target.value }))}
+              placeholder="e.g., content creators and social media managers"
+            />
+
+            {/* Use Cases */}
+            <div className="space-y-2">
+              <Label>Use cases</Label>
+              {profileForm.use_cases.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {profileForm.use_cases.map((uc, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm text-foreground"
+                    >
+                      {uc}
+                      <button
+                        onClick={() =>
+                          setProfileForm((prev) => ({
+                            ...prev,
+                            use_cases: prev.use_cases.filter((_, idx) => idx !== i),
+                          }))
+                        }
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {profileForm.use_cases.length < 6 && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newUseCase}
+                    onChange={(e) => setNewUseCase(e.target.value)}
+                    placeholder="e.g., TikTok video ads"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newUseCase.trim()) {
+                        e.preventDefault()
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          use_cases: [...prev.use_cases, newUseCase.trim()],
+                        }))
+                        setNewUseCase("")
+                      }
+                    }}
+                    className={cn(
+                      "flex h-11 flex-1 rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
+                      "placeholder:text-muted-foreground/60",
+                      "hover:border-border/80",
+                      "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
+                    )}
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (newUseCase.trim()) {
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          use_cases: [...prev.use_cases, newUseCase.trim()],
+                        }))
+                        setNewUseCase("")
+                      }
+                    }}
+                    disabled={!newUseCase.trim()}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Competitors (profile-level) */}
+            <div className="space-y-2">
+              <Label>Competitors</Label>
+              {profileForm.competitors.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {profileForm.competitors.map((c, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-full text-sm text-foreground"
+                    >
+                      {c}
+                      <button
+                        onClick={() =>
+                          setProfileForm((prev) => ({
+                            ...prev,
+                            competitors: prev.competitors.filter((_, idx) => idx !== i),
+                          }))
+                        }
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {profileForm.competitors.length < 10 && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newProfileCompetitor}
+                    onChange={(e) => setNewProfileCompetitor(e.target.value)}
+                    placeholder="e.g., Runway, Kling"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newProfileCompetitor.trim()) {
+                        e.preventDefault()
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          competitors: [...prev.competitors, newProfileCompetitor.trim()],
+                        }))
+                        setNewProfileCompetitor("")
+                      }
+                    }}
+                    className={cn(
+                      "flex h-11 flex-1 rounded-xl border border-border bg-background px-4 py-2 text-base text-foreground transition-all duration-200",
+                      "placeholder:text-muted-foreground/60",
+                      "hover:border-border/80",
+                      "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10"
+                    )}
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (newProfileCompetitor.trim()) {
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          competitors: [...prev.competitors, newProfileCompetitor.trim()],
+                        }))
+                        setNewProfileCompetitor("")
+                      }
+                    }}
+                    disabled={!newProfileCompetitor.trim()}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Website URL */}
+            <FormInput
+              label="Website URL"
+              value={profileForm.website_url}
+              onChange={(e) => setProfileForm((prev) => ({ ...prev, website_url: e.target.value }))}
+              placeholder="e.g., https://pika.art"
+            />
+
+            {/* Preferred Tone */}
+            <div className="space-y-2">
+              <Label>Preferred reply tone</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {TONE_OPTIONS.map((tone) => (
+                  <button
+                    key={tone.value}
+                    onClick={() => setProfileForm((prev) => ({ ...prev, preferred_tone: tone.value }))}
+                    className={cn(
+                      "text-left rounded-xl border p-3 transition-all",
+                      profileForm.preferred_tone === tone.value
+                        ? "border-foreground/30 bg-muted ring-1 ring-foreground/10"
+                        : "border-border hover:border-border/80"
+                    )}
+                  >
+                    <div className="text-sm font-medium text-foreground">{tone.label}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">{tone.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Instructions */}
+            <div className="space-y-2">
+              <Label>Custom style notes <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <textarea
+                value={profileForm.custom_instructions}
+                onChange={(e) => setProfileForm((prev) => ({ ...prev, custom_instructions: e.target.value }))}
+                placeholder='e.g., "Always mention that we have a free tier. Avoid comparing on price."'
+                rows={2}
+                className={cn(
+                  "flex w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground transition-all duration-200",
+                  "placeholder:text-muted-foreground/60",
+                  "hover:border-border/80",
+                  "focus:border-foreground/20 focus:outline-none focus:ring-2 focus:ring-ring/10",
+                  "resize-none"
+                )}
+              />
+            </div>
+
+            {/* Save */}
+            <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+              {isSavingProfile ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : profileExists ? (
+                "Update profile"
+              ) : (
+                "Save profile"
+              )}
+            </Button>
           </CardContent>
         </Card>
 

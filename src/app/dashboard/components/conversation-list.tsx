@@ -3,12 +3,15 @@
 import { useState, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { ScoreBadge, type OpportunityTier, type OpportunitySignals } from "./score-badge"
+import { ReplyGeneratorPanel } from "./reply-generator/reply-generator-panel"
 import {
   ChevronDown,
   Loader2,
   ExternalLink,
   MessageSquare,
   ArrowUpDown,
+  Sparkles,
+  Lock,
 } from "lucide-react"
 
 // ---------------------------------------------------------------------------
@@ -112,7 +115,12 @@ function timeAgo(dateStr: string): string {
 // ConversationList
 // ---------------------------------------------------------------------------
 
-export function ConversationList() {
+interface ConversationListProps {
+  isPaidUser?: boolean
+  onUpgrade?: () => void
+}
+
+export function ConversationList({ isPaidUser = false, onUpgrade }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [tierCounts, setTierCounts] = useState<TierCounts>({ hot: 0, strong: 0, moderate: 0, low: 0, cold: 0 })
   const [total, setTotal] = useState(0)
@@ -121,6 +129,10 @@ export function ConversationList() {
   const [sortOption, setSortOption] = useState(SORT_OPTIONS[0])
   const [showSortMenu, setShowSortMenu] = useState(false)
   const [activeTiers, setActiveTiers] = useState<Set<OpportunityTier>>(new Set())
+
+  // Reply panel state
+  const [replyConversation, setReplyConversation] = useState<Conversation | null>(null)
+  const [replyPanelOpen, setReplyPanelOpen] = useState(false)
 
   const fetchConversations = useCallback(async () => {
     setIsLoading(true)
@@ -266,7 +278,15 @@ export function ConversationList() {
       ) : (
         <div className="space-y-3">
           {conversations.map((conv) => (
-            <ConversationRow key={conv.id} conversation={conv} />
+            <ConversationRow
+              key={conv.id}
+              conversation={conv}
+              isPaidUser={isPaidUser}
+              onGenerateReply={() => {
+                setReplyConversation(conv)
+                setReplyPanelOpen(true)
+              }}
+            />
           ))}
 
           {total > conversations.length && (
@@ -276,6 +296,21 @@ export function ConversationList() {
           )}
         </div>
       )}
+
+      {/* Reply generator panel */}
+      <ReplyGeneratorPanel
+        conversation={replyConversation ? {
+          id: replyConversation.id,
+          title: replyConversation.title,
+          text: replyConversation.text,
+          platform: replyConversation.platform,
+          opportunity_score: replyConversation.opportunity_score,
+        } : null}
+        open={replyPanelOpen}
+        onClose={() => setReplyPanelOpen(false)}
+        isPaidUser={isPaidUser}
+        onUpgrade={onUpgrade}
+      />
     </div>
   )
 }
@@ -284,7 +319,15 @@ export function ConversationList() {
 // ConversationRow
 // ---------------------------------------------------------------------------
 
-function ConversationRow({ conversation: conv }: { conversation: Conversation }) {
+function ConversationRow({
+  conversation: conv,
+  isPaidUser,
+  onGenerateReply,
+}: {
+  conversation: Conversation
+  isPaidUser: boolean
+  onGenerateReply: () => void
+}) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 hover:border-gray-300 transition flex gap-4 items-start">
       {/* Score badge */}
@@ -319,17 +362,35 @@ function ConversationRow({ conversation: conv }: { conversation: Conversation })
         </div>
       </div>
 
-      {/* External link */}
-      {conv.url && (
-        <a
-          href={conv.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 text-gray-300 hover:text-blue-500 transition"
+      {/* Actions */}
+      <div className="shrink-0 flex items-center gap-2">
+        <button
+          onClick={onGenerateReply}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition",
+            isPaidUser
+              ? "text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100"
+              : "text-gray-400 border-gray-200 bg-gray-50 cursor-default"
+          )}
         >
-          <ExternalLink className="size-4" />
-        </a>
-      )}
+          {isPaidUser ? (
+            <Sparkles className="size-3.5" />
+          ) : (
+            <Lock className="size-3.5" />
+          )}
+          Reply
+        </button>
+        {conv.url && (
+          <a
+            href={conv.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-300 hover:text-blue-500 transition"
+          >
+            <ExternalLink className="size-4" />
+          </a>
+        )}
+      </div>
     </div>
   )
 }
