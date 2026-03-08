@@ -273,7 +273,7 @@ export default function BillingPage() {
               <div className="flex items-start gap-3">
                 <Check className="size-5 text-[#2563EB] mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-[#1E293B]">AI Visibility Checklist</p>
+                  <p className="font-medium text-[#1E293B]">AI Visibility Playbook</p>
                   <p className="text-sm text-[#64748B]">
                     Step-by-step guide to improve your AI visibility
                   </p>

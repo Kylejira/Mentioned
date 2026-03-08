@@ -59,18 +59,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'completed_items must be an array' }, { status: 400 })
     }
 
-    // Validate item IDs against allowed values
+    // Validate item IDs against allowed values (checklist + playbook tasks)
     const allowedItems = [
-      // Foundation
+      // Checklist — Foundation
       "bing-webmaster", "google-search-console", "openai-submission", "crawl-accessibility",
-      // Site Structure
+      // Checklist — Site Structure
       "clean-titles", "clear-descriptions", "category-structure",
-      // Build Authority
+      // Checklist — Build Authority
       "reddit-quora", "review-platforms", "press-coverage", "wikipedia",
-      // Content Optimization
+      // Checklist — Content Optimization
       "natural-language", "comparison-content", "podcasts-youtube",
-      // Technical
-      "image-optimization", "schema-markup"
+      // Checklist — Technical
+      "image-optimization", "schema-markup",
+      // Playbook tasks
+      "submit-openai", "fix-crawl-blockers", "site-structure",
+      "publish-trusted-platforms", "match-human-language",
+      "expand-footprint", "optimize-visuals", "create-comparison-content",
     ]
 
     const validItems = completed_items.filter(item => allowedItems.includes(item))

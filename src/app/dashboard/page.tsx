@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils"
 import { mockScanData, formatScanDate, type Action, type ScanData, type VisibilityStatus, type VisibilityScore, type DimensionScore, type VisibilityGap, type ActionItem } from "@/lib/mock-data"
 import { ProviderComparison } from "@/components/ProviderComparison"
 import { OpportunitySection } from "./components/opportunity-section"
+import { PlaybookPreview } from "./components/playbook-preview"
 import { CompetitorReasonsSection } from "./components/competitor-reasons-section"
 import { ContentOpportunitiesSection } from "./components/content-opportunities-section"
 import { AutoDiscoverModal } from "./components/auto-discover/auto-discover-modal"
@@ -1254,7 +1255,7 @@ export default function DashboardPage() {
                 <Link href="/checklist">
                   <button className="bg-white border border-gray-200 text-gray-700 font-medium px-4 py-2 rounded-xl hover:bg-gray-50 transition text-sm inline-flex items-center gap-1.5">
                     <CheckCircle2 className="size-4 text-blue-500" />
-                    Checklist
+                    Playbook
                   </button>
                 </Link>
                 <Link href="/progress">
@@ -1364,6 +1365,21 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {/* ================================================================ */}
+        {/* SECTION 1.2: AI VISIBILITY PLAYBOOK                              */}
+        {/* ================================================================ */}
+        <PlaybookPreview
+          score={score}
+          mentionRate={mentionRate}
+          providerScores={
+            data.visibilityScore?.byModel
+              ? Object.fromEntries(
+                  Object.entries(data.visibilityScore.byModel).map(([model, score]) => [model, typeof score === "number" ? score : 0])
+                )
+              : undefined
+          }
+        />
 
         {/* ================================================================ */}
         {/* SECTION 1.5: AI TRAFFIC OPPORTUNITY                              */}
@@ -1570,7 +1586,7 @@ export default function DashboardPage() {
                   <Link href="/checklist">
                     <button className="bg-white border border-gray-200 text-gray-700 font-medium px-5 py-2.5 rounded-xl hover:bg-gray-50 transition text-sm inline-flex items-center gap-1.5">
                       <CheckCircle2 className="size-4 text-blue-500" />
-                      View Checklist
+                      View Playbook
                     </button>
                   </Link>
                 </div>

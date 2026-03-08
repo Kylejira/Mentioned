@@ -650,15 +650,14 @@ export default function ChecklistPage() {
               {/* Pill Badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm mb-4">
                 <Layers className="size-4 text-white/80" />
-                <span className="text-sm font-medium text-white/90">AI Visibility Checklist</span>
+                <span className="text-sm font-medium text-white/90">AI Visibility Playbook</span>
               </div>
 
-              {/* Heading */}
               <h1 className="text-2xl md:text-[28px] font-bold text-white mb-2">
-                Get Recommended by AI
+                AI Visibility Playbook
               </h1>
               <p className="text-white/80 text-sm md:text-base leading-relaxed max-w-md">
-                Complete this checklist to optimize your brand for AI recommendations. Work through each section to improve your visibility on ChatGPT, Claude, and other AI tools.
+                Work through each section to systematically improve your visibility on ChatGPT, Claude, and other AI tools.
               </p>
             </div>
 
@@ -748,7 +747,7 @@ export default function ChecklistPage() {
             Ready to track your progress?
           </h3>
           <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-            Run a new scan to see how your visibility has improved after completing checklist items.
+            Run a new scan to see how your visibility has improved after completing playbook steps.
           </p>
           <Link href="/check">
             <Button 

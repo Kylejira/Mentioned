@@ -164,7 +164,7 @@ export function getUpgradeReason(
   }
   
   if (feature === "checklist" && subscription.plan === "free") {
-    return "Upgrade to access the AI Visibility Checklist."
+    return "Upgrade to access the AI Visibility Playbook."
   }
   
   if (feature === "history" && subscription.plan === "free") {
@@ -191,7 +191,7 @@ export const PLANS = {
     ],
     limitations: [
       "No additional scans",
-      "No AI Visibility Checklist",
+      "No AI Visibility Playbook",
       "No content generation",
     ],
     cta: "Current Plan",
@@ -205,7 +205,7 @@ export const PLANS = {
     scansIncluded: 10,
     features: [
       "10 AI visibility scans/month",
-      "AI Visibility Checklist",
+      "AI Visibility Playbook",
       "Generate optimization drafts",
       "Full scan history",
       "Competitor analysis",
@@ -222,7 +222,7 @@ export const PLANS = {
     period: "per month",
     features: [
       "Unlimited AI visibility scans",
-      "AI Visibility Checklist",
+      "AI Visibility Playbook",
       "Generate optimization drafts",
       "Full scan history",
       "Competitor analysis",
@@ -242,7 +242,7 @@ export const PLANS = {
     savings: "Save 33%",
     features: [
       "Unlimited AI visibility scans",
-      "AI Visibility Checklist",
+      "AI Visibility Playbook",
       "Generate optimization drafts",
       "Full scan history",
       "Competitor analysis",

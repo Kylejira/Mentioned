@@ -26,8 +26,8 @@ const featureMessages = {
     icon: Sparkles,
   },
   checklist: {
-    title: "Unlock AI Visibility Checklist",
-    description: "Access the complete checklist to systematically improve your discoverability by AI tools.",
+    title: "Unlock AI Visibility Playbook",
+    description: "Access the complete playbook to systematically improve your discoverability by AI tools.",
     icon: Lock,
   },
   history: {
@@ -177,7 +177,7 @@ export function UpgradePrompt({ feature, onClose, inline = false, className }: U
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#10B981]" />
-                  AI Visibility Checklist
+                  AI Visibility Playbook
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#10B981]" />
@@ -230,7 +230,7 @@ export function UpgradePrompt({ feature, onClose, inline = false, className }: U
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#2563EB]" />
-                  AI Visibility Checklist
+                  AI Visibility Playbook
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#2563EB]" />

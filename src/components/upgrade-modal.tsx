@@ -30,14 +30,14 @@ export function UpgradeModal({
   const featureTitles: Record<string, string> = {
     scan: "Unlock More Scans",
     generate: "Unlock Content Generation",
-    checklist: "Unlock AI Visibility Checklist",
+    checklist: "Unlock AI Visibility Playbook",
     history: "Unlock Scan History",
   }
 
   const featureDescriptions: Record<string, string> = {
     scan: "You've used your free scan. Upgrade to run more scans and track your AI visibility over time.",
     generate: "Generate AI-optimized content drafts to improve your visibility on ChatGPT, Claude, and other AI tools.",
-    checklist: "Access the complete AI Visibility Checklist to systematically improve your discoverability.",
+    checklist: "Access the complete AI Visibility Playbook to systematically improve your discoverability.",
     history: "View your full scan history and track how your AI visibility improves over time.",
   }
 
@@ -154,7 +154,7 @@ export function UpgradeModal({
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#10B981]" />
-                  AI Visibility Checklist
+                  AI Visibility Playbook
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#10B981]" />
@@ -207,7 +207,7 @@ export function UpgradeModal({
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#2563EB]" />
-                  AI Visibility Checklist
+                  AI Visibility Playbook
                 </li>
                 <li className="flex items-center gap-2 text-sm text-[#64748B]">
                   <Check className="size-4 text-[#2563EB]" />
