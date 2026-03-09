@@ -269,6 +269,11 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
         modelConsistency: totalMentions === 0 ? null : (chatgptMentioned === claudeMentioned ? 100 : 50),
       },
       byModel: {
+        chatgpt: v3.score.provider_scores.find(p => p.provider === "openai")?.visibility_score ?? chatgptMentionRate,
+        claude: v3.score.provider_scores.find(p => p.provider === "claude")?.visibility_score ?? claudeMentionRate,
+        ...(geminiAnalyses.length > 0 ? { gemini: v3.score.provider_scores.find(p => p.provider === "gemini")?.visibility_score ?? geminiMentionRate } : {}),
+      },
+      mentionRates: {
         chatgpt: chatgptMentionRate,
         claude: claudeMentionRate,
         ...(geminiAnalyses.length > 0 ? { gemini: geminiMentionRate } : {}),

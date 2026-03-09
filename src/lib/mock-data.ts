@@ -89,9 +89,12 @@ export type VisibilityScore = {
     modelConsistency: number // % agreement between models
   }
   byModel: {
-    chatgpt: number // 0-100 score for ChatGPT
-    claude: number // 0-100 score for Claude
+    chatgpt: number // 0-100 composite score for ChatGPT
+    claude: number // 0-100 composite score for Claude
   }
+  mentionRates?: {
+    [provider: string]: number // 0-100 raw mention rate per provider
+  } | null
   byDimension?: DimensionScore[] // Breakdown by query dimension
   trend?: "up" | "down" | "stable" | null
 }

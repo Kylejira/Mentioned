@@ -175,6 +175,7 @@ ${action.why}
         chatgpt: rawScore.byModel?.chatgpt ?? rawScore.chatgpt?.percentage ?? 0,
         claude: rawScore.byModel?.claude ?? rawScore.claude?.percentage ?? 0,
       },
+      mentionRates: rawScore.mentionRates ?? null,
       byDimension: rawScore.byDimension || [],
       trend: rawScore.trend || null,
     } : undefined
@@ -1392,7 +1393,7 @@ export default function DashboardPage() {
         {data.visibilityScore?.byModel && (
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4">Score by AI Provider</h2>
-            <ProviderComparison data={data.visibilityScore.byModel} totalQueries={data.queries?.length} deltas={scanDeltas} />
+            <ProviderComparison data={data.visibilityScore.byModel} mentionRates={data.visibilityScore.mentionRates} totalQueries={data.queries?.length} deltas={scanDeltas} />
           </section>
         )}
 

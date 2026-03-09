@@ -9,11 +9,12 @@ interface ByModelData {
 
 interface ProviderComparisonProps {
   data: ByModelData | null
+  mentionRates?: ByModelData | null
   totalQueries?: number
   deltas?: Record<string, any> | null
 }
 
-export function ProviderComparison({ data, totalQueries, deltas }: ProviderComparisonProps) {
+export function ProviderComparison({ data, mentionRates, totalQueries, deltas }: ProviderComparisonProps) {
   if (!data) {
     return null
   }
@@ -25,10 +26,11 @@ export function ProviderComparison({ data, totalQueries, deltas }: ProviderCompa
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {providers.map(([provider, mentionRate]) => {
+        {providers.map(([provider, compositeScore]) => {
           const providerKey = provider === "chatgpt" ? "openai" : provider
           const queries = totalQueries ?? 0
-          const mentionCount = queries > 0 ? Math.round((mentionRate / 100) * queries) : 0
+          const mRate = mentionRates?.[provider] ?? compositeScore
+          const mentionCount = queries > 0 ? Math.round((mRate / 100) * queries) : 0
 
           const providerDelta = deltas?.providers?.[providerKey]?.delta ?? null
 
@@ -36,11 +38,11 @@ export function ProviderComparison({ data, totalQueries, deltas }: ProviderCompa
             <ProviderCard
               key={provider}
               provider={providerKey}
-              composite_score={mentionRate}
-              mention_rate={mentionRate / 100}
-              avg_position={mentionRate > 0 ? 2 : 0}
-              sentiment_avg={mentionRate > 0 ? (mentionRate >= 50 ? 1 : 0) : null}
-              category_coverage={mentionRate / 100}
+              composite_score={compositeScore}
+              mention_rate={mRate / 100}
+              avg_position={mRate > 0 ? 2 : 0}
+              sentiment_avg={mRate > 0 ? (mRate >= 50 ? 1 : 0) : null}
+              category_coverage={mRate / 100}
               mentions_count={mentionCount}
               total_queries={queries}
               scoreDelta={providerDelta}
