@@ -143,16 +143,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Scan route returns scanId (queued mode) or _scanId (sync mode)
+    const resolvedScanId = scanResult.scanId || scanResult._scanId || null
+
     logger.info("Auto-discovery scan created", {
       sessionId,
-      scanId: scanResult.scanId,
+      scanId: resolvedScanId,
       queriesActivated: queryTexts.length,
       product: profile.product_name,
     })
 
     return NextResponse.json({
-      scan_id: scanResult.scanId,
-      status: scanResult.status || "processing",
+      scan_id: resolvedScanId,
+      status: scanResult.status || "complete",
       queries_activated: queryTexts.length,
       product_name: profile.product_name,
     })

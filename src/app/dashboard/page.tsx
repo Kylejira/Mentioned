@@ -1765,9 +1765,9 @@ export default function DashboardPage() {
       <AutoDiscoverModal
         open={showAutoDiscover}
         onClose={() => setShowAutoDiscover(false)}
-        onScanCreated={(scanId) => {
+        onScanCreated={() => {
           setShowAutoDiscover(false)
-          router.push("/check?scanId=" + scanId)
+          window.location.reload()
         }}
       />
       {showUpgradeModal && (
