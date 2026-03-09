@@ -70,6 +70,8 @@ export default function CheckPage() {
   ])
   const [loadingElapsed, setLoadingElapsed] = useState(0)
 
+  const [autoStartPending, setAutoStartPending] = useState(false)
+
   // Load form data from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(FORM_STORAGE_KEY)
@@ -81,6 +83,13 @@ export default function CheckPage() {
         // Ignore parse errors
       }
     }
+
+    // Check for auto-discover autostart flag
+    const autoStart = localStorage.getItem("mentioned_auto_discover_autostart")
+    if (autoStart) {
+      localStorage.removeItem("mentioned_auto_discover_autostart")
+      setAutoStartPending(true)
+    }
   }, [])
 
   // Save form data to localStorage whenever it changes
@@ -89,6 +98,23 @@ export default function CheckPage() {
       localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData))
     }
   }, [formData])
+
+  // Auto-start scan when redirected from auto-discover
+  useEffect(() => {
+    if (!autoStartPending || authLoading || isLoading) return
+    if (!formData.brandName || !formData.coreProblem) return
+
+    setAutoStartPending(false)
+
+    if (user) {
+      saveBrandData().then(() => {
+        setIsLoading(true)
+      })
+    } else {
+      setIsLoading(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartPending, authLoading, formData.brandName, formData.coreProblem, user])
 
   // URL validation
   const isValidUrl = (url: string) => {

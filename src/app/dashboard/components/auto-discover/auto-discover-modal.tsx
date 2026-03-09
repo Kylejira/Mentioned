@@ -51,8 +51,6 @@ interface ProductProfile {
 
 type Step = "url_input" | "manual_input" | "analyzing" | "query_review" | "activating" | "done"
 
-const SCAN_RESULT_KEY = "mentioned_scan_result"
-
 interface AutoDiscoverModalProps {
   open: boolean
   onClose: () => void
@@ -280,7 +278,8 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
   }, [manualName, manualDescription, manualCategory, manualCompetitors, url])
 
   // ── Activate selected queries ──
-  // Two-phase: (1) save selections server-side, (2) run scan client-side
+  // Saves selections, then redirects to /check with pre-filled form data
+  // so the scan runs through the same proven flow as manual scans.
   const handleActivate = useCallback(async () => {
     if (!sessionId) return
     const selected = queries.filter((q) => q.selected)
@@ -290,7 +289,6 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
     setStep("activating")
 
     try {
-      // Phase 1: Save selected queries and get the scan payload
       const activateRes = await fetch("/api/auto-discover/activate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -321,58 +319,27 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
         throw new Error("No scan payload returned")
       }
 
-      // Phase 2: Run the scan directly from the client (same as /check page)
-      const scanRes = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scanPayload),
-      })
-
-      if (!scanRes.ok) {
-        let errorMessage = "Scan failed"
-        try {
-          const errorData = await scanRes.json()
-          if (errorData.upgradeRequired) {
-            setActivationError("You've used your free scan. Upgrade to run more scans.")
-            setStep("query_review")
-            return
-          }
-          errorMessage = errorData.error || errorMessage
-        } catch {
-          // ignore parse errors
-        }
-        throw new Error(errorMessage)
+      // Store form data in localStorage for /check to pick up and auto-start
+      const checkFormData = {
+        brandName: scanPayload.brandName || "",
+        websiteUrl: scanPayload.brandUrl || "",
+        coreProblem: scanPayload.coreProblem || "",
+        targetBuyer: scanPayload.targetBuyer || "",
+        differentiators: scanPayload.differentiators || "",
+        competitors: scanPayload.competitors || [],
+        buyerQuestions: (scanPayload.buyerQuestions || []).join("\n"),
       }
 
-      const scanResult = await scanRes.json()
+      localStorage.setItem("mentioned_check_form", JSON.stringify(checkFormData))
+      localStorage.setItem("mentioned_auto_discover_autostart", "true")
 
-      // Store in localStorage so the dashboard picks it up (mirrors /check flow)
-      try {
-        const scanData = {
-          ...scanResult,
-          brandName: scanPayload.brandName,
-          brandUrl: scanPayload.brandUrl,
-          category: scanResult.category || scanPayload.category || "Software",
-          timestamp: new Date().toISOString(),
-        }
-        const userKeys = Object.keys(localStorage).filter(k => k.startsWith(SCAN_RESULT_KEY + "_"))
-        const storageKey = userKeys.length > 0 ? userKeys[0] : SCAN_RESULT_KEY
-        localStorage.setItem(storageKey, JSON.stringify(scanData))
-      } catch {
-        // Non-fatal
-      }
-
-      setStep("done")
-
-      const scanId = scanResult._scanId || scanResult.scanId || null
-      setTimeout(() => {
-        onScanCreated(scanId)
-      }, 2000)
+      // Redirect to /check — the page will pre-fill the form and auto-start
+      window.location.href = "/check"
     } catch (err) {
       setActivationError(err instanceof Error ? err.message : "Failed to create scan")
       setStep("query_review")
     }
-  }, [sessionId, queries, onScanCreated])
+  }, [sessionId, queries])
 
   // ── Query helpers ──
   const toggleQuery = (index: number) => {
