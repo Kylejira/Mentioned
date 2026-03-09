@@ -74,6 +74,25 @@ export default function CheckPage() {
 
   // Load form data from localStorage on mount
   useEffect(() => {
+    // Check URL params first (auto-discover passes data here as a reliable backup)
+    const urlParams = new URLSearchParams(window.location.search)
+    const autodiscoverParam = urlParams.get("autodiscover")
+
+    if (autodiscoverParam) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(autodiscoverParam))
+        setFormData(parsed)
+        setAutoStartPending(true)
+        // Clean up URL
+        window.history.replaceState(null, "", "/check")
+        localStorage.removeItem("mentioned_auto_discover_autostart")
+        return
+      } catch {
+        // Fall through to localStorage
+      }
+    }
+
+    // Fall back to localStorage
     const saved = localStorage.getItem(FORM_STORAGE_KEY)
     if (saved) {
       try {
@@ -84,7 +103,7 @@ export default function CheckPage() {
       }
     }
 
-    // Check for auto-discover autostart flag
+    // Check for auto-discover autostart flag from localStorage
     const autoStart = localStorage.getItem("mentioned_auto_discover_autostart")
     if (autoStart) {
       localStorage.removeItem("mentioned_auto_discover_autostart")
@@ -102,7 +121,14 @@ export default function CheckPage() {
   // Auto-start scan when redirected from auto-discover
   useEffect(() => {
     if (!autoStartPending || authLoading || isLoading) return
-    if (!formData.brandName || !formData.coreProblem) return
+    if (!formData.brandName) return
+
+    // If we have brand name but coreProblem is empty/short, don't auto-start
+    // — show the pre-filled form so the user can complete it
+    if (!formData.coreProblem || formData.coreProblem.trim().length < 10) {
+      setAutoStartPending(false)
+      return
+    }
 
     setAutoStartPending(false)
 

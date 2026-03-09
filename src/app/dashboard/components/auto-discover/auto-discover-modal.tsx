@@ -278,8 +278,8 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
   }, [manualName, manualDescription, manualCategory, manualCompetitors, url])
 
   // ── Activate selected queries ──
-  // Saves selections, then redirects to /check with pre-filled form data
-  // so the scan runs through the same proven flow as manual scans.
+  // Saves selections, then redirects to /check with the session ID so /check
+  // can fetch the data and run the scan through its proven flow.
   const handleActivate = useCallback(async () => {
     if (!sessionId) return
     const selected = queries.filter((q) => q.selected)
@@ -319,7 +319,7 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
         throw new Error("No scan payload returned")
       }
 
-      // Store form data in localStorage for /check to pick up and auto-start
+      // Store form data in localStorage AND pass session ID via URL
       const checkFormData = {
         brandName: scanPayload.brandName || "",
         websiteUrl: scanPayload.brandUrl || "",
@@ -333,8 +333,9 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
       localStorage.setItem("mentioned_check_form", JSON.stringify(checkFormData))
       localStorage.setItem("mentioned_auto_discover_autostart", "true")
 
-      // Redirect to /check — the page will pre-fill the form and auto-start
-      window.location.href = "/check"
+      // Redirect to /check with autodiscover param as a backup data source
+      const encodedPayload = encodeURIComponent(JSON.stringify(checkFormData))
+      window.location.href = `/check?autodiscover=${encodedPayload}`
     } catch (err) {
       setActivationError(err instanceof Error ? err.message : "Failed to create scan")
       setStep("query_review")
