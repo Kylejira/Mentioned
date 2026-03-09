@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
       status: scanResult.status || "complete",
       queries_activated: queryTexts.length,
       product_name: profile.product_name,
+      scan_result: scanResult,
     })
   } catch (err) {
     logger.error("Activate failed", {

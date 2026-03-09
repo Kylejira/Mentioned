@@ -51,6 +51,8 @@ interface ProductProfile {
 
 type Step = "url_input" | "manual_input" | "analyzing" | "query_review" | "activating" | "done"
 
+const SCAN_RESULT_KEY = "mentioned_scan_result"
+
 interface AutoDiscoverModalProps {
   open: boolean
   onClose: () => void
@@ -312,9 +314,25 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
         return
       }
 
+      // Store the full scan result in localStorage so the dashboard picks it up
+      if (data.scan_result) {
+        try {
+          const scanData = {
+            ...data.scan_result,
+            brandName: data.product_name || data.scan_result.brandName,
+            timestamp: new Date().toISOString(),
+          }
+          // Try user-specific key first, then fall back to generic
+          const userKeys = Object.keys(localStorage).filter(k => k.startsWith(SCAN_RESULT_KEY + "_"))
+          const storageKey = userKeys.length > 0 ? userKeys[0] : SCAN_RESULT_KEY
+          localStorage.setItem(storageKey, JSON.stringify(scanData))
+        } catch {
+          // Non-fatal — dashboard will fall back to DB
+        }
+      }
+
       setStep("done")
 
-      // Navigate to progress/dashboard after a brief success message
       setTimeout(() => {
         onScanCreated(data.scan_id)
       }, 2000)
