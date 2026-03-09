@@ -280,6 +280,7 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
   }, [manualName, manualDescription, manualCategory, manualCompetitors, url])
 
   // ── Activate selected queries ──
+  // Two-phase: (1) save selections server-side, (2) run scan client-side
   const handleActivate = useCallback(async () => {
     if (!sessionId) return
     const selected = queries.filter((q) => q.selected)
@@ -289,7 +290,8 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
     setStep("activating")
 
     try {
-      const res = await fetch("/api/auto-discover/activate", {
+      // Phase 1: Save selected queries and get the scan payload
+      const activateRes = await fetch("/api/auto-discover/activate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -302,39 +304,69 @@ export function AutoDiscoverModal({ open, onClose, onScanCreated }: AutoDiscover
         }),
       })
 
-      const data = await res.json()
+      const activateData = await activateRes.json()
 
-      if (!res.ok) {
-        if (data.upgradeRequired) {
+      if (!activateRes.ok) {
+        if (activateData.upgradeRequired) {
           setActivationError("You've used your free scan. Upgrade to run more scans.")
         } else {
-          throw new Error(data.message || data.error || "Activation failed")
+          throw new Error(activateData.message || activateData.error || "Activation failed")
         }
         setStep("query_review")
         return
       }
 
-      // Store the full scan result in localStorage so the dashboard picks it up
-      if (data.scan_result) {
+      const scanPayload = activateData.scan_payload
+      if (!scanPayload) {
+        throw new Error("No scan payload returned")
+      }
+
+      // Phase 2: Run the scan directly from the client (same as /check page)
+      const scanRes = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scanPayload),
+      })
+
+      if (!scanRes.ok) {
+        let errorMessage = "Scan failed"
         try {
-          const scanData = {
-            ...data.scan_result,
-            brandName: data.product_name || data.scan_result.brandName,
-            timestamp: new Date().toISOString(),
+          const errorData = await scanRes.json()
+          if (errorData.upgradeRequired) {
+            setActivationError("You've used your free scan. Upgrade to run more scans.")
+            setStep("query_review")
+            return
           }
-          // Try user-specific key first, then fall back to generic
-          const userKeys = Object.keys(localStorage).filter(k => k.startsWith(SCAN_RESULT_KEY + "_"))
-          const storageKey = userKeys.length > 0 ? userKeys[0] : SCAN_RESULT_KEY
-          localStorage.setItem(storageKey, JSON.stringify(scanData))
+          errorMessage = errorData.error || errorMessage
         } catch {
-          // Non-fatal — dashboard will fall back to DB
+          // ignore parse errors
         }
+        throw new Error(errorMessage)
+      }
+
+      const scanResult = await scanRes.json()
+
+      // Store in localStorage so the dashboard picks it up (mirrors /check flow)
+      try {
+        const scanData = {
+          ...scanResult,
+          brandName: scanPayload.brandName,
+          brandUrl: scanPayload.brandUrl,
+          category: scanResult.category || scanPayload.category || "Software",
+          timestamp: new Date().toISOString(),
+        }
+        const userKeys = Object.keys(localStorage).filter(k => k.startsWith(SCAN_RESULT_KEY + "_"))
+        const storageKey = userKeys.length > 0 ? userKeys[0] : SCAN_RESULT_KEY
+        localStorage.setItem(storageKey, JSON.stringify(scanData))
+      } catch {
+        // Non-fatal
       }
 
       setStep("done")
 
+      const scanId = scanResult._scanId || scanResult.scanId || null
       setTimeout(() => {
-        onScanCreated(data.scan_id)
+        onScanCreated(scanId)
       }, 2000)
     } catch (err) {
       setActivationError(err instanceof Error ? err.message : "Failed to create scan")

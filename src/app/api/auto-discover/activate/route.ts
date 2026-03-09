@@ -3,11 +3,17 @@ import { createClient } from "@/lib/supabase-server"
 import { createAdminClient } from "@/lib/supabase-admin"
 import { log } from "@/lib/logger"
 
-export const maxDuration = 240
 export const dynamic = "force-dynamic"
 
 const logger = log.create("auto-discover-activate")
 
+/**
+ * POST /api/auto-discover/activate
+ *
+ * Saves the user's selected queries and returns a scan payload.
+ * The actual scan is triggered client-side by the modal calling /api/scan directly,
+ * mirroring the flow used by the /check page.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -62,16 +68,33 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", sessionId)
 
-    // Build scan payload
+    // Build scan payload for the client to use
     const queryTexts = selectedQueries.map((q) => q.query)
 
-    // Resolve brandUrl — profile.source_url, session.source_url, or build from product name
     let brandUrl = (profile.source_url as string) || (session.source_url as string) || ""
     if (!brandUrl || brandUrl.startsWith("manual://")) {
       brandUrl = `https://${((profile.product_name as string) || "unknown").toLowerCase().replace(/\s+/g, "")}.com`
     }
 
+    // Look up the user's brand ID so the scan is linked properly
+    let brandId: string | null = null
+    try {
+      const { data: brand } = await supabase
+        .from("brands")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (brand) {
+        brandId = brand.id
+      }
+    } catch {
+      // Non-fatal
+    }
+
     const scanPayload = {
+      brandId,
       brandName: (profile.product_name as string) || "Unknown Product",
       brandUrl,
       category: (profile.category as string) || "software",
@@ -82,83 +105,17 @@ export async function POST(request: NextRequest) {
       buyerQuestions: queryTexts,
     }
 
-    logger.info("Creating scan from auto-discover", {
+    logger.info("Auto-discover activated, returning scan payload", {
       sessionId,
       brandName: scanPayload.brandName,
       brandUrl: scanPayload.brandUrl,
+      brandId,
       queryCount: queryTexts.length,
     })
 
-    // Forward cookies so the scan route gets the same auth context
-    const cookieHeader = request.headers.get("cookie") || ""
-    const origin = request.nextUrl.origin
-
-    let scanResult: Record<string, unknown>
-    try {
-      const scanResponse = await fetch(`${origin}/api/scan`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: cookieHeader,
-        },
-        body: JSON.stringify(scanPayload),
-      })
-
-      const responseText = await scanResponse.text()
-      try {
-        scanResult = JSON.parse(responseText)
-      } catch {
-        logger.error("Scan API returned non-JSON", { status: scanResponse.status, body: responseText.slice(0, 500) })
-        return NextResponse.json(
-          { error: "Scan service returned an unexpected response. Please try again." },
-          { status: 502 }
-        )
-      }
-
-      if (!scanResponse.ok) {
-        logger.error("Scan creation failed", {
-          sessionId,
-          status: scanResponse.status,
-          error: scanResult.error,
-          payload: { brandName: scanPayload.brandName, brandUrl: scanPayload.brandUrl },
-        })
-        return NextResponse.json(
-          {
-            error: scanResult.error || "Failed to create scan",
-            message: scanResult.message,
-            upgradeRequired: scanResult.upgradeRequired,
-          },
-          { status: scanResponse.status }
-        )
-      }
-    } catch (fetchErr) {
-      logger.error("Failed to call scan API", {
-        sessionId,
-        error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
-        origin,
-      })
-      return NextResponse.json(
-        { error: "Failed to reach scan service. Please try again." },
-        { status: 502 }
-      )
-    }
-
-    // Scan route returns scanId (queued mode) or _scanId (sync mode)
-    const resolvedScanId = scanResult.scanId || scanResult._scanId || null
-
-    logger.info("Auto-discovery scan created", {
-      sessionId,
-      scanId: resolvedScanId,
-      queriesActivated: queryTexts.length,
-      product: profile.product_name,
-    })
-
     return NextResponse.json({
-      scan_id: resolvedScanId,
-      status: scanResult.status || "complete",
-      queries_activated: queryTexts.length,
-      product_name: profile.product_name,
-      scan_result: scanResult,
+      status: "ready",
+      scan_payload: scanPayload,
     })
   } catch (err) {
     logger.error("Activate failed", {
