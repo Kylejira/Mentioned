@@ -112,17 +112,19 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 7. Check if product already mentioned in thread ──
+    const productName = profile.product_name || ""
     const threadText = (conversation.full_thread_text || conversation.text || "").toLowerCase()
-    const productAlreadyMentioned = threadText.includes(profile.product_name.toLowerCase())
+    const productAlreadyMentioned = productName.length > 0 && threadText.includes(productName.toLowerCase())
 
     // ── 8. Build context and generate ──
+    const baseThreadText = conversation.full_thread_text || conversation.text || ""
     const conversationCtx: ConversationContext = {
       id: conversation.id,
       platform: conversation.platform || "reddit",
       title: conversation.title,
       text: conversation.text,
       full_thread_text: productAlreadyMentioned
-        ? conversation.full_thread_text + "\n\n[NOTE: The user's product has already been mentioned in this thread. Generate a reply that adds value without re-mentioning it.]"
+        ? baseThreadText + "\n\n[NOTE: The user's product has already been mentioned in this thread. Generate a reply that adds value without re-mentioning it.]"
         : conversation.full_thread_text,
       url: conversation.url,
     }

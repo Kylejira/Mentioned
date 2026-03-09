@@ -255,6 +255,33 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
   const claudeMentionRate = claudeAnalyses.length > 0 ? Math.round((claudeMentionCount / claudeAnalyses.length) * 100) : 0
   const geminiMentionRate = geminiAnalyses.length > 0 ? Math.round((geminiMentionCount / geminiAnalyses.length) * 100) : 0
 
+  // Compute top-3 rate: % of mentions that were in position 1, 2, or 3
+  const mentionsWithPosition = analyses.filter(
+    a => a.brand_detection.detected && a.brand_detection.position !== null && a.brand_detection.position >= 1
+  )
+  const mentionsInTop3 = mentionsWithPosition.filter(a => a.brand_detection.position! <= 3).length
+  const topThreeRate = totalMentions > 0 ? Math.round((mentionsInTop3 / totalMentions) * 100) : 0
+
+  // Compute average position across all mentions with valid positions
+  const positionSum = mentionsWithPosition.reduce((sum, a) => sum + a.brand_detection.position!, 0)
+  const avgPosition = mentionsWithPosition.length > 0
+    ? Math.round((positionSum / mentionsWithPosition.length) * 10) / 10
+    : null
+
+  // Use the real cross-model consistency from the scoring engine
+  const modelConsistency = totalMentions === 0
+    ? null
+    : Math.round(v3.score.cross_model_consistency * 100)
+
+  // Helper to check if a provider has any top-3 mentions
+  const hasTop3 = (providerAnalyses: typeof analyses) =>
+    providerAnalyses.some(a =>
+      a.brand_detection.detected &&
+      a.brand_detection.position !== null &&
+      a.brand_detection.position >= 1 &&
+      a.brand_detection.position <= 3
+    )
+
   return {
     status: "complete",
     brandName,
@@ -264,9 +291,9 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
       overall: score,
       breakdown: {
         mentionRate,
-        topThreeRate: 0,
-        avgPosition: null,
-        modelConsistency: totalMentions === 0 ? null : (chatgptMentioned === claudeMentioned ? 100 : 50),
+        topThreeRate,
+        avgPosition,
+        modelConsistency,
       },
       byModel: {
         chatgpt: v3.score.provider_scores.find(p => p.provider === "openai")?.visibility_score ?? chatgptMentionRate,
@@ -278,6 +305,27 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
         claude: claudeMentionRate,
         ...(geminiAnalyses.length > 0 ? { gemini: geminiMentionRate } : {}),
       },
+      providerDetails: Object.fromEntries(
+        v3.score.provider_scores.map(ps => {
+          const key = ps.provider === "openai" ? "chatgpt" : ps.provider
+          const providerMentions = analyses.filter(
+            a => a.provider === ps.provider && a.brand_detection.detected
+          )
+          const positions = providerMentions
+            .map(a => a.brand_detection.position)
+            .filter((p): p is number => p !== null && p >= 1)
+          const avgPos = positions.length > 0
+            ? Math.round((positions.reduce((s, p) => s + p, 0) / positions.length) * 10) / 10
+            : null
+          return [key, {
+            avg_position: avgPos,
+            sentiment: ps.sentiment,
+            mention_rate: ps.mention_rate,
+            mention_count: ps.mention_count,
+            total_queries: ps.total_queries,
+          }]
+        })
+      ),
     },
     productData: {
       name: v3.profile.brand_name,
@@ -288,20 +336,20 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
     sources: {
       chatgpt: {
         mentioned: chatgptMentioned,
-        position: chatgptMentionCount >= 3 ? "top_3" : chatgptMentioned ? "mentioned" : "not_found",
+        position: hasTop3(openaiAnalyses) ? "top_3" : chatgptMentioned ? "mentioned" : "not_found",
         description: chatgptMentioned ? `Mentioned in ${chatgptMentionCount} of ${openaiAnalyses.length} queries` : null,
         descriptionAccurate: true,
       },
       claude: {
         mentioned: claudeMentioned,
-        position: claudeMentionCount >= 3 ? "top_3" : claudeMentioned ? "mentioned" : "not_found",
+        position: hasTop3(claudeAnalyses) ? "top_3" : claudeMentioned ? "mentioned" : "not_found",
         description: claudeMentioned ? `Mentioned in ${claudeMentionCount} of ${claudeAnalyses.length} queries` : null,
         descriptionAccurate: true,
       },
       ...(geminiAnalyses.length > 0 ? {
         gemini: {
           mentioned: geminiMentioned,
-          position: geminiMentionCount >= 3 ? "top_3" : geminiMentioned ? "mentioned" : "not_found",
+          position: hasTop3(geminiAnalyses) ? "top_3" : geminiMentioned ? "mentioned" : "not_found",
           description: geminiMentioned ? `Mentioned in ${geminiMentionCount} of ${geminiAnalyses.length} queries` : null,
           descriptionAccurate: true,
         },
@@ -318,7 +366,7 @@ export function convertV3ToLegacy(v3: V3ScanResult, brandName: string, category?
       topThreeCount: 0,
       totalQueries: v3.query_count,
       visibilityLevel: c.last_mention_count > 3 ? "recommended" : c.last_mention_count > 0 ? "low_visibility" : "not_mentioned",
-      outranksUser: c.last_mention_count > Math.round(v3.score.mention_rate * v3.query_count),
+      outranksUser: c.last_mention_count > totalMentions,
     })),
     raw_responses: rawResponses,
     scan_version: "v3",

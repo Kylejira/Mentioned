@@ -176,18 +176,11 @@ ${action.why}
         claude: rawScore.byModel?.claude ?? rawScore.claude?.percentage ?? 0,
       },
       mentionRates: rawScore.mentionRates ?? null,
+      providerDetails: rawScore.providerDetails ?? null,
       byDimension: rawScore.byDimension || [],
       trend: rawScore.trend || null,
     } : undefined
     
-    console.log("[Dashboard Transform] Visibility score:", {
-      rawOverall: rawScore?.overall,
-      rawTotal: rawScore?.total,
-      rawScore: rawScore?.score,
-      transformedOverall: visibilityScore?.overall,
-      breakdown: visibilityScore?.breakdown
-    })
-
     return {
       brand: {
         name: brandName,
@@ -749,7 +742,6 @@ export default function DashboardPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState<"scan" | "generate" | "checklist" | "history" | null>(null)
   const [showScanLimitModal, setShowScanLimitModal] = useState(false)
   const [showAutoDiscover, setShowAutoDiscover] = useState(false)
-  const [providerComparisonData, setProviderComparisonData] = useState<unknown>(null)
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringLoading, setRecurringLoading] = useState(false)
   const [scanDeltas, setScanDeltas] = useState<Record<string, any> | null>(null)
@@ -770,7 +762,7 @@ export default function DashboardPage() {
     if (user?.id) {
       localStorage.removeItem(`${SCAN_RESULT_KEY}_${user.id}`)
     }
-    console.log("[Dashboard] Cache cleared manually")
+    // Cache cleared
     window.location.reload()
   }
 
@@ -788,15 +780,7 @@ export default function DashboardPage() {
 
         if (stored) {
           const parsed = JSON.parse(stored)
-          console.log("[Dashboard] Found scan in localStorage:", {
-            brandName: parsed.brandName,
-            status: parsed.status,
-            timestamp: parsed.timestamp,
-          })
-
-          // If a scan is in progress or failed, don't show stale DB data
           if (parsed.status === "scanning" || parsed.status === "failed") {
-            console.log(`[Dashboard] Scan status: ${parsed.status} — not loading stale data`)
             if (cancelled) return
             setHasRealData(false)
             setIsLoading(false)
@@ -825,7 +809,7 @@ export default function DashboardPage() {
 
       // STEP 2: Fall back to database (for cross-session, e.g. new browser/device)
       try {
-        console.log("[Dashboard] No localStorage data, fetching from database...")
+        // No localStorage data — fall back to database
         const response = await fetch("/api/scan-history/latest")
 
         if (cancelled) return
@@ -833,13 +817,6 @@ export default function DashboardPage() {
         if (response.ok) {
           const { scan } = await response.json()
           if (scan?.fullResult) {
-            console.log("[Dashboard] Loaded scan from database:", {
-              brandName: scan.fullResult.brandName,
-              category: scan.fullResult.category,
-              score: scan.score,
-              scannedAt: scan.scannedAt,
-            })
-
             if (cancelled) return
             setRawScanData(scan.fullResult)
             if (scan.deltas) setScanDeltas(scan.deltas)
@@ -864,7 +841,7 @@ export default function DashboardPage() {
       if (cancelled) return
 
       // STEP 3: No data anywhere — show empty state
-      console.log("[Dashboard] No scan data found anywhere")
+      // No scan data found — show empty state
       setScanData(mockScanData)
       setHasRealData(false)
       setIsLoading(false)
@@ -1393,7 +1370,7 @@ export default function DashboardPage() {
         {data.visibilityScore?.byModel && (
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4">Score by AI Provider</h2>
-            <ProviderComparison data={data.visibilityScore.byModel} mentionRates={data.visibilityScore.mentionRates} totalQueries={data.queries?.length} deltas={scanDeltas} />
+            <ProviderComparison data={data.visibilityScore.byModel} mentionRates={data.visibilityScore.mentionRates} providerDetails={data.visibilityScore.providerDetails} totalQueries={data.queries?.length} deltas={scanDeltas} />
           </section>
         )}
 
@@ -1414,7 +1391,7 @@ export default function DashboardPage() {
             brandName={data.brand.name}
             sources={data.sources}
             category={data.brand.category}
-            totalQueries={data.queries?.length || 5}
+            totalQueries={data.queries?.length || 0}
             visibilityScore={data.visibilityScore?.overall}
           />
         </section>

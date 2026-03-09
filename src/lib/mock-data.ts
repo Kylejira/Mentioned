@@ -95,6 +95,15 @@ export type VisibilityScore = {
   mentionRates?: {
     [provider: string]: number // 0-100 raw mention rate per provider
   } | null
+  providerDetails?: {
+    [provider: string]: {
+      avg_position: number | null
+      sentiment: "positive" | "neutral" | "negative" | null
+      mention_rate: number
+      mention_count: number
+      total_queries: number
+    }
+  } | null
   byDimension?: DimensionScore[] // Breakdown by query dimension
   trend?: "up" | "down" | "stable" | null
 }
