@@ -81,8 +81,9 @@ function transformScanResult(apiResult: any): ScanData | null {
     // Generate draft content for actions
     const generateDraftContent = (action: any, brandName: string, competitors: string[]): string => {
       const competitorList = competitors.slice(0, 2).join(" and ") || "competitors"
+      const title = action.title || action.description || ""
       
-      if (action.title.toLowerCase().includes("comparison")) {
+      if (title.toLowerCase().includes("comparison")) {
         return `# ${brandName} vs. ${competitorList}: Which Is Right for Your Team?
 
 ## Quick Comparison
@@ -110,7 +111,7 @@ Start with a comparison table highlighting key differences in:
 Choose based on your specific needs. ${brandName} is ideal for [your key differentiator].`
       }
       
-      if (action.title.toLowerCase().includes("faq")) {
+      if (title.toLowerCase().includes("faq")) {
         return `# Frequently Asked Questions
 
 ## What is ${brandName}?
@@ -138,15 +139,15 @@ Choose based on your specific needs. ${brandName} is ideal for [your key differe
 [Trial or free tier details]`
       }
       
-      return `# ${action.title}
+      return `# ${title || brandName}
 
 ## Recommended approach
 
-${action.what}
+${action.what || ""}
 
 ## Why this matters
 
-${action.why}
+${action.why || ""}
 
 ## Next steps
 
@@ -780,6 +781,7 @@ export default function DashboardPage() {
 
         if (stored) {
           const parsed = JSON.parse(stored)
+          if (!parsed || typeof parsed !== "object") throw new Error("Invalid stored data")
           if (parsed.status === "scanning" || parsed.status === "failed") {
             if (cancelled) return
             setHasRealData(false)
@@ -805,6 +807,8 @@ export default function DashboardPage() {
         }
       } catch (e) {
         console.error("[Dashboard] Error reading localStorage:", e)
+        if (cancelled) return
+        setIsLoading(false)
       }
 
       // STEP 2: Fall back to database (for cross-session, e.g. new browser/device)
