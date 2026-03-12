@@ -34,6 +34,7 @@ import { mockScanData, formatScanDate, type Action, type ScanData, type Visibili
 import { ProviderComparison } from "@/components/ProviderComparison"
 import { OpportunitySection } from "./components/opportunity-section"
 import { PlaybookPreview } from "./components/playbook-preview"
+import { PostScanActionPanel } from "./components/post-scan-action-panel"
 import { CompetitorReasonsSection } from "./components/competitor-reasons-section"
 import { ContentOpportunitiesSection } from "./components/content-opportunities-section"
 import { AutoDiscoverModal } from "./components/auto-discover/auto-discover-modal"
@@ -1347,6 +1348,20 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {/* ================================================================ */}
+        {/* SECTION 1.1: POST-SCAN ACTION PANEL                              */}
+        {/* ================================================================ */}
+        <PostScanActionPanel
+          brandName={data.brand.name}
+          score={score}
+          mentionRate={mentionRate}
+          queries={data.queries || []}
+          competitors={data.competitors || []}
+          rawResponses={data.rawResponses || []}
+          isFreePlan={subscription.plan === "free"}
+          onUpgrade={() => setShowUpgradeModal("generate")}
+        />
 
         {/* ================================================================ */}
         {/* SECTION 1.2: AI VISIBILITY PLAYBOOK                              */}
