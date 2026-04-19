@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       text: conversation.text,
       full_thread_text: productAlreadyMentioned
         ? baseThreadText + "\n\n[NOTE: The user's product has already been mentioned in this thread. Generate a reply that adds value without re-mentioning it.]"
-        : conversation.full_thread_text,
+        : baseThreadText || null,
       url: conversation.url,
     }
 

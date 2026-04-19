@@ -116,11 +116,12 @@ export function OpportunitySection({ data, brandName = "Your brand" }: Opportuni
   const compBarPct = Math.round(data.competitor_capture_rate * 100)
   const uncapturedBarPct = Math.round(data.uncaptured_rate * 100)
 
-  const topCompMentions = data.top_competitors.length > 0
-    ? data.top_competitors[0].mentions
+  const topCompetitors = data.top_competitors || []
+  const topCompMentions = topCompetitors.length > 0
+    ? topCompetitors[0].mentions
     : 0
 
-  const hasCompetitors = data.top_competitors.length > 0
+  const hasCompetitors = topCompetitors.length > 0
   const isSmallSample = data.total_queries < 10
   const allUncaptured =
     data.queries_with_any_mention === 0 && data.total_query_provider_pairs > 0
@@ -239,7 +240,7 @@ export function OpportunitySection({ data, brandName = "Your brand" }: Opportuni
               Who Captures AI Demand
             </div>
             <div className="space-y-3">
-              {data.top_competitors.map((comp, i) => (
+              {topCompetitors.map((comp, i) => (
                 <CompetitorRow
                   key={comp.name}
                   rank={i + 1}
@@ -315,7 +316,7 @@ const INSIGHT_ICONS: Record<string, string> = {
 }
 
 function classifyInsight(text: string): { icon: string; accent: string } {
-  const t = text.toLowerCase()
+  const t = (text || "").toLowerCase()
 
   if (t.includes("was not mentioned") || t.includes("capture 100%"))
     return { icon: INSIGHT_ICONS.invisible, accent: "border-red-200 bg-red-50" }

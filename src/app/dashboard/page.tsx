@@ -883,7 +883,7 @@ export default function DashboardPage() {
 
   // Determine action type for API
   const getActionType = (action: Action): "comparison" | "faq" | "positioning" => {
-    const title = action.title.toLowerCase()
+    const title = (action.title || "").toLowerCase()
     if (title.includes("comparison") || title.includes("compare")) return "comparison"
     if (title.includes("faq") || title.includes("question")) return "faq"
     return "positioning"
@@ -1520,7 +1520,7 @@ export default function DashboardPage() {
                       <AlertTriangle className="size-5 text-amber-500 mt-0.5 shrink-0" />
                       <div>
                         <h4 className="font-semibold text-gray-900 text-sm">
-                          {gap.type.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                          {(gap.type || "").replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                         </h4>
                         <p className="text-gray-600 text-sm mt-1">{gap.description}</p>
                         {gap.competitor_reference && <p className="text-gray-500 text-xs mt-2">{gap.competitor_reference}</p>}

@@ -230,7 +230,7 @@ function OtherCompetitorsRow({ competitors }: { competitors: OverflowCompetitor[
                 key={c.name}
                 className="w-6 h-6 rounded-md bg-gray-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-gray-500"
               >
-                {c.name.charAt(0).toUpperCase()}
+                {(c.name || "?").charAt(0).toUpperCase()}
               </div>
             ))}
           </div>
@@ -250,9 +250,9 @@ function OtherCompetitorsRow({ competitors }: { competitors: OverflowCompetitor[
               <div key={c.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-500">
-                    {c.name.charAt(0).toUpperCase()}
+                    {(c.name || "?").charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm text-gray-700">{capitalize(c.name)}</span>
+                  <span className="text-sm text-gray-700">{capitalize(c.name || "")}</span>
                 </div>
                 <span className="text-xs text-gray-400 tabular-nums">
                   {c.total_mentions} mention{c.total_mentions !== 1 ? "s" : ""}
@@ -276,10 +276,11 @@ function OtherCompetitorsRow({ competitors }: { competitors: OverflowCompetitor[
 function CompetitorReasonCard({ competitor }: { competitor: CompetitorReasonEntry }) {
   const [expanded, setExpanded] = useState(false)
 
-  const hasReasons = competitor.reasons.length > 0
-  const topQuote = hasReasons ? competitor.reasons[0].sample_quote : null
+  const reasons = competitor.reasons || []
+  const hasReasons = reasons.length > 0
+  const topQuote = hasReasons ? reasons[0].sample_quote : null
   const additionalQuotes = hasReasons
-    ? competitor.reasons.slice(1).filter((r) => r.sample_quote).map((r) => r.sample_quote)
+    ? reasons.slice(1).filter((r) => r.sample_quote).map((r) => r.sample_quote)
     : []
 
   return (
@@ -288,7 +289,7 @@ function CompetitorReasonCard({ competitor }: { competitor: CompetitorReasonEntr
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm">
-            {competitor.name.charAt(0).toUpperCase()}
+            {(competitor.name || "?").charAt(0).toUpperCase()}
           </div>
           <div>
             <span className="font-semibold text-gray-900">{capitalize(competitor.name)}</span>
@@ -297,9 +298,9 @@ function CompetitorReasonCard({ competitor }: { competitor: CompetitorReasonEntr
             </span>
           </div>
         </div>
-        {competitor.top_categories.length > 0 && (
+        {(competitor.top_categories || []).length > 0 && (
           <div className="flex gap-1.5 flex-wrap justify-end">
-            {competitor.top_categories.slice(0, 2).map((cat) => (
+            {(competitor.top_categories || []).slice(0, 2).map((cat) => (
               <span
                 key={cat}
                 className={cn(
@@ -317,7 +318,7 @@ function CompetitorReasonCard({ competitor }: { competitor: CompetitorReasonEntr
       {/* Reasons list */}
       {hasReasons ? (
         <div className="mt-4 space-y-2">
-          {competitor.reasons.map((reason, i) => {
+          {reasons.map((reason, i) => {
             const style = getCategoryStyle(reason.category)
             return (
               <div key={i} className="flex items-center justify-between">

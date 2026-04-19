@@ -48,7 +48,7 @@ function getMissedQueries(
   competitors: Competitor[]
 ): MissedQuery[] {
   const competitorNames = competitors
-    .filter((c) => c.mentioned)
+    .filter((c) => c.mentioned && c.name)
     .map((c) => c.name.toLowerCase())
 
   const missedQueries: MissedQuery[] = []
@@ -68,7 +68,7 @@ function getMissedQueries(
     const foundCompetitors = competitors
       .filter(
         (c) =>
-          c.mentioned && responseText.includes(c.name.toLowerCase())
+          c.mentioned && c.name && responseText.includes(c.name.toLowerCase())
       )
       .map((c) => c.name)
 
