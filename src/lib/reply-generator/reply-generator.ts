@@ -238,10 +238,10 @@ export async function generateReplies(
   })
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-5.4-mini",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.85,
-    max_tokens: 2000,
+    max_completion_tokens: 2000,
     response_format: { type: "json_object" },
   })
 
@@ -258,10 +258,10 @@ export async function generateReplies(
     // Retry once on unparseable JSON
     logger.warn("JSON parse failed, retrying once")
     const retryParseResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5.4-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_completion_tokens: 2000,
       response_format: { type: "json_object" },
     })
     const retryRaw = retryParseResponse.choices[0]?.message?.content
@@ -295,10 +295,10 @@ export async function generateReplies(
     const strictPrompt = buildReplyPrompt(conversation, effectiveProfile, true)
 
     const retryResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5.4-mini",
       messages: [{ role: "user", content: strictPrompt }],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_completion_tokens: 2000,
       response_format: { type: "json_object" },
     })
 

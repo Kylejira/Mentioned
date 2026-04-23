@@ -16,16 +16,24 @@ export class OpenAIProvider implements AIProvider {
 
   constructor(config: OpenAIProviderConfig = {}) {
     this.client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
-    this.model = config.model ?? "gpt-4o"
+    this.model = config.model ?? "gpt-5.4-mini"
     this.maxTokens = config.maxTokens ?? 1500
     this.temperature = config.temperature ?? 0.3
   }
 
+  private usesMaxCompletionTokens(): boolean {
+    return /^(gpt-5|o[1-4])/.test(this.model)
+  }
+
   async generateResponse(prompt: string): Promise<string> {
+    const tokenParam = this.usesMaxCompletionTokens()
+      ? { max_completion_tokens: this.maxTokens }
+      : { max_tokens: this.maxTokens }
+
     const res = await this.client.chat.completions.create({
       model: this.model,
       messages: [{ role: "user", content: prompt }],
-      max_tokens: this.maxTokens,
+      ...tokenParam,
       temperature: this.temperature,
     })
     return res.choices[0]?.message?.content || ""

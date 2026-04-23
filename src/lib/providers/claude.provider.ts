@@ -16,7 +16,7 @@ export class ClaudeProvider implements AIProvider {
 
   constructor(config: ClaudeProviderConfig = {}) {
     this.client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
-    this.model = config.model ?? "claude-3-haiku-20240307"
+    this.model = config.model ?? "claude-haiku-4-5-20251001"
     this.maxTokens = config.maxTokens ?? 1500
     this.temperature = config.temperature ?? 0.3
   }

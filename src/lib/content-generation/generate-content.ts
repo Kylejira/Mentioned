@@ -125,10 +125,10 @@ FORMAT: Markdown`
   try {
     const response = await Promise.race([
       client.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-5.4-mini",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_completion_tokens: 2000,
       }),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Content generation timeout after 15s")), 15000)

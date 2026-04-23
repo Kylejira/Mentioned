@@ -60,7 +60,7 @@ let _gpt4oMini: OpenAIProvider | null = null
 
 function getGpt4o(): OpenAIProvider {
   if (!_gpt4o) {
-    _gpt4o = new OpenAIProvider({ model: "gpt-4o", maxTokens: 3000, temperature: 0.7 })
+    _gpt4o = new OpenAIProvider({ model: "gpt-5.4-mini", maxTokens: 3000, temperature: 0.7 })
   }
   return _gpt4o
 }
@@ -138,7 +138,7 @@ RULES:
       type: "comparison",
       competitor_name: competitorName,
       competitor_mention_rate: competitorMentionRate,
-      model: "gpt-4o",
+      model: "gpt-5.4-mini",
     },
   }
 }
@@ -204,7 +204,7 @@ RULES:
       type: "answer_page",
       query_text: queryText,
       competitors: competitors.map((c) => c.name),
-      model: "gpt-4o",
+      model: "gpt-5.4-mini",
     },
   }
 }

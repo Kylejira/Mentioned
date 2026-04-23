@@ -49,8 +49,8 @@ function createLlmCallAdapter(): (prompt: string) => Promise<string> {
 
 function getActiveProviders(): { adapter: (query: string, provider: LlmProviderName) => Promise<string>; names: LlmProviderName[] } {
   const providers: Record<string, AIProvider> = {
-    openai: new OpenAIProvider({ model: "gpt-4o", maxTokens: 1500, temperature: 0.3 }),
-    claude: new ClaudeProvider({ model: "claude-3-haiku-20240307", maxTokens: 1500, temperature: 0.3 }),
+    openai: new OpenAIProvider({ model: "gpt-5.4-mini", maxTokens: 1500, temperature: 0.3 }),
+    claude: new ClaudeProvider({ model: "claude-haiku-4-5-20251001", maxTokens: 1500, temperature: 0.3 }),
   }
 
   const names: LlmProviderName[] = ["openai", "claude"]
