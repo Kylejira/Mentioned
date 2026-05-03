@@ -166,6 +166,7 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
           summary: {
             ...(existing?.summary as Record<string, unknown> ?? {}),
             provider_comparison: comparison,
+            legacy_result: result.legacyResult,
             ...(deltas ? { deltas } : {}),
             ...(shareOfVoice ? { share_of_voice: shareOfVoice } : {}),
             ...(opportunity ? { opportunity } : {}),

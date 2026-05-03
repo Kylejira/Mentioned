@@ -45,10 +45,15 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    // ── Subscription / quota checks ──
+    // Public scans (from /scan) always run on free-tier limits regardless of who
+    // is calling, and never consume the caller's tracked free-scan quota.
+    // Detect early so we can skip subscription/quota gates entirely.
+    const isPublicScan = body?.source === "public"
+
+    // ── Subscription / quota checks (skipped for public scans) ──
     let planTier: PlanTier = "free"
     let effectivePlan = "free"
-    if (user) {
+    if (user && !isPublicScan) {
       const isWhitelisted = PRO_WHITELIST.includes(user.email?.toLowerCase() || "")
 
       if (isWhitelisted) {
@@ -122,11 +127,16 @@ export async function POST(request: NextRequest) {
       differentiators,
       buyerQuestions,
       description,
+      source,
+      leadEmail,
     } = body
 
     if (!brandName || !brandUrl) {
       return NextResponse.json({ error: "Missing required fields: brandName, brandUrl" }, { status: 400 })
     }
+    // (isPublicScan, planTier, effectivePlan were resolved above before quota gates.)
+    // `source` is intentionally not destructured into a local — we use isPublicScan instead.
+    void source
 
     const scanInput: ScanInput = {
       brand_name: brandName,
@@ -149,35 +159,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const scanId = brandId || `v3_${Date.now()}`
+    // Public scans get a fresh ID — never reuse a brandId so the share URL
+    // is always unique and can't collide with a tracked brand record.
+    const scanId = isPublicScan ? `pub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` : (brandId || `v3_${Date.now()}`)
     const resolvedCategory = category || categories?.[0]
 
     // ── Async mode: enqueue and return immediately ──
     if (isQueueEnabled()) {
-      logger.info("Enqueueing scan (async)", { scanId, brand: brandName, url: brandUrl, plan: planTier })
+      logger.info("Enqueueing scan (async)", { scanId, brand: brandName, url: brandUrl, plan: planTier, isPublic: isPublicScan })
 
       const adminDb = createAdminClient()
 
       // Create scan record with "queued" status
       await adminDb.from("scans").upsert({
         id: scanId,
-        brand_id: brandId || null,
+        brand_id: isPublicScan ? null : (brandId || null),
         status: "queued",
         scan_version: "v3",
         core_problem: coreProblem || null,
         target_buyer: targetBuyer || null,
         differentiators: differentiators || null,
         buyer_questions: buyerQuestions || customQueries || [],
+        is_public: isPublicScan,
+        lead_email: isPublicScan && leadEmail ? String(leadEmail).slice(0, 320) : null,
       }, { onConflict: "id" })
 
       const { getScanQueue } = await import("@/lib/queue")
 
       await getScanQueue().add("scan", {
         scanId,
-        userId: user?.id || null,
+        // Public scans NEVER attribute to a user's history — even if a logged-in
+        // user somehow lands on the public flow.
+        userId: isPublicScan ? null : (user?.id || null),
         brandName,
         brandUrl,
-        brandId,
+        brandId: isPublicScan ? undefined : brandId,
         category: resolvedCategory,
         coreProblem: coreProblem || description || "",
         targetBuyer: targetBuyer || "",
@@ -186,7 +202,7 @@ export async function POST(request: NextRequest) {
         buyerQuestions: buyerQuestions || customQueries || [],
         planTier,
         effectivePlan,
-        userEmail: user?.email || undefined,
+        userEmail: isPublicScan ? undefined : (user?.email || undefined),
       }, { jobId: scanId })
 
       return NextResponse.json({ scanId, status: "queued" })
@@ -199,19 +215,22 @@ export async function POST(request: NextRequest) {
 
     await adminDb.from("scans").upsert({
       id: scanId,
-      brand_id: brandId || null,
+      brand_id: isPublicScan ? null : (brandId || null),
       status: "processing",
       scan_version: "v3",
       core_problem: coreProblem || null,
       target_buyer: targetBuyer || null,
       differentiators: differentiators || null,
       buyer_questions: buyerQuestions || customQueries || [],
+      is_public: isPublicScan,
+      lead_email: isPublicScan && leadEmail ? String(leadEmail).slice(0, 320) : null,
     }, { onConflict: "id" })
 
     try {
       const result = await runScan({
         scanId,
-        userId: user?.id || null,
+        // Public scans NEVER attribute to a user's history.
+        userId: isPublicScan ? null : (user?.id || null),
         brandName,
         brandUrl,
         category: resolvedCategory,
@@ -220,7 +239,8 @@ export async function POST(request: NextRequest) {
         effectivePlan,
       })
 
-      if (user) {
+      // Only consume tracked-quota for non-public scans.
+      if (user && !isPublicScan) {
         const isWhitelisted = PRO_WHITELIST.includes(user.email?.toLowerCase() || "")
         if (!isWhitelisted) {
           const { data: subscription } = await supabase
@@ -344,6 +364,7 @@ export async function POST(request: NextRequest) {
             summary: {
               ...(existing?.summary as Record<string, unknown> ?? {}),
               provider_comparison: comparison,
+              legacy_result: result.legacyResult,
               ...(deltas ? { deltas } : {}),
               ...(shareOfVoice ? { share_of_voice: shareOfVoice } : {}),
               ...(opportunity ? { opportunity } : {}),

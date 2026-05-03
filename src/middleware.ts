@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+// Routes under these paths require an authenticated session.
+// NOTE: /scan and /scan/[id] are intentionally PUBLIC (no-signup tier).
+// Auth/quota for those routes is enforced inside the API + UI, not the middleware.
 const PROTECTED_PATHS = [
   "/dashboard",
   "/history",
