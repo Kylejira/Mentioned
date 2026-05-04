@@ -14,6 +14,11 @@ import { identifyContentOpportunities } from "@/lib/scan-v3/analysis/content-opp
 import { OpenAIProvider } from "@/lib/providers"
 import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import { log } from "@/lib/logger"
+import { getClientIp } from "@/lib/rate-limit/get-client-ip"
+import {
+  checkPublicScanRateLimit,
+  rateLimitHeaders,
+} from "@/lib/rate-limit/public-scan-limit"
 
 export const maxDuration = 240
 export const dynamic = "force-dynamic"
@@ -49,6 +54,47 @@ export async function POST(request: NextRequest) {
     // is calling, and never consume the caller's tracked free-scan quota.
     // Detect early so we can skip subscription/quota gates entirely.
     const isPublicScan = body?.source === "public"
+
+    // ── Per-IP rate limit (anonymous public scans only) ──
+    // Signed-up users are unlimited per the access model — they never hit this gate.
+    // Must run BEFORE any DB write or queue enqueue so abusive bursts cost us nothing.
+    let publicRateLimit: Awaited<ReturnType<typeof checkPublicScanRateLimit>> | null = null
+    if (isPublicScan && !user) {
+      const ip = getClientIp(request)
+      if (ip) {
+        publicRateLimit = await checkPublicScanRateLimit(ip)
+        if (!publicRateLimit.allowed) {
+          // Build a prefilled signup URL so the form can guide the user straight in.
+          const brandHint = typeof body?.brandUrl === "string" ? body.brandUrl : ""
+          const signupUrl = `/signup?source=rate_limit${
+            brandHint ? `&brand=${encodeURIComponent(brandHint)}` : ""
+          }`
+          logger.info("Public scan rate limit hit", {
+            limit: publicRateLimit.limit,
+            resetAt: publicRateLimit.resetAt,
+          })
+          return NextResponse.json(
+            {
+              error: "rate_limited",
+              message:
+                "You've used your 3 free scans today. Sign up free for unlimited scans and weekly tracking.",
+              limit: publicRateLimit.limit,
+              remaining: publicRateLimit.remaining,
+              resetAt: new Date(publicRateLimit.resetAt).toISOString(),
+              retryAfterSeconds: publicRateLimit.retryAfterSeconds,
+              signupUrl,
+            },
+            { status: 429, headers: rateLimitHeaders(publicRateLimit) },
+          )
+        }
+      } else {
+        // No IP detectable (test env / odd network) — log and allow through.
+        // Turnstile + global daily cap are still in place as second/third lines.
+        logger.warn("Public scan with no resolvable IP — allowing", {
+          ua: request.headers.get("user-agent") ?? null,
+        })
+      }
+    }
 
     // ── Subscription / quota checks (skipped for public scans) ──
     let planTier: PlanTier = "free"
@@ -205,7 +251,12 @@ export async function POST(request: NextRequest) {
         userEmail: isPublicScan ? undefined : (user?.email || undefined),
       }, { jobId: scanId })
 
-      return NextResponse.json({ scanId, status: "queued" })
+      return NextResponse.json(
+        { scanId, status: "queued" },
+        publicRateLimit
+          ? { headers: rateLimitHeaders(publicRateLimit) }
+          : undefined,
+      )
     }
 
     // ── Sync fallback: run inline when Redis is not available ──
@@ -394,14 +445,19 @@ export async function POST(request: NextRequest) {
         logger.info("Strategic plan skipped (plan does not include strategic brain)", { scanId, effectivePlan })
       }
 
-      return NextResponse.json({
-        ...result.legacyResult,
-        _scanId: scanId,
-        ...(scanDeltas ? { _deltas: scanDeltas } : {}),
-        ...(scanShareOfVoice ? { _share_of_voice: scanShareOfVoice } : {}),
-        ...(scanOpportunity ? { _opportunity: scanOpportunity } : {}),
-        ...(scanContentOpportunities ? { _content_opportunities: scanContentOpportunities } : {}),
-      })
+      return NextResponse.json(
+        {
+          ...result.legacyResult,
+          _scanId: scanId,
+          ...(scanDeltas ? { _deltas: scanDeltas } : {}),
+          ...(scanShareOfVoice ? { _share_of_voice: scanShareOfVoice } : {}),
+          ...(scanOpportunity ? { _opportunity: scanOpportunity } : {}),
+          ...(scanContentOpportunities ? { _content_opportunities: scanContentOpportunities } : {}),
+        },
+        publicRateLimit
+          ? { headers: rateLimitHeaders(publicRateLimit) }
+          : undefined,
+      )
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error"
       const stack = err instanceof Error ? err.stack?.split("\n").slice(0, 3).join(" | ") : ""

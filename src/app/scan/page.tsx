@@ -15,6 +15,8 @@ import {
   Info,
   Sparkles,
   Loader2,
+  Lock,
+  Clock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -52,6 +54,11 @@ export default function PublicScanPage() {
   const [competitorInput, setCompetitorInput] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [rateLimitState, setRateLimitState] = useState<{
+    message: string
+    signupUrl: string
+    resetAt: string | null
+  } | null>(null)
 
   // ── Logged-in users → redirect to /check (their tracked workflow) ──
   useEffect(() => {
@@ -133,6 +140,7 @@ export default function PublicScanPage() {
     if (!isFormValid || submitting) return
     setSubmitting(true)
     setSubmitError(null)
+    setRateLimitState(null)
 
     try {
       let normalizedUrl = formData.websiteUrl.trim()
@@ -161,6 +169,30 @@ export default function PublicScanPage() {
           leadEmail: formData.email.trim() || undefined,
         }),
       })
+
+      // ── Rate-limited: render inline conversion UI, don't show a toast ──
+      if (response.status === 429) {
+        let data: {
+          message?: string
+          signupUrl?: string
+          resetAt?: string
+        } = {}
+        try {
+          data = await response.json()
+        } catch {
+          /* ignore — we'll fall back to defaults below */
+        }
+        const fallbackSignup = `/signup?source=rate_limit&brand=${encodeURIComponent(normalizedUrl)}`
+        setRateLimitState({
+          message:
+            data.message ||
+            "You've used your 3 free scans today. Sign up free for unlimited scans.",
+          signupUrl: data.signupUrl || fallbackSignup,
+          resetAt: data.resetAt || null,
+        })
+        setSubmitting(false)
+        return
+      }
 
       if (!response.ok) {
         let msg = "Scan failed. Please try again."
@@ -222,6 +254,18 @@ export default function PublicScanPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="size-6 text-gray-400 animate-spin" />
       </div>
+    )
+  }
+
+  // Rate-limited: replace the form with a focused conversion state.
+  // The user's form draft is preserved in localStorage so they can come back later.
+  if (rateLimitState) {
+    return (
+      <RateLimitedView
+        message={rateLimitState.message}
+        signupUrl={rateLimitState.signupUrl}
+        resetAt={rateLimitState.resetAt}
+      />
     )
   }
 
@@ -580,4 +624,129 @@ function StepIndicator({
       )}
     </div>
   )
+}
+
+function RateLimitedView({
+  message,
+  signupUrl,
+  resetAt,
+}: {
+  message: string
+  signupUrl: string
+  resetAt: string | null
+}) {
+  const resetLabel = resetAt
+    ? formatRelativeTime(new Date(resetAt))
+    : "tomorrow"
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-2xl px-6">
+          <div className="flex h-14 items-center justify-between">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="size-4" />
+              Back
+            </Link>
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/logo.png"
+                alt="Mentioned"
+                width={24}
+                height={24}
+                className="rounded-md"
+              />
+              <span className="font-semibold text-gray-900 text-sm">
+                Mentioned
+              </span>
+            </Link>
+            <div className="w-14" />
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-xl px-6 py-16 sm:py-24">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 sm:p-10 text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="size-14 rounded-full bg-blue-50 flex items-center justify-center">
+              <Lock className="size-6 text-blue-600" />
+            </div>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 mb-3">
+            You&apos;ve hit your daily limit
+          </h1>
+
+          <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+            {message}
+          </p>
+
+          <div className="space-y-3">
+            <Link href={signupUrl}>
+              <Button
+                size="xl"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm"
+              >
+                Sign up free for unlimited scans
+                <ArrowRight className="ml-1" />
+              </Button>
+            </Link>
+
+            <Link href="/login">
+              <Button
+                size="lg"
+                variant="ghost"
+                className="w-full text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl"
+              >
+                Already have an account? Log in
+              </Button>
+            </Link>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-center gap-2 text-xs text-gray-500">
+            <Clock className="size-3.5" />
+            <span>Or come back {resetLabel} for another free scan.</span>
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-xl bg-white border border-gray-200 p-6">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">
+            What you get with a free account
+          </h2>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li className="flex items-start gap-2">
+              <span className="mt-2 size-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+              <span>Unlimited scans — no daily cap</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-2 size-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+              <span>Save and re-run scans for one tracked brand</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-2 size-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+              <span>Your last 5 scans saved to your dashboard</span>
+            </li>
+          </ul>
+          <p className="mt-4 text-xs text-gray-400">
+            No credit card required. Upgrade anytime for weekly tracking and alerts.
+          </p>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function formatRelativeTime(date: Date): string {
+  const diffMs = date.getTime() - Date.now()
+  if (diffMs <= 0) return "now"
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60))
+  if (diffHours < 1) return "in less than an hour"
+  if (diffHours === 1) return "in an hour"
+  if (diffHours < 24) return `in ${diffHours} hours`
+  const diffDays = Math.round(diffHours / 24)
+  if (diffDays === 1) return "tomorrow"
+  return `in ${diffDays} days`
 }
