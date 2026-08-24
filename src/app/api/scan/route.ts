@@ -11,6 +11,7 @@ import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
 import { computeOpportunityMetrics } from "@/lib/scan-v3/scoring/opportunity-analyzer"
 import { analyzeCompetitorReasons } from "@/lib/scan-v3/analysis/competitor-reason-analyzer"
 import { identifyContentOpportunities } from "@/lib/scan-v3/analysis/content-opportunity-analyzer"
+import { persistScanResults } from "@/lib/scan-v3/persistence/persist-scan-results"
 import { OpenAIProvider } from "@/lib/providers"
 import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import { log } from "@/lib/logger"
@@ -205,9 +206,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Public scans get a fresh ID — never reuse a brandId so the share URL
-    // is always unique and can't collide with a tracked brand record.
-    const scanId = isPublicScan ? `pub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` : (brandId || `v3_${Date.now()}`)
+    // Every scan gets a fresh uuid. brand_id is stored separately for history/deltas.
+    const scanId = crypto.randomUUID()
     const resolvedCategory = category || categories?.[0]
 
     // ── Async mode: enqueue and return immediately ──
@@ -216,8 +216,8 @@ export async function POST(request: NextRequest) {
 
       const adminDb = createAdminClient()
 
-      // Create scan record with "queued" status
-      await adminDb.from("scans").upsert({
+      // Create scan record with "queued" status (one row per scan)
+      await adminDb.from("scans").insert({
         id: scanId,
         brand_id: isPublicScan ? null : (brandId || null),
         status: "queued",
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
         buyer_questions: buyerQuestions || customQueries || [],
         is_public: isPublicScan,
         lead_email: isPublicScan && leadEmail ? String(leadEmail).slice(0, 320) : null,
-      }, { onConflict: "id" })
+      })
 
       const { getScanQueue } = await import("@/lib/queue")
 
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
 
     const adminDb = createAdminClient()
 
-    await adminDb.from("scans").upsert({
+    await adminDb.from("scans").insert({
       id: scanId,
       brand_id: isPublicScan ? null : (brandId || null),
       status: "processing",
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
       buyer_questions: buyerQuestions || customQueries || [],
       is_public: isPublicScan,
       lead_email: isPublicScan && leadEmail ? String(leadEmail).slice(0, 320) : null,
-    }, { onConflict: "id" })
+    })
 
     try {
       const result = await runScan({
@@ -323,6 +323,32 @@ export async function POST(request: NextRequest) {
       let scanOpportunity: unknown = null
       let scanContentOpportunities: unknown = null
       try {
+        // Persist per-(query, provider) rows BEFORE anything that reads from
+        // scan_results (share-of-voice, opportunity-analyzer,
+        // competitor-reason-analyzer). Non-fatal.
+        try {
+          const persistRes = await persistScanResults(scanId, result.v3Result.analyses, adminDb)
+          if (persistRes.error) {
+            logger.warn("persistScanResults non-fatal", {
+              scanId,
+              inserted: persistRes.inserted,
+              skipped: persistRes.skipped,
+              error: persistRes.error,
+            })
+          } else {
+            logger.info("persistScanResults ok", {
+              scanId,
+              inserted: persistRes.inserted,
+              skipped: persistRes.skipped,
+            })
+          }
+        } catch (persistErr) {
+          logger.error("persistScanResults threw (non-fatal)", {
+            scanId,
+            error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+          })
+        }
+
         const comparison = await computeProviderComparison(scanId, adminDb)
         const { data: existing } = await adminDb
           .from("scans")
@@ -339,14 +365,16 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          deltas = await computeScoreDeltas(scanId, brandId || scanId, {
-            overall: result.score,
-            mention_rate: comparison?.providers?.length
-              ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
-              : 0,
-            consistency: comparison?.cross_provider?.consistency_score ?? 0,
-            providerScores,
-          }, adminDb)
+          if (brandId) {
+            deltas = await computeScoreDeltas(scanId, brandId, {
+              overall: result.score,
+              mention_rate: comparison?.providers?.length
+                ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
+                : 0,
+              consistency: comparison?.cross_provider?.consistency_score ?? 0,
+              providerScores,
+            }, adminDb)
+          }
           scanDeltas = deltas as unknown as Record<string, unknown>
         } catch (deltaErr) {
           logger.warn("Delta computation failed (non-fatal)", {

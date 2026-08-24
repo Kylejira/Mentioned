@@ -8,6 +8,7 @@ import { computeShareOfVoice } from "@/lib/scan-v3/scoring/share-of-voice"
 import { computeOpportunityMetrics } from "@/lib/scan-v3/scoring/opportunity-analyzer"
 import { analyzeCompetitorReasons } from "@/lib/scan-v3/analysis/competitor-reason-analyzer"
 import { identifyContentOpportunities } from "@/lib/scan-v3/analysis/content-opportunity-analyzer"
+import { persistScanResults } from "@/lib/scan-v3/persistence/persist-scan-results"
 import { OpenAIProvider } from "@/lib/providers"
 import { canUseStrategicBrain } from "@/lib/plans/enforce"
 import { createAdminClient } from "@/lib/supabase-admin"
@@ -81,6 +82,32 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
     await job.updateProgress(80)
 
     try {
+      // Persist per-(query, provider) rows BEFORE anything that reads from
+      // scan_results (share-of-voice, opportunity-analyzer,
+      // competitor-reason-analyzer). Non-fatal — same error model as below.
+      try {
+        const persistRes = await persistScanResults(scanId, result.v3Result.analyses, db)
+        if (persistRes.error) {
+          logger.warn("persistScanResults non-fatal", {
+            scanId,
+            inserted: persistRes.inserted,
+            skipped: persistRes.skipped,
+            error: persistRes.error,
+          })
+        } else {
+          logger.info("persistScanResults ok", {
+            scanId,
+            inserted: persistRes.inserted,
+            skipped: persistRes.skipped,
+          })
+        }
+      } catch (persistErr) {
+        logger.error("persistScanResults threw (non-fatal)", {
+          scanId,
+          error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+        })
+      }
+
       const comparison = await computeProviderComparison(scanId, db)
       const { data: existing } = await db
         .from("scans")
@@ -97,14 +124,16 @@ async function processScanJob(job: Job<ScanJobData, ScanJobResult>): Promise<Sca
           }
         }
 
-        deltas = await computeScoreDeltas(scanId, brandId || scanId, {
-          overall: result.score,
-          mention_rate: comparison?.providers?.length
-            ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
-            : 0,
-          consistency: comparison?.cross_provider?.consistency_score ?? 0,
-          providerScores,
-        }, db)
+        if (brandId) {
+          deltas = await computeScoreDeltas(scanId, brandId, {
+            overall: result.score,
+            mention_rate: comparison?.providers?.length
+              ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
+              : 0,
+            consistency: comparison?.cross_provider?.consistency_score ?? 0,
+            providerScores,
+          }, db)
+        }
       } catch (deltaErr) {
         logger.error("Delta computation failed (non-fatal)", {
           scanId,

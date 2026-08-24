@@ -1,30 +1,23 @@
 import { getPlanConfig } from "./config"
+import { PROVIDER_NAME_MAP, type CanonicalProviderName } from "@/lib/providers/names"
 
-const PROVIDER_NAME_MAP: Record<string, string> = {
-  openai: "openai",
-  claude: "anthropic",
-  anthropic: "anthropic",
-  gemini: "google",
-  google: "google",
-  perplexity: "perplexity",
-}
-
-const PROVIDER_RUNNER_MAP: Record<string, string> = {
-  openai: "openai",
-  anthropic: "claude",
-  google: "gemini",
-  perplexity: "perplexity",
-}
+// Inverse of PROVIDER_NAME_MAP: canonical → runner name. Used only here.
+const PROVIDER_RUNNER_MAP: Record<CanonicalProviderName, string> = Object.entries(
+  PROVIDER_NAME_MAP,
+).reduce((acc, [runner, canonical]) => {
+  acc[canonical as CanonicalProviderName] = runner
+  return acc
+}, {} as Record<CanonicalProviderName, string>)
 
 export function getAllowedProviders(plan: string): string[] {
   const configProviders = getPlanConfig(plan).providers
   return configProviders
-    .map((p) => PROVIDER_RUNNER_MAP[p])
+    .map((p) => PROVIDER_RUNNER_MAP[p as CanonicalProviderName])
     .filter(Boolean) as string[]
 }
 
 export function isProviderAllowed(plan: string, runnerProviderName: string): boolean {
-  const configName = PROVIDER_NAME_MAP[runnerProviderName]
+  const configName = (PROVIDER_NAME_MAP as Record<string, string>)[runnerProviderName]
   if (!configName) return false
   return getPlanConfig(plan).providers.includes(configName)
 }
