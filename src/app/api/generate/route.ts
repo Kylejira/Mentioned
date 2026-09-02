@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { createClient } from "@/lib/supabase-server"
 import { log } from "@/lib/logger"
 
 const logger = log.create("generate-api")
+
+const PRO_WHITELIST = (process.env.PRO_WHITELIST_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean)
 
 // Lazy initialization to avoid errors when API key is not set
 let openai: OpenAI | null = null
@@ -20,6 +26,7 @@ function getOpenAIClient(): OpenAI | null {
 }
 
 export const maxDuration = 30
+export const dynamic = "force-dynamic"
 
 type ContentType = "comparison" | "faq" | "positioning"
 
@@ -78,6 +85,42 @@ Output in markdown format with clear separation between options.`,
 
 export async function POST(request: NextRequest) {
   try {
+    // ── 1. Auth check ──
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // ── 2. Plan gating — free users cannot generate content ──
+    const isWhitelisted = PRO_WHITELIST.includes(user.email?.toLowerCase() || "")
+    let isPaid = isWhitelisted
+
+    if (!isPaid) {
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("plan, status")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .single()
+
+      isPaid = !!subscription?.plan
+    }
+
+    if (!isPaid) {
+      return NextResponse.json(
+        {
+          error: "Content generation requires a paid plan",
+          code: "PLAN_REQUIRED",
+        },
+        { status: 403 }
+      )
+    }
+
     const body: GenerateRequest = await request.json()
     const { type, brandName, competitors, category, description } = body
 
