@@ -15,13 +15,8 @@ interface ProviderComparisonEntry {
   composite_score: number
 }
 
-interface CrossProviderMetrics {
-  consistency_score: number
-}
-
 interface ProviderComparison {
   providers: ProviderComparisonEntry[]
-  cross_provider: CrossProviderMetrics
 }
 
 function nullDelta(current: number): { current: number; previous: null; delta: null } {
@@ -41,7 +36,7 @@ export async function computeScoreDeltas(
 ): Promise<ScoreDeltas> {
   const { data: prevScan } = await supabase
     .from("scans")
-    .select("id, score, summary, created_at")
+    .select("id, score, summary, score_breakdown, created_at")
     .eq("brand_id", brandId)
     .neq("id", scanId)
     .in("status", ["not_mentioned", "low_visibility", "recommended"])
@@ -76,7 +71,15 @@ export async function computeScoreDeltas(
     prevMentionRate = sum / prevProviders.length
   }
 
-  const prevConsistency = comparison?.cross_provider?.consistency_score ?? null
+  // Model Agreement displays cross_model_consistency as a 0-100 percentage, so
+  // the delta has to compare that same field — not the mention-rate spread in
+  // provider_comparison.cross_provider. Scans predating score_breakdown leave
+  // this null, which renders as "First scan" rather than a wrong number.
+  const prevBreakdown = prevScan.score_breakdown as Record<string, unknown> | null
+  const prevCrossModel = typeof prevBreakdown?.cross_model_consistency === "number"
+    ? prevBreakdown.cross_model_consistency
+    : null
+  const prevConsistency = prevCrossModel !== null ? Math.round(prevCrossModel * 100) : null
 
   const providers: ScoreDeltas["providers"] = {}
   for (const [key, currentVal] of Object.entries(currentScores.providerScores)) {

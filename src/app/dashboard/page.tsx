@@ -1176,49 +1176,43 @@ export default function DashboardPage() {
     )
   }
 
-  // Get accurate status message based on actual mention rate
+  // Hero copy tiers, gated on the same overall score the ring, the status
+  // badge, and the "Room for improvement" banner read — so the headline can
+  // never disagree with the number next to it.
   const getStatusMessage = () => {
-    const mentionRate = data.visibilityScore?.overall || 0
-    const score = data.visibilityScore?.breakdown?.mentionRate || mentionRate
-    
-    if (score === 0 || mentionRate === 0) {
+    const overall = data.visibilityScore?.overall || 0
+
+    if (overall >= 80) {
       return {
-        title: "AI doesn't know you exist yet",
-        subtitle: "You weren't mentioned in any of the queries we tested. Let's change that.",
+        title: "You're a top AI recommendation",
+        subtitle: "AI tools consistently put you among the first choices. Keep it up.",
       }
     }
-    
-    if (score < 20) {
+
+    if (overall >= 60) {
       return {
-        title: "You're barely visible",
-        subtitle: "AI tools rarely mention you. There's significant room to improve.",
+        title: "You're on the board, but not the top pick",
+        subtitle: "AI tools mention you regularly, but competitors are still recommended ahead of you.",
       }
     }
-    
-    if (score < 40) {
+
+    if (overall >= 40) {
       return {
-      title: "You're on the radar, but not top-of-mind",
-        subtitle: "AI tools mention you sometimes, but competitors get recommended more often.",
+        title: "Room to grow",
+        subtitle: "AI tools know you exist, but you're rarely a top recommendation yet.",
       }
     }
-    
-    if (score < 60) {
+
+    if (overall >= 20) {
       return {
-        title: "You're in the conversation",
-        subtitle: "AI tools recommend you regularly, but you're not consistently in top picks.",
+        title: "You're getting missed",
+        subtitle: "AI tools mention competitors far more often than you.",
       }
     }
-    
-    if (score < 80) {
-      return {
-        title: "You're a top recommendation",
-        subtitle: "AI tools frequently recommend you. Focus on maintaining your position.",
-      }
-    }
-    
+
     return {
-      title: "You're dominating AI recommendations",
-      subtitle: "AI tools consistently recommend you as a top choice. Keep it up!",
+      title: "Nearly invisible to AI",
+      subtitle: "AI tools almost never recommend you for these queries.",
     }
   }
 

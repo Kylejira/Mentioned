@@ -371,7 +371,8 @@ export async function POST(request: NextRequest) {
               mention_rate: comparison?.providers?.length
                 ? comparison.providers.reduce((s, p) => s + p.mention_rate, 0) / comparison.providers.length
                 : 0,
-              consistency: comparison?.cross_provider?.consistency_score ?? 0,
+              // Same field the dashboard's Model Agreement card displays.
+              consistency: Math.round(result.v3Result.score.cross_model_consistency * 100),
               providerScores,
             }, adminDb)
           }
