@@ -150,7 +150,7 @@ export type VisibilityGap = {
 export type ActionItem = {
   id: string
   number: number
-  category: "content" | "positioning" | "authority" | "social_proof" | "comparison" | "faq"
+  category: "content" | "positioning" | "authority" | "social_proof" | "comparison" | "faq" | "technical"
   type: string
   title: string
   // Evidence-based fields (new)
@@ -163,7 +163,14 @@ export type ActionItem = {
   competitor_example?: string | null
   effort: "30 mins" | "1-2 hours" | "2-3 hours" | "half day" | "1-2 days"
   impact: "high" | "medium" | "low"
-  generate_type: "comparison_page" | "headline" | "faq" | "testimonial_email" | "use_case_page" | null
+  generate_type: "comparison_page" | "headline" | "faq" | "testimonial_email" | "use_case_page" | "comparison" | "positioning" | null
+  // Scored fields from action_plans.actions (ProcessedAction)
+  description?: string
+  impact_score?: number
+  effort_score?: number
+  priority_score?: number
+  timeline?: string
+  badges?: string[]
 }
 
 export type ScanData = {

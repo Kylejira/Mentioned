@@ -48,6 +48,51 @@ import ReactMarkdown from "react-markdown"
 const SCAN_RESULT_KEY = "mentioned_scan_result" // Legacy key (shared across users)
 // New keys are scoped per-user: mentioned_scan_result_{userId}
 
+// Only content and positioning actions map onto a generator that produces
+// on-target copy. Technical and authority actions get no draft button.
+const PLAN_GENERATE_TYPES: Record<string, "comparison" | "positioning"> = {
+  content: "comparison",
+  positioning: "positioning",
+}
+
+// Map action_plans.actions (ProcessedAction[]) onto the ActionItem shape the
+// action-plan cards render.
+function mapPlanActions(actions: any): ActionItem[] {
+  if (!Array.isArray(actions)) return []
+
+  return actions
+    .map((a: any, idx: number): ActionItem => {
+      const impactScore = typeof a?.impact_score === "number" ? a.impact_score : null
+      const effortScore = typeof a?.effort_score === "number" ? a.effort_score : null
+      const description = typeof a?.description === "string" ? a.description : ""
+
+      return {
+        id: a?.id || `plan-action-${idx + 1}`,
+        number: idx + 1,
+        category: a?.category || "content",
+        type: a?.category || "content",
+        title: a?.title || "Action item",
+        // The card body renders why_it_matters — that's where the plan's
+        // implementation guidance has to land or the cards come out blank.
+        why_it_matters: description || null,
+        what_we_found: null,
+        competitor_comparison: null,
+        competitor_example: null,
+        what_to_do: description,
+        description,
+        impact_score: impactScore ?? undefined,
+        effort_score: effortScore ?? undefined,
+        priority_score: typeof a?.priority_score === "number" ? a.priority_score : 0,
+        timeline: typeof a?.timeline === "string" ? a.timeline : undefined,
+        badges: Array.isArray(a?.badges) ? a.badges : [],
+        impact: impactScore === null ? "medium" : impactScore >= 8 ? "high" : impactScore >= 5 ? "medium" : "low",
+        effort: effortScore === null ? "half day" : effortScore <= 3 ? "1-2 hours" : effortScore <= 6 ? "half day" : "1-2 days",
+        generate_type: PLAN_GENERATE_TYPES[a?.category] ?? null,
+      }
+    })
+    .sort((a, b) => (b.priority_score ?? 0) - (a.priority_score ?? 0))
+}
+
 // Transform API scan result to dashboard format
 function transformScanResult(apiResult: any): ScanData | null {
   if (!apiResult) return null
@@ -752,6 +797,7 @@ export default function DashboardPage() {
   const [competitorReasonsData, setCompetitorReasonsData] = useState<any>(null)
   const [contentOpportunitiesData, setContentOpportunitiesData] = useState<any>(null)
   const [currentScanId, setCurrentScanId] = useState<string | null>(null)
+  const [actionPlanItems, setActionPlanItems] = useState<ActionItem[] | null>(null)
 
   const [activeActionCategory, setActiveActionCategory] = useState<string>("all")
 
@@ -865,8 +911,35 @@ export default function DashboardPage() {
       .catch(() => {})
   }, [user?.id, authLoading])
 
+  // Load the strategic action plan for whichever scan the dashboard resolved
+  // (localStorage _scanId or the DB latestScanId — both set currentScanId).
+  useEffect(() => {
+    if (!currentScanId) {
+      setActionPlanItems(null)
+      return
+    }
+
+    let cancelled = false
+
+    fetch(`/api/scan/${currentScanId}/action-plan`)
+      .then(res => res.ok ? res.json() : null)
+      .then(d => {
+        if (cancelled || !d) return
+        setActionPlanItems(mapPlanActions(d.actions))
+      })
+      .catch(() => {})
+
+    return () => { cancelled = true }
+  }, [currentScanId])
+
   // Use the loaded data or show loading state
   const data = scanData || mockScanData
+
+  // Strategic plan actions win over any legacy action_items on the payload.
+  const planActionItems: ActionItem[] =
+    actionPlanItems && actionPlanItems.length > 0
+      ? actionPlanItems
+      : (data.actionItems || [])
 
   // Calculate scan freshness
   const getScanFreshness = () => {
@@ -980,22 +1053,15 @@ export default function DashboardPage() {
     setGeneratedActionContent(null)
 
     try {
-      const response = await fetch("/api/generate-content", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: actionItem,
-          productData: data.productData || {
-            product_name: data.brand.name,
-            category: data.brand.category,
-            one_line_description: `${data.brand.category} product`,
-            target_audience: { who: "businesses", company_size: "various", industry: "general" },
-            key_features: [],
-            use_cases: [],
-            unique_selling_points: [],
-          },
-          topCompetitors: data.competitors.slice(0, 3).map(c => c.name),
-          generateType: actionItem.generate_type,
+          type: actionItem.generate_type,
+          brandName: data.brand.name,
+          competitors: data.competitors.map(c => c.name),
+          category: data.brand.category,
+          description: actionItem.description || actionItem.what_to_do || actionItem.title,
         }),
       })
 
@@ -1564,7 +1630,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {(!data.actionItems || data.actionItems.length === 0) && (!data.actions || data.actions.length === 0) ? (
+            {planActionItems.length === 0 && (!data.actions || data.actions.length === 0) ? (
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center">
                 <div className="text-3xl mb-3">&#128161;</div>
                 <h3 className="font-semibold text-gray-900 mb-1">No action plan yet</h3>
@@ -1588,11 +1654,11 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               </div>
-            ) : data.actionItems && data.actionItems.length > 0 ? (() => {
-              const hasCategories = data.actionItems.some((a: any) => a.category)
+            ) : planActionItems.length > 0 ? (() => {
+              const hasCategories = planActionItems.some((a) => a.category)
               const filteredActions = activeActionCategory === "all"
-                ? data.actionItems
-                : data.actionItems.filter((a: any) => a.category === activeActionCategory)
+                ? planActionItems
+                : planActionItems.filter((a) => a.category === activeActionCategory)
 
               return (
                 <div className="space-y-3">
@@ -1623,10 +1689,10 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold text-gray-900 text-sm">{actionItem.title}</h3>
-                            {(actionItem as any).badges?.includes('quick_win') && (
+                            {actionItem.badges?.includes('quick_win') && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-700">&#9889; Quick Win</span>
                             )}
-                            {(actionItem as any).badges?.includes('high_impact') && (
+                            {actionItem.badges?.includes('high_impact') && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700">&#127919; High Impact</span>
                             )}
                           </div>
@@ -1648,13 +1714,18 @@ export default function DashboardPage() {
                             <p className="text-sm text-gray-400 mt-1 italic">{actionItem.competitor_example}</p>
                           )}
 
-                          {(actionItem as any).impact_score && (
+                          {actionItem.impact_score && (
                             <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                              <span>Impact: <strong className="text-gray-600">{(actionItem as any).impact_score}/10</strong></span>
-                              <span>Effort: <strong className="text-gray-600">{(actionItem as any).effort_score}/10</strong></span>
-                              {(actionItem as any).category && (
-                                <span className={cn("px-2 py-0.5 rounded-full font-medium", getCategoryColor((actionItem as any).category))}>
-                                  {(actionItem as any).category}
+                              <span>Impact: <strong className="text-gray-600">{actionItem.impact_score}/10</strong></span>
+                              <span>Effort: <strong className="text-gray-600">{actionItem.effort_score}/10</strong></span>
+                              {actionItem.category && (
+                                <span className={cn("px-2 py-0.5 rounded-full font-medium", getCategoryColor(actionItem.category))}>
+                                  {actionItem.category}
+                                </span>
+                              )}
+                              {actionItem.timeline && (
+                                <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                  {actionItem.timeline.replace(/_/g, ' ')}
                                 </span>
                               )}
                             </div>
