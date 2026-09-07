@@ -61,6 +61,11 @@ function getEmptyMetrics(): OpportunityMetrics {
 // Opportunity gap classification
 // ---------------------------------------------------------------------------
 
+/**
+ * Classifies the gap from the brand's share of ALL tested query-provider pairs
+ * (not just the ones where someone was recommended). Queries where AI named
+ * nobody are unclaimed demand, so they count against the brand here.
+ */
 function classifyOpportunityGap(brandCaptureRate: number): OpportunityGap {
   if (brandCaptureRate >= 0.40) return "Low"
   if (brandCaptureRate >= 0.15) return "Moderate"
@@ -124,7 +129,7 @@ export function generateOpportunityInsights(
   // Priority 5: Shared capture (appears alongside competitors)
   if (sharedCaptureRate > 0.3 && insights.length < 4) {
     insights.push(
-      `You appear alongside competitors in ${pct(sharedCaptureRate)}% of recommendations. Focus on improving your ranking position.`
+      `You appear alongside competitors in ${pct(sharedCaptureRate)}% of AI responses tested. Focus on improving your ranking position.`
     )
   }
 
@@ -201,9 +206,13 @@ export async function computeOpportunityMetrics(
   }
 
   // --- Rates ---
-  const brandCaptureRate = anyMention > 0 ? brandMentionCount / anyMention : 0
-  const competitorCaptureRate = anyMention > 0 ? competitorOnly / anyMention : 0
-  const sharedCaptureRate = anyMention > 0 ? shared / anyMention : 0
+  // Every rate divides by totalPairs so brand / competitor-only / uncaptured
+  // partition the same whole and sum to 1. brandCaptureRate counts every row
+  // where the brand appeared, shared rows included — sharedCaptureRate is a
+  // subset of it and must never be added on top.
+  const brandCaptureRate = totalPairs > 0 ? brandMentionCount / totalPairs : 0
+  const competitorCaptureRate = totalPairs > 0 ? competitorOnly / totalPairs : 0
+  const sharedCaptureRate = totalPairs > 0 ? shared / totalPairs : 0
   const uncapturedRate = totalPairs > 0 ? noMention / totalPairs : 0
 
   // --- Opportunity gap ---

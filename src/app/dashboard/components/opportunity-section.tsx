@@ -68,6 +68,33 @@ function pct(value: number): string {
   return `${Math.round(value * 100)}%`
 }
 
+/**
+ * Turns rates that partition a whole into whole percentages that always total
+ * exactly 100, using largest-remainder rounding. Without this, independently
+ * rounding 81.25 / 13.39 / 5.36 yields 99 and the stacked bar under-fills.
+ */
+function splitPercentages(parts: number[]): number[] {
+  const total = parts.reduce((sum, p) => sum + p, 0)
+  if (total <= 0) return parts.map(() => 0)
+
+  const scaled = parts.map((p) => (p / total) * 100)
+  const floors = scaled.map((v) => Math.floor(v))
+  let remainder = 100 - floors.reduce((sum, f) => sum + f, 0)
+
+  const byFraction = scaled
+    .map((v, i) => ({ i, fraction: v - Math.floor(v) }))
+    .sort((a, b) => b.fraction - a.fraction)
+
+  const result = [...floors]
+  for (const { i } of byFraction) {
+    if (remainder <= 0) break
+    result[i] += 1
+    remainder -= 1
+  }
+
+  return result
+}
+
 function capitalize(name: string): string {
   if (!name) return ""
   return name.charAt(0).toUpperCase() + name.slice(1)
@@ -112,9 +139,23 @@ export function OpportunitySection({ data, brandName = "Your brand" }: Opportuni
   const badge = GAP_BADGE[gap] || GAP_BADGE.Critical
   const message = GAP_MESSAGE[gap] || GAP_MESSAGE.Critical
 
-  const brandBarPct = Math.round((data.brand_capture_rate + data.shared_capture_rate) * 100)
-  const compBarPct = Math.round(data.competitor_capture_rate * 100)
-  const uncapturedBarPct = Math.round(data.uncaptured_rate * 100)
+  // Three mutually exclusive segments of the same whole: rows where the brand
+  // appeared (shared or not), rows where only competitors did, and rows with no
+  // recommendation at all. shared_capture_rate is a subset of the brand segment
+  // and is deliberately not added here.
+  //
+  // Split on the raw counts rather than the stored rates — those are rounded to
+  // three decimals on write, which is enough to misplace the rounding remainder.
+  // Every row falls in exactly one segment, so the counts always total the pairs.
+  const competitorOnlyCount = Math.max(
+    0,
+    data.total_query_provider_pairs - data.brand_mention_count - data.queries_with_no_mention
+  )
+  const [brandBarPct, compBarPct, uncapturedBarPct] = splitPercentages([
+    data.brand_mention_count,
+    competitorOnlyCount,
+    data.queries_with_no_mention,
+  ])
 
   const topCompetitors = data.top_competitors || []
   const topCompMentions = topCompetitors.length > 0
@@ -165,14 +206,14 @@ export function OpportunitySection({ data, brandName = "Your brand" }: Opportuni
           <MetricCard
             label="Your Brand Mentions"
             value={`${data.brand_mention_count}`}
-            sublabel={`You captured ${pct(data.brand_capture_rate)}`}
+            sublabel={`You captured ${brandBarPct}% of tested demand`}
             valueColor={data.brand_mention_count > 0 ? "text-green-600" : "text-red-600"}
           />
           <MetricCard
             label="Competitor Mentions"
             value={`${data.competitor_mention_count}`}
             sublabel={hasCompetitors
-              ? `Competitors captured ${pct(data.competitor_capture_rate)}`
+              ? `Competitors captured ${compBarPct}% outright`
               : "No competitors detected"
             }
             valueColor={data.competitor_mention_count > 0 ? "text-red-600" : "text-gray-400"}
@@ -180,7 +221,7 @@ export function OpportunitySection({ data, brandName = "Your brand" }: Opportuni
           <MetricCard
             label="Uncaptured Demand"
             value={`${data.queries_with_no_mention}`}
-            sublabel={`${pct(data.uncaptured_rate)} with no recommendation`}
+            sublabel={`${uncapturedBarPct}% with no recommendation`}
           />
         </div>
 
@@ -218,17 +259,17 @@ export function OpportunitySection({ data, brandName = "Your brand" }: Opportuni
           <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm">
             <span className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-green-500" />
-              Your brand: {pct(data.brand_capture_rate + data.shared_capture_rate)}
+              Your brand: {brandBarPct}%
             </span>
             {hasCompetitors && (
               <span className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-sm bg-red-500" />
-                Competitors: {pct(data.competitor_capture_rate)}
+                Competitors: {compBarPct}%
               </span>
             )}
             <span className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-gray-300" />
-              No recommendation: {pct(data.uncaptured_rate)}
+              No recommendation: {uncapturedBarPct}%
             </span>
           </div>
         </div>
